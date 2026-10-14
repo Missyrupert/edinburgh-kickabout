@@ -215,14 +215,14 @@ function build(scene, world, mats, P) {
   { const z = GZ0 + 3.5 * GW;
     solid('wood', -10.05, 1.05, z, 0.1, 2.1, 2.4, 0x8e1c1c, { target: 'garage' });
     quad('atlas', -9.99, 1.05, z, 2.4, 2.1, Math.PI / 2, atlas.draw(256, 224, (g) => { g.fillStyle = '#c9c4ba'; g.fillRect(0, 0, 256, 224); g.strokeStyle = '#fff'; g.lineWidth = 10; g.strokeRect(28, 30, 200, 194); g.beginPath(); g.moveTo(28, 110); g.lineTo(228, 110); g.stroke(); for (let y = 0; y < 224; y += 22) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(0, y, 256, 3); } g.fillStyle = '#c8102e'; g.font = 'bold 26px Arial'; g.fillText('No 4  - SHOOT HERE', 40, 80); }));
-    addTarget({ id: 'garage', name: 'Garage Door No.4', hint: 'skelp the painted goal', points: 40, cash: 40, diff: 'easy', kind: 'hit', pos: V(-9.6, 0, z), ringR: 1.3, stand: V(-3, 0, z), aim: V(-10, 0.6, z),
+    addTarget({ id: 'garage', name: 'Garage Door No.4', hint: 'skelp the painted goal', points: 40, cash: 40, diff: 'easy', tier: 'easy', kind: 'hit', pos: V(-9.6, 0, z), ringR: 1.3, stand: V(-3, 0, z), aim: V(-10, 0.6, z),
       lines: ["BOOM! Wee Tam's da is coming oot.", 'Top bins! Well... middle bins.', 'That door has taken a few.'] }); }
   // 2. Shopping trolley on the verge (easy)
   { const x = 7.6, z = 12;
     for (const [w, h, d, y] of [[0.6, 0.04, 0.9, 0.3], [0.6, 0.5, 0.03, 0.6], [0.03, 0.5, 0.9, 0.6]]) for (const o of (d < 0.1 ? [-0.45, 0.45] : w < 0.1 ? [-0.3, 0.3] : [0])) solid('metal', x + (w < 0.1 ? o : 0), y, z + (d < 0.1 ? o : 0), w, h, d, 0xa7adb2, { phys: false, rz: 0.12 });
     solid('flat', x, 0.86, z - 0.5, 0.6, 0.06, 0.06, 0xd0302a, { phys: false });
     boxBody(x, 0.55, z, 0.62, 0.9, 0.92, { target: 'trolley' });
-    addTarget({ id: 'trolley', name: 'Abandoned Trolley', hint: 'hit the trolley', points: 50, cash: 50, diff: 'easy', kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(3.2, 0, z), aim: V(x, 0.5, z),
+    addTarget({ id: 'trolley', name: 'Abandoned Trolley', hint: 'hit the trolley', points: 50, cash: 50, diff: 'easy', tier: 'easy', kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(3.2, 0, z), aim: V(x, 0.5, z),
       lines: ['Clang! Take it back for the pound.', "It's been there since 1997. Respect.", 'Supermarket sweep!'] }); }
   // 3. Bus stop shelter (medium)
   { const x = 5.6, z = -2;
@@ -233,43 +233,44 @@ function build(scene, world, mats, P) {
     cyl('metal', x - 0.4, 1.5, z + 2.2, 0.05, 0.05, 3, 0x333333, { seg: 6, target: 'busstop' });
     sign('BUS STOP  21 27 37', x - 0.4, 2.75, z + 2.2, 0.55, 0.42, -Math.PI / 2, '#c8102e', '#fff', 'bold 40px Arial', '#fff');
     sign('NEXT BUS: AYE, RIGHT', x + 1.12, 2.1, z, 1.8, 0.24, -Math.PI / 2, '#111', '#ffb000', 'bold 44px Courier New');
-    addTarget({ id: 'busstop', name: 'Bus Stop', hint: 'hit the shelter', points: 75, cash: 75, diff: 'medium', kind: 'hit', pos: V(x + 0.5, 0, z), ringR: 1.6, stand: V(1.2, 0, z), aim: V(x + 0.6, 1.0, z),
+    addTarget({ id: 'busstop', name: 'Bus Stop', hint: 'hit the shelter', points: 75, cash: 75, diff: 'medium', tier: 'easy', kind: 'hit', pos: V(x + 0.5, 0, z), ringR: 1.6, stand: V(1.2, 0, z), aim: V(x + 0.6, 1.0, z),
       lines: ["Three 21s turn up at once.", "Driver: 'Exact fare, pal.'", 'Shelter rattled. Nae bus, mind.'] }); }
   // 4. Lamppost (medium): the one with a missing-cat poster
   { const x = -5.6, z = 0; lamp(x, z, -1, 'lamp'); quad('atlas', x + 0.15, 1.6, z, 0.3, 0.4, Math.PI / 2, atlas.sign('LOST CAT', '#fff', '#111', 0.75, 'bold 30px Arial'));
-    addTarget({ id: 'lamp', name: 'Lamppost (lost cat)', hint: 'ping the post', points: 75, cash: 75, diff: 'medium', kind: 'hit', pos: V(x, 0, z), ringR: 0.8, stand: V(-2.2, 0, z), aim: V(x, 0.6, z),
+    addTarget({ id: 'lamp', name: 'Lamppost (lost cat)', hint: 'ping the post', points: 75, cash: 75, diff: 'medium', tier: 'easy', kind: 'hit', pos: V(x, 0, z), ringR: 0.8, stand: V(-2.2, 0, z), aim: V(x, 0.6, z),
       lines: ['PING! The cat has not been found.', 'Concrete clang!', 'Off the post and doon.'] }); }
   // 5. Communal bin by the garages (medium chip)
   { const x = -7.4, z = 24.5; const zone = bin(x, z, 1.3, 1.0, 1.25, 0x3f5a3f);
     solid('flat', x - 0.79, 1.68, z, 0.06, 0.9, 1.0, 0x2f4a2f, { rz: 0.3 }); // open lid, hinged at the back (away from the street)
     sign('RECYCLING', x + 0.66, 0.75, z, 0.9, 0.18, Math.PI / 2, '#2f4a2f', '#fff', 'bold 60px Arial');
-    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'chip it IN the bin', points: 100, cash: 100, diff: 'medium', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 1.3, stand: V(-1.5, 0, z), aim: V(x, 0.6, z), zone,
+    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'chip it IN the bin', points: 100, cash: 100, diff: 'medium', tier: 'tricky', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 1.3, stand: V(-1.5, 0, z), aim: V(x, 0.6, z), zone,
       lines: ['In the bucket! The cooncil thanks you.', 'Recycling? Close enough.', 'Bin day came early.'] }); }
   // 6. Drying green: through the poles (hard), up the bank
-  addTarget({ id: 'gap', name: 'Drying Green Poles', hint: 'kick it between the poles (up the bank)', points: 125, cash: 125, diff: 'hard', kind: 'zone', pos: V(19, rise, -4), ringR: 1.0, stand: V(14.5, rise, -4), aim: V(22, rise + 0.3, -4),
+  addTarget({ id: 'gap', name: 'Drying Green Poles', hint: 'kick it between the poles (up the bank)', points: 125, cash: 125, diff: 'hard', tier: 'tricky', kind: 'zone', pos: V(19, rise, -4), ringR: 1.0, stand: V(14.5, rise, -4), aim: V(22, rise + 0.3, -4),
     zone: new THREE.Box3(V(18.7, rise, -5.9), V(19.3, rise + 2.1, -2.1)), minSpeed: 1,
     lines: ["Through the posts! Mind Mrs Kerr's sheets.", 'GOAL! The washing applauds.', 'Wembley? Naw. Pilton drying green.'] });
   // 7. Wheelie bin chip (hard): open green wheelie by the gate
   { const x = -6.6, z = -19.5; const zone = bin(x, z, 0.72, 0.82, 1.0, 0x2e5a34); zone.max.y += 0.15;
     solid('flat', x - 0.47, 1.25, z, 0.06, 0.55, 0.84, 0x244a2a, { rz: 0.5 }); // lid flipped open at the back
-    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 0.8, stand: V(-2.5, 0, z), aim: V(x, 0.6, z), zone,
+    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', tier: 'tricky', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 0.8, stand: V(-2.5, 0, z), aim: V(x, 0.6, z), zone,
       lines: ['Garden waste: ONE football. Lovely.', 'Chipped in! Messi who?', 'Brown bin? Naw, green. Still counts.'] }); }
   // 8. "NO BALL GAMES" sign on the block (cheeky, hard)
   { const x = 10.94, y = 2.4, z = -24;
     sign('NO BALL GAMES', x, y, z, 1.4, 0.5, -Math.PI / 2, '#f4f1ea', '#c8102e', 'bold 54px Arial', '#c8102e');
     sign('BY ORDER - CITY OF EDINBURGH COUNCIL', x, y - 0.36, z, 1.4, 0.14, -Math.PI / 2, '#f4f1ea', '#222', 'bold 30px Arial');
     boxBody(x - 0.02, y - 0.05, z, 0.06, 0.75, 1.5, { target: 'noballs' });
-    addTarget({ id: 'noballs', name: "'No Ball Games' Sign", hint: 'hit the sign. Go on.', points: 125, cash: 125, diff: 'hard', kind: 'hit', pos: V(x - 0.4, 0, z), ringR: 1.0, stand: V(6.2, 0, z), aim: V(x, y, z),
+    addTarget({ id: 'noballs', name: "'No Ball Games' Sign", hint: 'hit the sign. Go on.', points: 125, cash: 125, diff: 'hard', tier: 'tricky', kind: 'hit', pos: V(x - 0.4, 0, z), ringR: 1.0, stand: V(6.2, 0, z), aim: V(x, y, z),
       lines: ['Ironic. Very ironic.', "Mrs Kerr's at the windae. RUN.", 'The council will be hearing aboot this.'] }); }
 
   // ---------- optional CHALLENGES (experimental): hidden, hard, separate from the 8 targets ----------
   const challenges = [];
-  const addChallenge = (t) => { addTarget(t); targets.pop(); t.challenge = true; challenges.push(t); return t; };
+  const addChallenge = (t) => { addTarget(t); targets.pop(); t.challenge = true; t.tier = 'legend'; challenges.push(t); return t; };
   // C1. Garage roof: lob it up onto the lock-up roof (and keep it there long enough to count)
   { const yR = 2.86; solid('flat', -13.4, yR + 0.12, GZ0 + 0.1, 7.4, 0.12, 0.14, 0x55575a, { phys: true }); // wee upstand at the back edge
-    addChallenge({ id: 'c_roof', name: 'Challenge: On the Lock-up Roof', hint: 'lob it ONTO the garage roof', points: 0, cash: 100, kind: 'zone', pos: V(-13.4, yR, GZ0 + GN * GW / 2), ringR: 1.6,
+    addChallenge({ id: 'c_roof', name: 'On the Lock-up Roof', hint: 'there\'s a ba\' up there already...', points: 0, cash: 100, kind: 'zone', pos: V(-13.4, yR, GZ0 + GN * GW / 2), ringR: 1.6,
       stand: V(-2.5, 0, 12), aim: V(-13.4, yR + 0.3, 12), zone: new THREE.Box3(V(-16.9, yR, GZ0 + 0.2), V(-10.1, yR + 0.45, GZ0 + GN * GW - 0.2)),
       lines: ["It's up there wi' the other forty balls.", "Wee Tam's da: 'That's comin' oot yer pocket money.'"] }); }
+  { const old = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6).scale(1, 0.55, 1), new THREE.MeshLambertMaterial({ color: 0x9a6a3a })); old.position.set(-15.8, 3.0, 5.2); scene.add(old); } // clue: an old burst ba' already up there
   // C2. Mrs Kerr's open upstairs windae (2nd floor of the pitched-roof block)
   { const x = 10.96, y = 4.65, z = -28.5;
     quad('flat', x - 0.005, y, z, 1.45, 1.5, -Math.PI / 2, null, 0xf2f2f0);
@@ -278,10 +279,10 @@ function build(scene, world, mats, P) {
     quad('flat', x - 0.02, y - 0.1, z + 0.45, 0.25, 0.9, -Math.PI / 2, null, 0xd77a9a); // curtain blowing
     solid('flat', x - 0.1, y - 0.7, z, 0.2, 0.08, 1.45, 0xd8d4cc, { phys: false }); // sill
     boxBody(x - 0.03, y - 0.05, z, 0.06, 1.05, 1.15, { target: 'c_window' });
-    addChallenge({ id: 'c_window', name: "Challenge: Mrs Kerr's Windae", hint: 'the open window, 2nd floor...', points: 0, cash: 100, kind: 'hit', pos: V(x - 0.6, 0, z), ringR: 1.0, stand: V(4.5, 0, z), aim: V(x, y, z),
+    addChallenge({ id: 'c_window', name: "Mrs Kerr's Windae", hint: 'somebody\'s left their windae open', points: 0, cash: 100, kind: 'hit', pos: V(x - 0.6, 0, z), ringR: 1.0, stand: V(4.5, 0, z), aim: V(x, y, z),
       lines: ["MRS KERR: 'WHO KICKED THAT?!'", 'Straight in the front room. Mind the good china.'] }); }
   // C3. Long-range drying green: through the poles from the far pavement (14 m+, up the bank)
-  addChallenge({ id: 'c_longpoles', name: 'Challenge: Worldie Through the Poles', hint: 'through the poles from the far side of the road', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
+  addChallenge({ id: 'c_longpoles', name: 'Worldie Through the Poles', hint: 'the big boys shoot from the far pavement', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
     stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -4), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(18.7, rise + 0.3, -4.9), V(19.3, rise + 1.5, -3.1)), minSpeed: 1,
     lines: ['WORLDIE! Fiona would be proud.', 'From there?! Absolute screamer.'] });
   // faint sparkles mark the challenge spots (one Points draw call)

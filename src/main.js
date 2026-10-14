@@ -4,7 +4,7 @@ import * as CANNON from 'cannon-es';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
 import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
-import { unlocks, completeChallenge, selectBall, resetProgress, BALLS, ITEMS, REWARDS, saveUnlocks } from './unlocks.js';
+import { unlocks, recordDone, levelDone, tierCount, TIERS, selectBall, selectBoots, BOOTS, resetProgress, BALLS, ITEMS, saveUnlocks } from './unlocks.js';
 import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
 import { Sfx } from './audio.js';
@@ -86,6 +86,8 @@ const { targets, dynamics, pigeons, materials, views } = built;
 const SPAWN_YAW = LEVEL.spawnYaw * Math.PI / 180, BOUNDS = LEVEL.bounds;
 const challenges = built.challenges || [];
 const allTargets = targets.concat(challenges); // challenges share the scoring code but have their own counter
+for (const t of targets) t.tier ||= t.diff === 'hard' ? 'tricky' : 'easy';
+{ const d = levelDone(LEVEL.id); for (const t of allTargets) if (d[t.id]) { t.done = true; t.ring.material.color.set(0x5fd35f); } } // saved progress
 const targetById = Object.fromEntries(allTargets.map((t) => [t.id, t]));
 // Static bodies were positioned after construction: refresh their AABBs once, or AABB broadphase misses them.
 // (This stale-AABB effect is also what made SAPBroadphase look "broken" in v1.)
@@ -113,14 +115,27 @@ const balls = BALL_HOMES.map(([x, y, z]) => {
 });
 
 // boot (kick animation), attached to the camera: one mesh
-const bootGeo = (() => {
-  const a = new THREE.BoxGeometry(0.12, 0.5, 0.12).translate(0, 0.25, 0).toNonIndexed(), b = new THREE.BoxGeometry(0.14, 0.1, 0.28).translate(0, 0, -0.08).toNonIndexed();
-  const col = (g, c) => { const k = new THREE.Color(c), n = g.attributes.position.count, arr = new Float32Array(n * 3); for (let i = 0; i < n; i++) arr.set([k.r, k.g, k.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(arr, 3)); return g; };
-  col(a, 0x24324a); col(b, 0x111111);
-  const g = new THREE.BufferGeometry();
-  for (const k of ['position', 'normal', 'uv', 'color']) { const x = a.attributes[k], y = b.attributes[k], arr = new Float32Array(x.array.length + y.array.length); arr.set(x.array); arr.set(y.array, x.array.length); g.setAttribute(k, new THREE.BufferAttribute(arr, x.itemSize)); }
+// a scuffed trainer (default) or unlockable classic black boots, with shin; cosmetic only (no physics)
+function footGeo(style) {
+  const parts = [], B = (w, h, d, x, y, z, c) => parts.push([new THREE.BoxGeometry(w, h, d).translate(x, y, z).toNonIndexed(), c]);
+  B(0.11, 0.48, 0.11, 0, 0.33, 0.01, 0x3b4a63); // trouser shin
+  B(0.105, 0.07, 0.105, 0, 0.08, 0.01, style === 'boots' ? 0x101010 : 0xe8e8e4); // sock / collar
+  if (style === 'boots') {
+    B(0.13, 0.085, 0.27, 0, 0.035, -0.07, 0x141414); B(0.12, 0.05, 0.08, 0, 0.02, -0.19, 0x1c1c1c); B(0.135, 0.022, 0.285, 0, -0.016, -0.07, 0x2a2a2a);
+    for (const z of [-0.17, -0.09, 0.02]) for (const x of [-0.045, 0.045]) B(0.022, 0.02, 0.022, x, -0.035, z, 0x8a8a8a); // studs
+    B(0.03, 0.006, 0.12, 0, 0.08, -0.08, 0xdddddd); // white laces
+  } else {
+    B(0.135, 0.09, 0.26, 0, 0.035, -0.07, 0xdedcd6); B(0.125, 0.06, 0.08, 0, 0.02, -0.18, 0xc9c6bf); // upper + scuffed toe
+    B(0.145, 0.035, 0.285, 0, -0.012, -0.07, 0x8d8f93); B(0.04, 0.007, 0.12, 0, 0.082, -0.07, 0x9a9a9a); // sole, laces
+    B(0.137, 0.03, 0.06, 0, 0.03, -0.205, 0x6f6a62); // mucky scuff
+  }
+  const g = new THREE.BufferGeometry(), cols = [];
+  for (const [p, c] of parts) { const k = new THREE.Color(c), n = p.attributes.position.count, arr = new Float32Array(n * 3); for (let q = 0; q < n; q++) arr.set([k.r, k.g, k.b], q * 3); p.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
+  for (const k of ['position', 'normal', 'uv', 'color']) { const tot = parts.reduce((a, [p]) => a + p.attributes[k].array.length, 0), arr = new Float32Array(tot); let o = 0;
+    for (const [p] of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; } g.setAttribute(k, new THREE.BufferAttribute(arr, parts[0][0].attributes[k].itemSize)); }
   return g;
-})();
+}
+const bootGeo = footGeo(unlocks.boots);
 const boot = new THREE.Mesh(bootGeo, materials.flat);
 boot.position.set(0.18, -1.05, -0.35); camera.add(boot);
 let kickAnim = 1;
@@ -131,7 +146,8 @@ const sfx = new Sfx();
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
 function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
-  $('chal').classList.toggle('hidden', !challenges.length); if (challenges.length) $('chalVal').textContent = `${challenges.filter((c) => unlocks.done[c.id]).length}/${challenges.length}`; }
+  const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
+  $('chal').classList.remove('hidden'); $('chalVal').textContent = `Warm-Up ${tc('easy')} · Cocky ${tc('tricky')}` + (challenges.length ? ` · Away Ye Go! ${tc('legend')}` : ''); }
 updateHud();
 // ---------- wallet (pocket money) ----------
 let lastEarn = null;
@@ -159,34 +175,44 @@ function checkCounter() { // the chippy counter (West Pilton): buy a supper when
   if (!built.counter || simTime < counterCool) return;
   if (Math.hypot(player.position.x - built.counter.x, player.position.z - built.counter.z) > 1.8) return;
   counterCool = simTime + 4;
-  if (unlocks.items.includes('mars')) { openCounter(); return; }
-  if (buySupper()) { updateWallet(true); showGoal(true); }
-  else toast(`<b>The Pilton Plaice</b><br>"A supper's ${fmt(GOAL.pence)}, pal. You've got ${fmt(wallet.pence)}. Away an' hit some targets."`, 3000);
+  openCounter();
 }
+const MENU = ['wee', 'supper', 'munchie'];
 function openCounter() {
-  const m = ITEMS.mars;
   $('cntWallet').textContent = fmt(wallet.pence);
-  $('cntSupper').disabled = wallet.pence < GOAL.pence; $('cntMars').disabled = wallet.pence < m.pence;
+  for (const id of MENU) { const b = $('cnt_' + id), m = ITEMS[id], on = unlocks.items.includes(id);
+    b.textContent = on ? `${m.name} ${fmt(m.pence)}` : `🔒 ${m.name} (${m.how})`; b.disabled = !on || wallet.pence < m.pence; }
   $('cntLine').innerHTML = '"What can I get ye, pal?"';
   $('counterCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
 }
 function buyItem(id) {
   const m = ITEMS[id]; if (!m || !unlocks.items.includes(id) || wallet.pence < m.pence) return false;
-  wallet.pence -= m.pence; saveWallet(); unlocks.bought[id] = (unlocks.bought[id] || 0) + 1; saveUnlocks(); updateWallet(true); return true;
+  if (id === 'supper') { if (!buySupper()) return false; } else { wallet.pence -= m.pence; saveWallet(); }
+  unlocks.bought[id] = (unlocks.bought[id] || 0) + 1; saveUnlocks(); updateWallet(true); return true;
 }
-$('cntSupper').addEventListener('click', () => { if (buySupper()) { $('counterCard').classList.add('hidden'); updateWallet(true); showGoal(true); } });
-$('cntMars').addEventListener('click', () => { if (buyItem('mars')) { $('cntLine').innerHTML = ITEMS.mars.line + `<br><small>Bought: ${unlocks.bought.mars}</small>`; $('cntWallet').textContent = fmt(wallet.pence); $('cntMars').disabled = wallet.pence < ITEMS.mars.pence; $('cntSupper').disabled = wallet.pence < GOAL.pence; sfx.success(false); } });
+for (const id of MENU) $('cnt_' + id).addEventListener('click', () => {
+  if (!buyItem(id)) return;
+  if (id === 'supper') { $('counterCard').classList.add('hidden'); showGoal(true); return; }
+  $('cntLine').innerHTML = ITEMS[id].line; sfx.success(false); openCounterRefresh();
+});
+function openCounterRefresh() { const l = $('cntLine').innerHTML; openCounter(); $('cntLine').innerHTML = l; }
 $('cntClose').addEventListener('click', () => { $('counterCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
 // ---------- ball selector (cosmetic only: same body, mass, size) ----------
 function applyBall(id) { if (!selectBall(id)) return false; ballMat.map = ballTexture(id); ballMat.needsUpdate = true; buildBallMenu(); return true; }
+function applyBoots(id) { if (!selectBoots(id)) return false; boot.geometry.dispose(); boot.geometry = footGeo(id); buildBallMenu(); return true; }
 function buildBallMenu() {
-  const el = $('ballSel'); el.innerHTML = 'Ball: ';
+  const el = $('ballSel'); el.innerHTML = '';
+  const row = document.createElement('div'); row.textContent = 'Feet: ';
+  for (const [id, b] of Object.entries(BOOTS)) { const on = unlocks.bootsOwned.includes(id); const btn = document.createElement('button');
+    btn.textContent = on ? b.name : `🔒 ${b.name} (${b.how})`; btn.disabled = !on; btn.dataset.boots = id; if (unlocks.boots === id) btn.classList.add('on');
+    btn.addEventListener('click', () => applyBoots(id)); row.appendChild(btn); }
+  el.appendChild(row); el.appendChild(document.createTextNode('Ball: '));
   for (const [id, b] of Object.entries(BALLS)) { const on = unlocks.balls.includes(id); const btn = document.createElement('button');
-    btn.textContent = on ? b.name : '🔒 ' + b.name; btn.disabled = !on; btn.dataset.ball = id; if (unlocks.ball === id) btn.classList.add('on');
+    btn.textContent = on ? b.name : `🔒 ${b.name} (${b.how})`; btn.disabled = !on; btn.dataset.ball = id; if (unlocks.ball === id) btn.classList.add('on');
     btn.addEventListener('click', () => applyBall(id)); el.appendChild(btn); }
 }
 buildBallMenu();
-$('progressReset').addEventListener('click', () => { if (confirm('Reset challenges and unlocks (balls, chippy items)? Your pocket money is kept.')) { resetProgress(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; buildBallMenu(); updateHud(); } });
+$('progressReset').addEventListener('click', () => { if (confirm('Reset progress: completed targets, unlocked balls/boots and chippy items? (Pocket money has its own reset.)')) { resetProgress(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; boot.geometry = footGeo('trainers'); buildBallMenu(); updateHud(); } });
 // ---------- levels ----------
 $('levelNow').textContent = LEVEL.name; $('levelBlurb').textContent = LEVEL.blurb;
 document.querySelectorAll('[data-level]').forEach((b) => { if (b.dataset.level === LEVEL.id) b.classList.add('on'); b.addEventListener('click', () => { if (b.dataset.level !== LEVEL.id) travelTo(b.dataset.level); }); });
@@ -204,7 +230,7 @@ $('perfBtn').addEventListener('click', () => setPerf(!perfOn));
 addEventListener('keydown', (e) => { if (e.code === 'KeyP') setPerf(!perfOn); });
 
 const controls = new Controls(renderer.domElement, {
-  jump, fetchBall,
+  jump, fetchBall: () => requestBall(),
   requestLock: () => { if (started) renderer.domElement.requestPointerLock?.(); },
   unlocked: () => { if (started && $('goalCard').classList.contains('hidden') && $('counterCard').classList.contains('hidden')) pause(); },
   pause,
@@ -261,6 +287,21 @@ function fetchBall() {
   release(b); trap(b, x, y, z); lastTouched = b;
   toast('Here\'s your ba\' - foot on it. Kick, or walk off to let it go.', 1600);
 }
+// BALL is a rescue, not a shortcut: free if stuck / out of reach / far; 10p for the wee boy otherwise; refused when it's right there
+const BALL_FEE = 10; let ballMsg = '';
+function requestBall() {
+  if (paused) return 'paused';
+  const b = lastTouched || nearestBall(), p = b.body.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
+  const stuck = d > 4 && simTime - (b.stillT ?? simTime) > 4, high = p.y - player.position.y > 2.2, out = Math.abs(p.x) > BOUNDS.x - 1 || p.z < BOUNDS.zMin + 1 || p.z > BOUNDS.zMax - 1 || p.y < -2;
+  const free = d > 25 || stuck || high || out;
+  if (!free && d < 8) { ballMsg = 'near'; toast("<b>Go get it yersel!</b><br>It's right there, ya lazy article.", 1800); return ballMsg; }
+  if (!free && wallet.pence < BALL_FEE) { ballMsg = 'skint'; toast("<b>Ye're skint.</b><br>The wee boy wants 10p. Go an' fetch it yersel.", 2000); return ballMsg; }
+  if (!free) { wallet.pence -= BALL_FEE; saveWallet(); updateWallet(true); }
+  fetchBall();
+  ballMsg = free ? 'free' : 'paid';
+  toast(free ? "<b>Rescued!</b><br>A wee boy got it back for nothin'. Lucky." : `<b>-${fmt(BALL_FEE)}</b><br>Paid a wee boy tae fetch it. "Pleasure doin' business."`, 1800);
+  return ballMsg;
+}
 let lastKickInfo = null;
 function kick(power) {
   kickAnim = 0;
@@ -306,7 +347,8 @@ let lastRepeat = 0;
 function scoreTarget(t, bonus = null) {
   const now = performance.now();
   if (t.done) { if (now - lastRepeat > 2500) { lastRepeat = now; toast(`Already bagged the ${t.name}.`, 1200); } return; }
-  if (t.challenge) return scoreChallenge(t);
+  const rec = recordDone(LEVEL.id, t, allTargets); announce(rec.news);
+  if (t.challenge) return scoreChallenge(t, rec.first);
   t.done = true; score += t.points;
   const pence = cashFor(t) + (bonus ? BONUS : 0);
   lastEarn = { id: t.id, pence, bonus };
@@ -320,19 +362,18 @@ function scoreTarget(t, bonus = null) {
   if (all) setTimeout(() => toast(`<b>Pure dead brilliant!</b><br>All ${targets.length} targets done in ${LEVEL.name}.<br><small>Pause to restart, or travel to ${LEVELS[LEVEL.next].name}.</small>`, 7000), 2600);
   updateHud();
 }
-function scoreChallenge(t) {
-  t.done = true;
-  const reward = completeChallenge(t.id); // null if already unlocked earlier (fires once)
+function announce(news) { // each unlock fires once ever: short sound + toast
+  if (!news.length) return; lastUnlock = news;
+  setTimeout(() => { sfx.success(true); toast(`<b>Unlocked!</b><br>${news.map((n) => n.text).join('<br>')}`, 4000); buildBallMenu(); }, 2300);
+}
+function scoreChallenge(t, first) {
+  t.done = true; t.ring.material.color.set(0x5fd35f);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
-  if (!reward) { toast(`<b>${t.name}</b> - done again!<br>${line}`, 2400); sfx.success(false); return; }
-  const pence = (t.cash || 0) + (reward.cash || 0); if (pence) { const reached = earn(pence); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
-  lastEarn = { id: t.id, pence, bonus: null }; lastUnlock = { id: t.id, ...reward };
-  toast(`<b>CHALLENGE! ${t.name.replace('Challenge: ', '')}</b>${pence ? ' +' + fmt(pence) : ''}<br>${line}`, 3500);
-  sfx.success(true); setTimeout(() => sfx.success(true), 350);
-  $('goalTitle').textContent = 'Unlocked!'; $('goalBig').textContent = reward.ball ? '⚽' : reward.item ? '🍫' : '🏆';
-  $('goalLine').innerHTML = `<b>${t.name.replace('Challenge: ', '')}</b><br>${reward.text}<br><small>Challenges: ${challenges.filter((c) => unlocks.done[c.id]).length}/${challenges.length}</small>`;
-  $('goalCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
-  buildBallMenu(); updateHud();
+  if (!first) { toast(`<b>${t.name}</b> - again!<br>${line}`, 2400); sfx.success(false); return; }
+  const pence = t.cash || 0; if (pence) { const reached = earn(pence); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
+  lastEarn = { id: t.id, pence, bonus: null };
+  toast(`<b>AWAY YE GO! ${t.name}</b>${pence ? ' +' + fmt(pence) : ''}<br>${line}`, 3500); sfx.success(true);
+  updateHud();
 }
 let lastUnlock = null;
 function restart() {
@@ -375,6 +416,8 @@ let simTime = 0, acc = 0, autopilot = null;
 const prevPlayer = new THREE.Vector3().copy(player.position);
 let moveInput = { x: 0, y: 0, run: false };
 function fixedUpdate(h) {
+  for (const b of balls) { const q = b.body.position; if (!b.stillP || Math.hypot(q.x - b.stillP.x, q.y - b.stillP.y, q.z - b.stillP.z) > 0.3) { b.stillP = { x: q.x, y: q.y, z: q.z }; b.stillT = simTime; } }
+
   simTime += h;
   const now = performance.now();
   for (const b of balls) { b.prevP.copy(b.body.position); b.prevQ.copy(b.body.quaternion); }
@@ -450,7 +493,7 @@ function render(dt, t) {
     if (!tg.done && d < 14 && d < nd) { nd = d; near = tg; }
   }
   $('nearby').textContent = near ? (near.challenge ? `${near.name} - ${near.hint}` : `Nearby: ${near.name} - ${near.hint} (${fmt(cashFor(near))})`) : '';
-  if (built.sparkles) { const left = challenges.some((c) => !unlocks.done[c.id]); built.sparkles.visible = left; built.sparkles.material.opacity = 0.25 + 0.3 * (0.5 + 0.5 * Math.sin(t * 0.004)); }
+  if (built.sparkles) { const left = challenges.some((c) => !levelDone(LEVEL.id)[c.id]); built.sparkles.visible = left; built.sparkles.material.opacity = 0.25 + 0.3 * (0.5 + 0.5 * Math.sin(t * 0.004)); }
   pigeons.list.forEach((pg, i) => {
     if (pg.state === 'idle') {
       pg.t -= dt; if (pg.t < 0) { pg.t = 1 + Math.random() * 3; pg.rot += (Math.random() - 0.5) * 2; }
@@ -512,7 +555,7 @@ window.__game = {
   get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
-  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
+  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return boot.geometry.attributes.position.count / 3; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },

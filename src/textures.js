@@ -180,6 +180,7 @@ export function ballTexture(style = 'tango') {
     }
     const k = acc / (SS * SS), s = seam / (SS * SS), o = (py * W + px) * 4;
     let r = 244 - k * 226, gg = 243 - k * 225, b = 238 - k * 220;
+    if (style === 'special') { const pk = pent / (SS * SS); r = 22 + pk * 212; gg = 92 + pk * 86; b = 52 - pk * 14; }
     if (style === 'winter') { const pk = pent / (SS * SS); r = 246 - pk * 226; gg = 118 - pk * 100; b = 24 - pk * 8; }
     r -= s * 45; gg -= s * 45; b -= s * 42;
     d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255;

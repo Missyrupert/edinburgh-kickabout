@@ -12,7 +12,7 @@
 <div id="hud">
   <div id="score">Score <b id="scoreVal">0</b></div>
   <div id="targets">Targets <b id="targetVal">0/0</b></div>
-  <div id="chal" class="hidden">Challenges <b id="chalVal">0/3</b></div>
+  <div id="chal" class="hidden"><b id="chalVal"></b></div>
   <div id="wallet"><span class="coin">£</span> <b id="walletVal">£0.00</b>
     <div id="goalBar"><div id="goalFill"></div></div><div id="goalTxt"></div></div>
   <div id="nearby"></div>
@@ -29,7 +29,7 @@
   <button id="btnBall">BALL</button>
   <button id="btnPause">II</button>
 </div>
-<div id="counterCard" class="hidden"><div class="card goal"><div class="big">🐟</div><h1>The Pilton Plaice</h1><p id="cntLine"></p><p><small>Wallet: <b id="cntWallet"></b></small></p><button id="cntSupper">Fish supper + Irn-Bru £6.50</button> <button id="cntMars">Deep-fried Mars bar £1.20</button> <button id="cntClose" class="ghost">Just lookin'</button></div></div>
+<div id="counterCard" class="hidden"><div class="card goal"><div class="big">🐟</div><h1>The Pilton Plaice</h1><p id="cntLine"></p><p><small>Wallet: <b id="cntWallet"></b></small></p><button id="cnt_wee"></button> <button id="cnt_supper"></button> <button id="cnt_munchie"></button> <button id="cntClose" class="ghost">Just lookin'</button></div></div>
 <div id="goalCard" class="hidden"><div class="card goal"><div class="big" id="goalBig">🍟 🥤</div><h1 id="goalTitle">Chippy unlocked!</h1><p id="goalLine"></p><button id="goalOk">Pure magic</button></div></div>
 <div id="overlay">
   <div class="card">
@@ -42,12 +42,12 @@
         <ul><li><b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump</li>
         <li><b>Mouse</b> look</li>
         <li><b>Hold &amp; release left click</b> to kick (aim up to chip it)</li>
-        <li><b>R</b> fetch nearest ball · <b>Esc</b> pause</li></ul></div>
+        <li><b>R</b> rescue a stuck/far ball (10p to a wee boy, free if stuck) · <b>Esc</b> pause</li></ul></div>
       <div class="mob"><h3>Touch</h3>
         <ul><li><b>Left thumb</b> joystick to walk (push far to run)</li>
         <li><b>Drag right side</b> to look</li>
         <li><b>Hold KICK</b>, release to shoot</li>
-        <li><b>BALL</b> fetches the ball · <b>JUMP</b></li></ul></div>
+        <li><b>BALL</b> rescues a stuck/far ball (10p) · <b>JUMP</b></li></ul></div>
     </div>
     <p class="sub"><span id="levelBlurb"></span> Glowing rings mark targets when you're near.</p>
     <div class="gfx">Graphics: <span id="presetNow"></span>
@@ -57,7 +57,7 @@
     <button id="restartBtn" class="ghost">Restart level</button>
     <button id="travelBtn" class="ghost">Travel</button>
     <button id="walletReset" class="ghost">Reset pocket money</button>
-    <button id="progressReset" class="ghost">Reset challenges &amp; unlocks</button>
+    <button id="progressReset" class="ghost">Reset progress</button>
     <div id="ballSel" class="ballsel"></div>
   </div>
 </div>
