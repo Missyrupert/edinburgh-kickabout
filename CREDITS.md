@@ -14,3 +14,6 @@ All third-party assets are **CC0 1.0 (public domain)** from [Poly Haven](https:/
 Textures were downloaded at 1K and re-encoded as JPEG (roughness maps 512 px greyscale) for mobile.
 Window, sign, door and ball textures and all sounds are generated in code (no external assets).
 Libraries: three.js (MIT), cannon-es (MIT), Vite (MIT).
+
+
+v1.2: the Poly Haven textures were re-encoded to WebP (1K + 512px, normal and roughness at 512px). The sky is a WebP made from the CC0 Poly Haven HDRI. The football pattern is original and generated procedurally (Tango/Telstar-inspired, no branding).

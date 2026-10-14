@@ -56,7 +56,7 @@ export class Controls {
     look.addEventListener('pointerup', lookEnd); look.addEventListener('pointercancel', lookEnd);
     const btn = (id, down, up) => {
       const b = document.getElementById(id);
-      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); b.setPointerCapture(e.pointerId); down(); });
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch {} down(); });
       if (up) { b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); }
       b.addEventListener('contextmenu', (e) => e.preventDefault());
     };

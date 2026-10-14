@@ -1,56 +1,73 @@
 import './style.css';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { buildWorld } from './world.js';
-import { ballTexture, texManager } from './textures.js';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
+import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
+import { buildWorld } from './world.js';
+import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
 import { Sfx } from './audio.js';
 import { Controls } from './controls.js';
 
-const isTouch = matchMedia('(pointer: coarse)').matches;
-const lowPower = isTouch || /Android|iPhone|iPad/i.test(navigator.userAgent);
-
+const P = PRESET;
 // ---------- renderer / scene ----------
-const renderer = new THREE.WebGLRenderer({ antialias: !lowPower, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.25 : 2));
+const renderer = new THREE.WebGLRenderer({ antialias: P.antialias, powerPreference: 'high-performance' });
+const basePixelRatio = Math.min(devicePixelRatio, P.maxPixelRatio);
+let resScale = 1, dynResOn = DYNRES;
+renderer.setPixelRatio(basePixelRatio);
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = !lowPower;
+renderer.shadowMap.enabled = P.shadows;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = P.pbr ? 1.05 : 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-const SKY = 0xc4ccd2; // haze colour, close to the HDRI horizon
-scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 55, 330);
-// CC0 HDRI (Poly Haven, kloofendal_48d_partly_cloudy_puresky, 1K): sky backdrop + image-based reflections.
+const HAZE = 0xc4ccd2;
+scene.fog = new THREE.Fog(HAZE, 55, P.fogFar);
+// Sky: CC0 Poly Haven kloofendal_48d_partly_cloudy_puresky (tonemapped WebP backdrop; the 1K HDR is only loaded on "high" for reflections).
+scene.background = skyTexture(); scene.backgroundIntensity = 0.95;
 let assetsLoaded = false;
 texManager.onLoad = () => { assetsLoaded = true; };
-new HDRLoader(texManager).load(import.meta.env.BASE_URL + 'hdri/sky_1k.hdr', (hdr) => {
+if (P.env) new HDRLoader(texManager).load(import.meta.env.BASE_URL + 'hdri/sky_1k.hdr', (hdr) => {
   hdr.mapping = THREE.EquirectangularReflectionMapping;
   const pm = new THREE.PMREMGenerator(renderer);
-  scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose();
+  scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose(); hdr.dispose();
   scene.environmentIntensity = 0.55;
-  scene.background = hdr; scene.backgroundIntensity = 0.9;
 });
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 600);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x6b5640, 0.9));
-const sun = new THREE.DirectionalLight(0xffc98f, 3.0); // warm, lowish sun from the south-west
-sun.position.set(18, 38, -55);
-if (renderer.shadowMap.enabled) {
-  sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 160 });
+scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x6b5640, P.pbr ? 0.9 : 1.25));
+const sun = new THREE.DirectionalLight(0xffc98f, P.pbr ? 3.0 : 2.6); // warm, lowish sun from the south-west
+const SUN_OFF = new THREE.Vector3(18, 38, -55);
+if (P.shadows) {
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 160 });
   sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
 }
 scene.add(sun, sun.target);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 // ---------- physics ----------
+// Broadphase that only pairs bodies that can move (ball, player, cone) with everything else.
+// The world has ~250 static colliders; naive N^2 pairing wasted most of the physics budget,
+// and SAP mis-handled the long kerb boxes (ball tunnelled through).
+class DynamicPairsBroadphase extends CANNON.NaiveBroadphase {
+  constructor() { super(); this.useBoundingBoxes = true; }
+  collisionPairs(world, p1, p2) {
+    const bodies = world.bodies, n = bodies.length;
+    for (let i = 0; i < n; i++) {
+      const a = bodies[i]; if (a.type === CANNON.Body.STATIC) continue;
+      for (let j = 0; j < n; j++) {
+        const b = bodies[j]; if (b === a || (b.type !== CANNON.Body.STATIC && j < i)) continue;
+        if (!this.needBroadphaseCollision(a, b)) continue;
+        this.intersectionTest(a, b, p1, p2);
+      }
+    }
+  }
+}
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
-// Naive broadphase: SAP mis-handled long static kerb boxes (ball tunnelled through).
+world.broadphase = new DynamicPairsBroadphase();
 world.defaultContactMaterial.friction = 0.3;
 world.defaultContactMaterial.restitution = 0.3;
 const mats = { ground: new CANNON.Material('ground'), ball: new CANNON.Material('ball'), player: new CANNON.Material('player'), kerb: new CANNON.Material('kerb') };
@@ -62,34 +79,43 @@ world.addContactMaterial(new CANNON.ContactMaterial(mats.ball, mats.player, { fr
 world.addContactMaterial(new CANNON.ContactMaterial(mats.ball, mats.ball, { friction: 0.1, restitution: 0.7 }));
 const G_STATIC = 1, G_PLAYER = 2, G_BALL = 4;
 
-const { targets, dynamics, pigeons } = buildWorld(scene, world, mats, { shadows: renderer.shadowMap.enabled });
+const { targets, dynamics, pigeons, materials, views } = buildWorld(scene, world, mats, P);
 const targetById = Object.fromEntries(targets.map((t) => [t.id, t]));
+// Static bodies were positioned after construction: refresh their AABBs once, or AABB broadphase misses them.
+// (This stale-AABB effect is also what made SAPBroadphase look "broken" in v1.)
+for (const b of world.bodies) b.updateAABB();
 
-// player: a capsule-ish sphere that slides along walls
+// player: a sphere that slides along walls
 const PLAYER_SPAWN = new CANNON.Vec3(0, 0.5, -36);
 const player = new CANNON.Body({ mass: 70, material: mats.player, shape: new CANNON.Sphere(0.35), fixedRotation: true, collisionFilterGroup: G_PLAYER });
 player.position.copy(PLAYER_SPAWN); world.addBody(player);
 let yaw = Math.PI, pitch = -0.25;
 
-// balls
+// balls (mass, size, damping unchanged from v1)
 const BALL_R = 0.22;
-const ballGeo = new THREE.SphereGeometry(BALL_R, lowPower ? 16 : 24, lowPower ? 12 : 16);
-const ballMat = new THREE.MeshStandardMaterial({ map: ballTexture(), roughness: 0.45 });
-const balls = [[0.3, 0.4, -33.6], [-19, 0.4, -6], [2, 3.4, 54]].map(([x, y, z]) => {
+const ballGeo = new THREE.SphereGeometry(BALL_R, P.ballSeg[0], P.ballSeg[1]);
+const ballTex = ballTexture();
+const ballMat = P.pbr ? new THREE.MeshStandardMaterial({ map: ballTex, roughness: 0.36, metalness: 0 }) : new THREE.MeshLambertMaterial({ map: ballTex });
+const BALL_HOMES = [[0.3, 0.4, -33.6], [-19, 0.4, -6], [views.terrace[0] - 1.5, 4.0, views.terrace[1] + 2]];
+const balls = BALL_HOMES.map(([x, y, z]) => {
   const body = new CANNON.Body({ mass: 0.43, material: mats.ball, shape: new CANNON.Sphere(BALL_R), linearDamping: 0.08, angularDamping: 0.25, collisionFilterGroup: G_BALL });
   body.position.set(x, y, z); world.addBody(body);
-  const mesh = new THREE.Mesh(ballGeo, ballMat); mesh.castShadow = true; scene.add(mesh);
-  const b = { body, mesh, home: new CANNON.Vec3(x, y, z), lastKick: -1e9, lastSound: 0 };
+  const mesh = new THREE.Mesh(ballGeo, ballMat); mesh.castShadow = P.shadows; scene.add(mesh);
+  const b = { body, mesh, home: new CANNON.Vec3(x, y, z), lastKick: -1e9, lastSound: 0, prevP: new THREE.Vector3(x, y, z), prevQ: new THREE.Quaternion() };
   body.addEventListener('collide', (e) => onBallCollide(b, e));
   return b;
 });
 
-// boot (kick animation), attached to the camera
-const boot = new THREE.Group();
-const shin = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.12), new THREE.MeshLambertMaterial({ color: 0x24324a }));
-shin.position.y = 0.25; boot.add(shin);
-const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.28), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-shoe.position.set(0, 0, -0.08); boot.add(shoe);
+// boot (kick animation), attached to the camera: one mesh
+const bootGeo = (() => {
+  const a = new THREE.BoxGeometry(0.12, 0.5, 0.12).translate(0, 0.25, 0).toNonIndexed(), b = new THREE.BoxGeometry(0.14, 0.1, 0.28).translate(0, 0, -0.08).toNonIndexed();
+  const col = (g, c) => { const k = new THREE.Color(c), n = g.attributes.position.count, arr = new Float32Array(n * 3); for (let i = 0; i < n; i++) arr.set([k.r, k.g, k.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(arr, 3)); return g; };
+  col(a, 0x24324a); col(b, 0x111111);
+  const g = new THREE.BufferGeometry();
+  for (const k of ['position', 'normal', 'uv', 'color']) { const x = a.attributes[k], y = b.attributes[k], arr = new Float32Array(x.array.length + y.array.length); arr.set(x.array); arr.set(y.array, x.array.length); g.setAttribute(k, new THREE.BufferAttribute(arr, x.itemSize)); }
+  return g;
+})();
+const boot = new THREE.Mesh(bootGeo, materials.flat);
 boot.position.set(0.18, -1.05, -0.35); camera.add(boot);
 let kickAnim = 1;
 
@@ -100,6 +126,16 @@ let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
 function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`; }
 updateHud();
+$('presetNow').textContent = `${P.name} (${PRESET_SOURCE})`;
+document.querySelectorAll('[data-preset]').forEach((b) => {
+  if (b.dataset.preset === (PRESET_SOURCE === 'auto' ? 'auto' : P.name)) b.classList.add('on');
+  b.addEventListener('click', () => choosePreset(b.dataset.preset));
+});
+let perfOn = SHOW_PERF;
+const setPerf = (on) => { perfOn = on; $('perf').classList.toggle('hidden', !on); $('perfBtn').classList.toggle('on', on); };
+setPerf(perfOn);
+$('perfBtn').addEventListener('click', () => setPerf(!perfOn));
+addEventListener('keydown', (e) => { if (e.code === 'KeyP') setPerf(!perfOn); });
 
 const controls = new Controls(renderer.domElement, {
   jump, fetchBall,
@@ -121,10 +157,11 @@ $('restartBtn').addEventListener('click', () => { restart(); resume(); });
 // ---------- gameplay ----------
 const tmpV = new THREE.Vector3();
 function forwardFlat() { return new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); }
+const rayRes = new CANNON.RaycastResult(), rayTo = new CANNON.Vec3();
 function grounded() {
-  const r = new CANNON.RaycastResult();
-  world.raycastClosest(player.position, new CANNON.Vec3(player.position.x, player.position.y - 0.47, player.position.z), { collisionFilterMask: G_STATIC, skipBackfaces: true }, r);
-  return r.hasHit;
+  rayRes.reset(); rayTo.set(player.position.x, player.position.y - 0.47, player.position.z);
+  world.raycastClosest(player.position, rayTo, { collisionFilterMask: G_STATIC, skipBackfaces: true }, rayRes);
+  return rayRes.hasHit;
 }
 function jump() { if (!paused && grounded()) player.velocity.y = 5.2; }
 function nearestBall() {
@@ -136,9 +173,10 @@ function fetchBall() {
   if (paused) return;
   const b = nearestBall(), f = forwardFlat();
   b.body.position.set(player.position.x + f.x * 1.2, player.position.y + 0.2, player.position.z + f.z * 1.2);
-  b.body.velocity.setZero(); b.body.angularVelocity.setZero();
+  b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.copy(b.body.position);
   toast('Here\'s your ba\'.', 1000);
 }
+let lastKickInfo = null;
 function kick(power) {
   kickAnim = 0;
   const f = forwardFlat();
@@ -151,7 +189,7 @@ function kick(power) {
     if (dot < 0.3 && dist > 0.8) continue;
     const s = dot - dist * 0.3; if (s > bestScore) { bestScore = s; target = b; }
   }
-  if (!target) { sfx.whiff(); return false; }
+  if (!target) { sfx.whiff(); lastKickInfo = { power, hit: false }; return false; }
   const elev = THREE.MathUtils.clamp(pitch + 0.38, 0.03, 1.05);
   const speed = 4 + power * 19;
   const v = target.body.velocity;
@@ -159,6 +197,7 @@ function kick(power) {
   const w = (speed * Math.cos(elev) / BALL_R) * 0.2; // topspin roughly matching roll
   target.body.angularVelocity.set(f.z * w, (Math.random() - 0.5) * 3, -f.x * w);
   target.lastKick = performance.now();
+  lastKickInfo = { power, hit: true, speed };
   sfx.kick(power);
   return true;
 }
@@ -187,9 +226,9 @@ function scoreTarget(t) {
 function restart() {
   score = 0;
   for (const t of targets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd75e); }
-  for (const b of balls) { b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; }
+  for (const b of balls) { b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; b.prevP.copy(b.home); }
   for (const d of dynamics) { d.body.position.copy(d.home); d.body.quaternion.set(0, 0, 0, 1); d.body.velocity.setZero(); d.body.angularVelocity.setZero(); }
-  player.position.copy(PLAYER_SPAWN); player.velocity.setZero(); yaw = Math.PI; pitch = -0.25;
+  player.position.copy(PLAYER_SPAWN); player.velocity.setZero(); yaw = Math.PI; pitch = -0.25; prevPlayer.copy(player.position);
   updateHud();
 }
 
@@ -198,7 +237,7 @@ function checkZones(now) {
     if (t.done && t.kind !== 'zone') continue;
     if (t.kind === 'zone') {
       for (const b of balls) {
-        const p = b.body.position; tmpV.set(p.x, p.y, p.z);
+        const p = b.body.position; tmpV.set(p.x, p.y, p.z).applyMatrix4(t.zoneInv);
         if (!t.zone.containsPoint(tmpV) || now - b.lastKick > 8000) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
@@ -213,88 +252,145 @@ function checkZones(now) {
   }
 }
 
-let simTime = 0;
-function step(dt) {
-  simTime += dt;
+// ---------- fixed-timestep simulation (independent of frame rate) ----------
+const FIXED = 1 / 120, MAX_STEPS = 15; // 120 Hz: a 20 m/s ball must not sink into kerbs
+let simTime = 0, acc = 0, autopilot = null;
+const prevPlayer = new THREE.Vector3().copy(player.position);
+let moveInput = { x: 0, y: 0, run: false };
+function fixedUpdate(h) {
+  simTime += h;
   const now = performance.now();
-  // look
-  const [lx, ly] = controls.consumeLook();
-  yaw -= lx * 0.0024; pitch = THREE.MathUtils.clamp(pitch - ly * 0.0024, -1.45, 1.35);
-  // move
-  const m = controls.getMove(), f = forwardFlat(), r = new THREE.Vector3(-f.z, 0, f.x);
+  for (const b of balls) { b.prevP.copy(b.body.position); b.prevQ.copy(b.body.quaternion); }
+  prevPlayer.copy(player.position);
+  let m = moveInput;
+  if (autopilot) { // test hook: walk towards a waypoint using the normal movement code
+    const w = autopilot.points[0], dx = w.x - player.position.x, dz = w.z - player.position.z, d = Math.hypot(dx, dz);
+    if (d < 0.6) { autopilot.points.shift(); if (!autopilot.points.length) { autopilot.done = true; autopilot = null; } }
+    else yaw = Math.atan2(-dx, -dz);
+    m = { x: 0, y: autopilot ? 1 : 0, run: true };
+  }
+  const f = forwardFlat(), r = new THREE.Vector3(-f.z, 0, f.x);
   const wish = f.multiplyScalar(m.y).add(r.multiplyScalar(m.x));
   if (wish.lengthSq() > 1) wish.normalize();
-  const speed = m.run ? 7.2 : 4.2, onGround = grounded(), k = Math.min(1, dt * (onGround ? 12 : 2.5));
+  const speed = m.run ? 7.2 : 4.2, onGround = grounded(), k = Math.min(1, h * (onGround ? 12 : 2.5));
   player.velocity.x += (wish.x * speed - player.velocity.x) * k;
   player.velocity.z += (wish.z * speed - player.velocity.z) * k;
   if (onGround && player.velocity.y > 0 && player.velocity.y < 2 && wish.lengthSq() > 0) player.velocity.y = Math.min(player.velocity.y, 1.5);
-  world.step(1 / 120, dt, 12); // small step: a 20 m/s ball must not sink into kerbs
-  // rolling resistance on the ground
-  for (const b of balls) {
-    const p = b.body.position, rr = new CANNON.RaycastResult();
-    world.raycastClosest(p, new CANNON.Vec3(p.x, p.y - BALL_R - 0.06, p.z), { collisionFilterMask: G_STATIC }, rr);
-    if (rr.hasHit) { const d = 1 - Math.min(1, 0.9 * dt); b.body.velocity.x *= d; b.body.velocity.z *= d; }
-    if (p.y < -3 || Math.abs(p.x) > 40 || p.z < -60 || p.z > 75) { p.copy(b.home); b.body.velocity.setZero(); toast('Ball lost ower the wall - it\'s back where you found it.', 1800); }
+  world.step(h);
+  for (const b of balls) { // rolling resistance on the ground
+    const p = b.body.position; rayRes.reset(); rayTo.set(p.x, p.y - BALL_R - 0.06, p.z);
+    world.raycastClosest(p, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
+    if (rayRes.hasHit) { const d = 1 - 0.9 * h; b.body.velocity.x *= d; b.body.velocity.z *= d; }
+    if (p.y < -3 || Math.abs(p.x) > 45 || p.z < -60 || p.z > 80) { p.copy(b.home); b.body.velocity.setZero(); b.prevP.copy(b.home); toast('Ball lost ower the wall - it\'s back where you found it.', 1800); }
   }
   if (player.position.y < -3) { player.position.copy(PLAYER_SPAWN); player.velocity.setZero(); }
   checkZones(now);
 }
+function advance(dt) { // frame -> fixed steps
+  const [lx, ly] = controls.consumeLook();
+  yaw -= lx * 0.0024; pitch = THREE.MathUtils.clamp(pitch - ly * 0.0024, -1.45, 1.35);
+  moveInput = controls.getMove();
+  acc += Math.min(dt, 0.25);
+  let n = 0;
+  while (acc >= FIXED && n < MAX_STEPS) { fixedUpdate(FIXED); acc -= FIXED; n++; }
+  if (n === MAX_STEPS) acc = 0; // device too slow: drop time rather than spiral
+}
 
+// ---------- render ----------
+const pigM = new THREE.Matrix4(), pigQ = new THREE.Quaternion(), pigS = new THREE.Vector3(1, 0.8, 1.4), pigH = new THREE.Vector3(), ZERO = new THREE.Vector3(0, 0, 0), UPY = new THREE.Vector3(0, 1, 0);
+const iP = new THREE.Vector3(), iQ = new THREE.Quaternion();
 function render(dt, t) {
-  const p = player.position, sp = Math.hypot(player.velocity.x, player.velocity.z);
+  const alpha = paused ? 1 : acc / FIXED;
+  iP.lerpVectors(prevPlayer, player.position, alpha);
+  const sp = Math.hypot(player.velocity.x, player.velocity.z);
   const bob = Math.sin(t * 0.011) * Math.min(1, sp / 4) * 0.04;
-  camera.position.set(p.x, p.y + 1.25 + bob, p.z);
+  camera.position.set(iP.x, iP.y + 1.25 + bob, iP.z);
   camera.rotation.set(pitch, yaw, 0);
-  for (const b of balls) { b.mesh.position.copy(b.body.position); b.mesh.quaternion.copy(b.body.quaternion); }
+  for (const b of balls) { b.mesh.position.lerpVectors(b.prevP, b.body.position, alpha); iQ.copy(b.body.quaternion); b.mesh.quaternion.slerpQuaternions(b.prevQ, iQ, alpha); }
   for (const d of dynamics) { d.mesh.position.copy(d.body.position); d.mesh.quaternion.copy(d.body.quaternion); }
-  // kick animation: swing boot forward & up
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
   boot.position.set(0.18, -1.05 + s * 0.35, -0.35 - s * 0.5); boot.rotation.x = -s * 1.1;
   boot.visible = kickAnim < 1 || pitch < -0.6;
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
-  // target rings + nearby hint
   let near = null, nd = 1e9;
   for (const tg of targets) {
-    const d = Math.hypot(tg.pos.x - p.x, tg.pos.z - p.z);
-    tg.ring.material.opacity = tg.done ? 0.25 : THREE.MathUtils.clamp((16 - d) / 8, 0, 0.85) * (0.75 + 0.25 * Math.sin(t * 0.005));
+    const d = Math.hypot(tg.pos.x - iP.x, tg.pos.z - iP.z);
+    const o = tg.done ? (d < 20 ? 0.25 : 0) : THREE.MathUtils.clamp((16 - d) / 8, 0, 0.85) * (0.75 + 0.25 * Math.sin(t * 0.005));
+    tg.ring.material.opacity = o; tg.ring.visible = o > 0.01;
     if (!tg.done && d < 14 && d < nd) { nd = d; near = tg; }
   }
   $('nearby').textContent = near ? `Nearby: ${near.name} - ${near.hint} (${near.points})` : '';
-  // pigeons
-  for (const pg of pigeons) {
+  pigeons.list.forEach((pg, i) => {
     if (pg.state === 'idle') {
-      pg.t -= dt; if (pg.t < 0) { pg.t = 1 + Math.random() * 3; pg.g.rotation.y += (Math.random() - 0.5) * 2; }
-      const scare = (q) => q.distanceTo(pg.g.position) < 2.4;
-      if (scare(tmpV.set(p.x, pg.g.position.y, p.z)) || balls.some((b) => scare(tmpV.set(b.body.position.x, b.body.position.y, b.body.position.z)))) {
+      pg.t -= dt; if (pg.t < 0) { pg.t = 1 + Math.random() * 3; pg.rot += (Math.random() - 0.5) * 2; }
+      const scare = (x, z) => Math.hypot(x - pg.pos.x, z - pg.pos.z) < 2.4;
+      if (scare(iP.x, iP.z) || balls.some((b) => scare(b.body.position.x, b.body.position.z))) {
         pg.state = 'fly'; pg.t = 4; pg.vel.set((Math.random() - 0.5) * 6, 4 + Math.random() * 2, (Math.random() - 0.5) * 6);
         if (Math.random() < 0.3) sfx.coo();
       }
     } else if (pg.state === 'fly') {
-      pg.g.position.addScaledVector(pg.vel, dt); pg.vel.y += dt; pg.t -= dt;
-      if (pg.t < 0) { pg.state = 'gone'; pg.g.visible = false; pg.t = 15; }
-    } else { pg.t -= dt; if (pg.t < 0 && Math.hypot(p.x - pg.home.x, p.z - pg.home.z) > 10) { pg.state = 'idle'; pg.g.visible = true; pg.g.position.copy(pg.home); } }
-  }
-  sun.position.set(p.x + 18, 38, p.z - 55); sun.target.position.set(p.x, 0, p.z);
+      pg.pos.addScaledVector(pg.vel, dt); pg.vel.y += dt; pg.t -= dt;
+      if (pg.t < 0) { pg.state = 'gone'; pg.t = 15; }
+    } else { pg.t -= dt; if (pg.t < 0 && Math.hypot(iP.x - pg.home.x, iP.z - pg.home.z) > 10) { pg.state = 'idle'; pg.pos.copy(pg.home); } }
+    const vis = pg.state !== 'gone';
+    pigQ.setFromAxisAngle(UPY, pg.rot);
+    pigM.compose(pg.pos, pigQ, vis ? pigS : ZERO); pigeons.body.setMatrixAt(i, pigM);
+    pigH.set(-Math.sin(pg.rot) * 0.1, 0.08, -Math.cos(pg.rot) * 0.1).add(pg.pos);
+    pigM.compose(pigH, pigQ, vis ? pigS.set(1, 1, 1) : ZERO); pigeons.head.setMatrixAt(i, pigM); pigS.set(1, 0.8, 1.4);
+  });
+  pigeons.body.instanceMatrix.needsUpdate = pigeons.head.instanceMatrix.needsUpdate = true;
+  if (P.shadows) { // follow the player, snapped to shadow texels to avoid shimmer
+    const snap = 64 / 2048, sx = Math.round(iP.x / snap) * snap, sz = Math.round(iP.z / snap) * snap;
+    sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z); sun.target.position.set(sx, 0, sz);
+  } else sun.position.copy(SUN_OFF);
   renderer.render(scene, camera);
+}
+
+// ---------- perf overlay + dynamic resolution ----------
+const frameTimes = []; let lastPerfUpdate = 0, lastDynCheck = 0, goodSince = 0;
+function perfTick(now, frameMs) {
+  frameTimes.push(frameMs); if (frameTimes.length > 120) frameTimes.shift();
+  const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+  if (dynResOn && now - lastDynCheck > 1000 && frameTimes.length >= 30) {
+    lastDynCheck = now; const old = resScale;
+    if (avg > 22) { resScale = Math.max(P.minScale, resScale - 0.1); goodSince = now; }
+    else if (avg < 14) { if (now - goodSince > 3000) resScale = Math.min(1, resScale + 0.05); }
+    else goodSince = now;
+    if (resScale !== old) renderer.setPixelRatio(basePixelRatio * resScale);
+  }
+  if (perfOn && now - lastPerfUpdate > 250) {
+    lastPerfUpdate = now; const i = renderer.info, c = renderer.domElement;
+    $('perf').textContent = `${(1000 / avg).toFixed(0)} fps  ${avg.toFixed(1)} ms  [${P.name}${dynResOn ? ' dynres' : ''}]\n` +
+      `draws ${i.render.calls}  tris ${(i.render.triangles / 1000).toFixed(1)}k  tex ${i.memory.textures} (~${(texStats.bytes / 1048576).toFixed(0)} MB)  geo ${i.memory.geometries}  prog ${i.programs.length}\n` +
+      `res ${c.width}x${c.height} (x${(basePixelRatio * resScale).toFixed(2)})  shadows ${P.shadows ? 'on' : 'off'}`;
+  }
 }
 
 let last = performance.now();
 function loop(t) {
-  const dt = Math.min(0.1, (t - last) / 1000); last = t;
-  if (!paused) step(dt);
-  render(dt, t);
+  const dt = Math.max(0, (t - last) / 1000); last = t;
+  if (!paused) advance(dt);
+  render(Math.min(dt, 0.1), t);
+  perfTick(t, dt * 1000);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// Test/debug hooks (used by scripts/verify.mjs).
+// Test/debug hooks (used by scripts/verify.mjs and scripts/profile.mjs).
 window.__game = {
-  get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; },
+  get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
+  get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
+  preset: P.name, presetSource: PRESET_SOURCE, views, FIXED,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
-  teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
-  placeBall(i, x, y, z) { const b = balls[i].body; b.position.set(x, y, z); b.velocity.setZero(); b.angularVelocity.setZero(); },
-  kick, restart, world,
-  simulate(sec) { for (let i = 0; i < Math.round(sec * 60); i++) step(1 / 60); },
+  teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
+  aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
+  placeBall(i, x, y, z) { const b = balls[i]; b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
+  kick, restart, world, renderer, scene, camera,
+  setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
+  simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
+  advance, // frame-path stepping (accumulator) for timestep-consistency tests
+  walk(points) { autopilot = { points: points.map(([x, z]) => ({ x, z })), done: false }; return autopilot; },
+  get autopilotActive() { return !!autopilot; },
 };

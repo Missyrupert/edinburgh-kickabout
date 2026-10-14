@@ -15,6 +15,7 @@
   <div id="nearby"></div>
 </div>
 <div id="toast"></div>
+<div id="perf" class="hidden"></div>
 <div id="crosshair"></div>
 <div id="power"><div id="powerFill"></div></div>
 <div id="touch">
@@ -42,6 +43,9 @@
         <li><b>BALL</b> fetches the ball · <b>JUMP</b></li></ul></div>
     </div>
     <p class="sub">11 targets are hidden around the street, the close and up the hill. Glowing rings mark them when you're near.</p>
+    <div class="gfx">Graphics: <span id="presetNow"></span>
+      <button data-preset="auto">Auto</button><button data-preset="low">Low</button><button data-preset="medium">Medium</button><button data-preset="high">High</button>
+      <button id="perfBtn">Perf stats</button></div>
     <button id="startBtn">Play</button>
     <button id="restartBtn" class="ghost">Restart game</button>
   </div>

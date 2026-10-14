@@ -32,3 +32,8 @@ body.touch #crosshair{width:8px;height:8px}
 #btnJump{right:calc(134px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:66px;height:66px;font-size:13px}
 #btnBall{right:calc(40px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:13px}
 #btnPause{right:calc(12px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));width:44px;height:44px;font-size:14px}
+#perf{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:30;background:rgba(0,0,0,.65);color:#9f9;font:12px/1.35 ui-monospace,Menlo,monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;text-align:left}
+#perf.hidden{display:none}
+.gfx{font-size:13px;margin:6px 0;opacity:.95}
+.card .gfx button{font-size:12px;padding:4px 10px;margin:2px;background:#3d4352;color:#fff;border:1px solid #777}
+.card .gfx button.on{background:#ffd75e;color:#222}

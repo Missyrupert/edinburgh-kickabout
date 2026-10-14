@@ -1,0 +1,84 @@
+{
+  "label": "after-medium",
+  "query": "?preset=medium",
+  "results": [
+    {
+      "profile": "phone",
+      "view": "spawn",
+      "frameMs": 87.5,
+      "calls": 19,
+      "triangles": 24240,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1372x618",
+      "preset": "medium",
+      "texMB": 74.5
+    },
+    {
+      "profile": "phone",
+      "view": "midstreet",
+      "frameMs": 80.8,
+      "calls": 17,
+      "triangles": 22092,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1372x618",
+      "preset": "medium",
+      "texMB": 74.5
+    },
+    {
+      "profile": "phone",
+      "view": "terrace",
+      "frameMs": 69.2,
+      "calls": 15,
+      "triangles": 20656,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1372x618",
+      "preset": "medium",
+      "texMB": 74.5
+    },
+    {
+      "profile": "desktop",
+      "view": "spawn",
+      "frameMs": 86.7,
+      "calls": 19,
+      "triangles": 24240,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1280x720",
+      "preset": "medium",
+      "texMB": 74.5
+    },
+    {
+      "profile": "desktop",
+      "view": "midstreet",
+      "frameMs": 79.2,
+      "calls": 17,
+      "triangles": 22092,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1280x720",
+      "preset": "medium",
+      "texMB": 74.5
+    },
+    {
+      "profile": "desktop",
+      "view": "terrace",
+      "frameMs": 65.8,
+      "calls": 14,
+      "triangles": 20592,
+      "textures": 13,
+      "geometries": 17,
+      "programs": 8,
+      "drawPx": "1280x720",
+      "preset": "medium",
+      "texMB": 74.5
+    }
+  ]
+}

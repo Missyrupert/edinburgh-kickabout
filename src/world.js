@@ -1,320 +1,447 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { tenementTexture, signTexture, doorTargetTexture, pbr, LOW_POWER } from './textures.js';
+import { Batcher, QUAD, roofPrism } from './batch.js';
+import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps } from './textures.js';
 
-// Layout (metres). Street runs along +Z ("north", uphill toward the Castle).
-// Grassmarket-style street z -50..30, Victoria-Street-style slope z 30..50 (rises 3 m),
-// upper terrace z 50..66, and a close (pend) on the west side at z -10..-8.5 into a back court.
-export const PAVE = 0.08; // pavement/kerb height
-export const RAMP = { z0: 30, z1: 50, rise: 3 };
+// Layout (metres). Lower street (Grassmarket-style) runs along +Z, z -50..30.
+// At z=30 the street BENDS right by BEND.yaw and climbs (Victoria-Street-style) 3.6 m over 20 m
+// to an upper terrace. North-section coordinates are "local": origin at the bend pivot, local +z uphill.
+export const PAVE = 0.08;
+export const RAMP = { len: 20, rise: 3.6 };
+export const BEND = { pivotZ: 30, yaw: 0.32 };
+export const NORTH = new THREE.Matrix4().makeTranslation(0, 0, BEND.pivotZ).multiply(new THREE.Matrix4().makeRotationY(BEND.yaw));
+export const northToWorld = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(NORTH);
+export const rampHeight = (zl) => RAMP.rise * THREE.MathUtils.clamp(zl / RAMP.len, 0, 1);
 
-export function buildWorld(scene, world, mats, opts = {}) {
-  const statics = [];
-  const targets = [];
-  const dynamics = []; // {mesh, body}
-  const winTex = tenementTexture(import.meta.env.BASE_URL + 'tex/sandstone_diff.jpg');
-  // Desktop: PBR (MeshStandard + HDRI reflections). Phones: Lambert with the same photo colour maps (much cheaper per pixel).
-  const M = (c, extra = {}) => {
-    if (LOW_POWER) { const { map, emissive } = extra; return new THREE.MeshLambertMaterial({ color: c, ...(map ? { map } : {}), ...(emissive ? { emissive } : {}) }); }
-    return new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0, ...extra });
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+export function buildWorld(scene, world, mats, P) {
+  const rand = mulberry32(1707); // deterministic layout (tests + screenshots)
+  const B = new Batcher(), atlas = new SignAtlas(), facadeTex = facadeAtlas();
+  const targets = [], dynamics = [];
+  const ID = new THREE.Matrix4();
+  let FR = ID, FYAW = 0; // current section frame
+  const inNorth = (fn) => { FR = NORTH; FYAW = BEND.yaw; fn(); FR = ID; FYAW = 0; };
+  const W = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(FR);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const BOX = new THREE.BoxGeometry(1, 1, 1), ROOF = roofPrism();
+  const cylCache = {};
+  const CYL = (rt, rb, seg) => (cylCache[rt + ':' + rb + ':' + seg] ||= new THREE.CylinderGeometry(rt, rb, 1, seg, 1));
+  const eul = new THREE.Euler(), q = new THREE.Quaternion();
+  const M4 = (x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => { eul.set(rx, ry, rz, 'YXZ'); q.setFromEuler(eul); return new THREE.Matrix4().compose(V(x, y, z), q, V(sx, sy, sz)); };
+
+  function body(shape, x, y, z, { rx = 0, ry = 0, rz = 0, material = mats.ground, target = null, mass = 0 } = {}) {
+    const b = new CANNON.Body({ mass, material, shape });
+    const p = W(x, y, z); b.position.set(p.x, p.y, p.z);
+    eul.set(rx, ry + FYAW, rz, 'YXZ'); q.setFromEuler(eul); b.quaternion.set(q.x, q.y, q.z, q.w);
+    if (target) b.userData = { target };
+    world.addBody(b); return b;
+  }
+  const boxBody = (x, y, z, w, h, d, o = {}) => body(new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)), x, y, z, o);
+  // visual + optional physics box. key = material bucket.
+  function solid(key, x, y, z, w, h, d, color, { phys = true, rx = 0, ry = 0, rz = 0, tile = 0, grime = 0, target = null, material } = {}) {
+    B.add(key, BOX, M4(x, y, z, w, h, d, rx, ry, rz), color, { tile, grime, frame: FR });
+    return phys ? boxBody(x, y, z, w, h, d, { rx, ry, rz, target, material }) : null;
+  }
+  function cyl(key, x, y, z, rt, rb, h, color, { phys = true, seg = 8, target = null } = {}) {
+    B.add(key, CYL(rt, rb, seg), M4(x, y, z, 1, h, 1), color, { frame: FR });
+    return phys ? body(new CANNON.Cylinder(rt, rb, h, seg), x, y, z, { target }) : null;
+  }
+  function quad(key, x, y, z, w, h, ry, uvRect, color = 0xffffff, { rx = 0, grime = 0 } = {}) {
+    B.add(key, QUAD, M4(x, y, z, w, h, 1, rx, ry), color, { uvRect, grime, frame: FR });
+  }
+  const sign = (text, x, y, z, w, h, ry, bg, fg, font, border) => quad('atlas', x, y, z, w, h, ry, atlas.sign(text, bg, fg, w / h, font, border));
+  const plaque = (text, x, y, z, w, ry) => sign(text, x, y, z, w, 0.36, ry, '#f4f1ea', '#111', 'bold 60px Arial, sans-serif', '#111');
+
+  // ---------- tenements ----------
+  const cellUV = (i) => { const c = i % 4, r = Math.floor(i / 4), e = 0.004; return [c / 4 + e, 1 - (r + 1) / 4 + e, (c + 1) / 4 - e, 1 - r / 4 - e]; };
+  const STYLES = {
+    classic: { upper: [FACADE.sashA, FACADE.sashA, FACADE.sashA, FACADE.lit, FACADE.flowers, FACADE.sashB], top: [FACADE.small, FACADE.small, FACADE.smallLit], ground: [FACADE.rustic, FACADE.door, FACADE.rustic], tint: [0xf2e6d2, 0xe9dcc4, 0xfff4e0] },
+    grand: { upper: [FACADE.sashB, FACADE.pediment, FACADE.sashB, FACADE.triple, FACADE.lit], top: [FACADE.sashA, FACADE.small], ground: [FACADE.arch, FACADE.doorGreen, FACADE.rustic], tint: [0xfaf0dc, 0xefe2c8] },
+    sooty: { upper: [FACADE.sashA, FACADE.sashA, FACADE.sashB, FACADE.sashA, FACADE.blind, FACADE.lit], top: [FACADE.small], ground: [FACADE.door, FACADE.rustic], tint: [0x9a8e7c, 0xa79a86] },
+    harled: { upper: [FACADE.small, FACADE.sashA, FACADE.smallLit], top: [FACADE.small], ground: [FACADE.doorRed, FACADE.plain], tint: [0xffffff], harled: true },
   };
-  const wood = (c, rx = 1, ry = 1) => M(c, pbr('wood', rx, ry, { normal: false }));
-  const roofMat = M(0x8a8e96, pbr('slate', 3, 3, { normal: false }));
-  const stoneMat = M(0xd8c4a4, pbr('sandstone', 2, 2));
-  const darkStone = M(0x9c8a72, pbr('sandstone', 3, 3));
-  const iron = M(0x1c1f22, { roughness: 0.45, metalness: 0.7 });
-  const sh = !!opts.shadows;
-
-  function box(x, y, z, w, h, d, mat, { phys = true, rotX = 0, material = mats.ground, cast = true } = {}) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    mesh.position.set(x, y, z); mesh.rotation.x = rotX;
-    mesh.castShadow = sh && cast; mesh.receiveShadow = sh;
-    scene.add(mesh);
-    let body = null;
-    if (phys) {
-      body = new CANNON.Body({ mass: 0, material, shape: new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)) });
-      body.position.set(x, y, z); body.quaternion.setFromEuler(rotX, 0, 0);
-      world.addBody(body); statics.push(body);
+  const pick = (a) => a[Math.floor(rand() * a.length)];
+  function facadeFace(cx, cz, nx, nz, L, h, base, st, tint, floorH, groundSkip) {
+    const nb = Math.max(1, Math.round(L / 3.3)), bw = L / nb, nf = Math.max(1, Math.round(h / floorH)), fh = h / nf;
+    const ax = -nz, az = nx, ry = Math.atan2(nx, nz);
+    const rowStyle = []; for (let j = 0; j < nf; j++) rowStyle.push(j === 0 ? null : j === nf - 1 ? pick(st.top) : pick(st.upper));
+    for (let i = 0; i < nb; i++) for (let j = 0; j < nf; j++) {
+      const s = (i + 0.5) * bw - L / 2, x = cx + ax * s, z = cz + az * s, y = base + (j + 0.5) * fh;
+      let c = j === 0 ? (groundSkip && groundSkip(x, z) ? FACADE.plain : pick(st.ground)) : rand() < 0.75 ? rowStyle[j] : pick(st.upper);
+      if (st.harled && rand() < 0.2) c = FACADE.plain;
+      const shade = 0.9 + rand() * 0.12;
+      const col = new THREE.Color(tint).multiplyScalar(shade);
+      quad('facade', x, y, z, bw, fh, ry, cellUV(c), col, { grime: st.name === 'harled' ? 0.15 : 0.32 });
     }
-    return { mesh, body };
   }
-  function cyl(x, y, z, rt, rb, h, mat, { phys = true, seg = 10 } = {}) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
-    mesh.position.set(x, y, z); mesh.castShadow = sh; scene.add(mesh);
-    let body = null;
-    if (phys) {
-      body = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Cylinder(rt, rb, h, seg) });
-      body.position.set(x, y, z); world.addBody(body); statics.push(body);
+  // building footprint x0..x1, z0..z1 (section-local). street: +1 if street is at +x side (west row), -1 for east row.
+  function tenement(x0, x1, z0, z1, h, style, { base = 0, roof = 'pitch', street = 1, floorH = 3.2 + rand() * 0.5, groundSkip = null, chimneys = true } = {}) {
+    const st = { ...STYLES[style], name: style }, tint = pick(st.tint), w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, top = base + h;
+    boxBody(cx, base + h / 2, cz, w, h, d);
+    const fx = street > 0 ? x1 : x0;
+    facadeFace(fx, cz, street, 0, d, h, base, st, tint, floorH, groundSkip); // street front
+    facadeFace(street > 0 ? x0 : x1, cz, -street, 0, d, h, base, st, tint, floorH); // back
+    facadeFace(cx, z0, 0, -1, w, h, base, st, tint, floorH); facadeFace(cx, z1, 0, 1, w, h, base, st, tint, floorH);
+    // cornice + string course, gutter, drainpipe on the street front
+    const sx = fx + street * 0.12;
+    solid('stone', sx, top - 0.25, cz, 0.3, 0.35, d, 0xe6d6b8, { phys: false, tile: 2.5 });
+    solid('stone', fx + street * 0.06, base + floorH, cz, 0.14, 0.2, d, 0xd8c7a6, { phys: false, tile: 2.5 });
+    solid('metal', fx + street * 0.3, top + 0.02, cz, 0.16, 0.14, d, 0x22252a, { phys: false });
+    const dpz = z0 + 0.25 + (rand() < 0.5 ? 0 : d - 0.5);
+    cyl('metal', fx + street * 0.18, base + h / 2, dpz, 0.055, 0.055, h, 0x25282d, { phys: false, seg: 6 });
+    // roof
+    if (roof === 'pitch') {
+      const rh = Math.min(4.5, w * 0.48);
+      B.add('roof', ROOF, M4(cx, top, cz, w + 0.4, rh, d + 0.05), 0xc8ccd4, { tile: 2.2, frame: FR });
+      if (rand() < 0.6) { const dz = z0 + d * (0.3 + rand() * 0.4); // dormer
+        solid('stone', fx - street * 1.1, top + 0.9, dz, 1.4, 1.8, 1.8, 0xe2d2b4, { phys: false, tile: 2 });
+        quad('facade', fx - street * 0.39, top + 0.9, dz, 1.2, 1.4, Math.atan2(street, 0), cellUV(FACADE.small), 0xffffff);
+        B.add('roof', ROOF, M4(fx - street * 1.1, top + 1.8, dz, 1.6, 0.8, 2.0, 0, Math.PI / 2), 0xc8ccd4, { tile: 2.2, frame: FR }); }
+    } else { // gable facing the street, crow-stepped
+      const rh = Math.min(6, d * 0.55);
+      B.add('roof', ROOF, M4(cx, top, cz, d, rh, w, 0, Math.PI / 2), 0xc8ccd4, { tile: 2.2, frame: FR });
+      const n = 6;
+      for (let k = 0; k < n; k++) { const ww = d * (1 - k / n) + 0.25, hh = rh / n;
+        solid('stone', fx - street * 0.2, top + (k + 0.5) * hh, cz, 0.45, hh, ww, 0xe8d8ba, { phys: false, tile: 2 });
+        solid('stone', fx - street * 0.2, top + (k + 1) * hh + 0.05, cz - ww / 2 + 0.15, 0.5, 0.1, 0.4, 0xd9c6a4, { phys: false });
+        solid('stone', fx - street * 0.2, top + (k + 1) * hh + 0.05, cz + ww / 2 - 0.15, 0.5, 0.1, 0.4, 0xd9c6a4, { phys: false }); }
+      quad('facade', fx + street * 0.03, top + rh * 0.3, cz, 1.3, 1.5, Math.atan2(street, 0), cellUV(FACADE.small), 0xffffff);
     }
-    return { mesh, body };
-  }
-  function invisibleWall(x, y, z, w, h, d) {
-    const b = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)) });
-    b.position.set(x, y, z); world.addBody(b);
-  }
-  function plane(x, y, z, w, d, mat) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
-    m.receiveShadow = sh; scene.add(m); return m;
-  }
-  function sign(text, x, y, z, w, h, rotY, bg, fg, font) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: signTexture(text, bg, fg, 512, Math.round(512 * h / w), font) }));
-    m.position.set(x, y, z); m.rotation.y = rotY; scene.add(m); return m;
-  }
-  const tints = [0xffffff, 0xe8dccb, 0xd9cdb8, 0xf2e2c4, 0xcbbfa8, 0xbfae95];
-  function tenement(x0, x1, z0, z1, h, base = 0, tint = 0) {
-    const w = x1 - x0, d = z1 - z0;
-    const tx = winTex.clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, Math.round(d / 3.4)), Math.round(h / 3.3));
-    const tz = winTex.clone(); tz.needsUpdate = true; tz.repeat.set(Math.max(1, Math.round(w / 3.4)), Math.round(h / 3.3));
-    const col = tints[tint % tints.length];
-    const mx = M(col, { map: tx, roughness: 0.9 }), mz = M(col, { map: tz, roughness: 0.9 });
-    const { mesh } = box((x0 + x1) / 2, base + h / 2, (z0 + z1) / 2, w, h, d, [mx, mx, roofMat, roofMat, mz, mz]);
-    // chimney stacks + cornice for Old Town skyline
-    box((x0 + x1) / 2, base + h + 0.25, (z0 + z1) / 2, w + 0.3, 0.5, d + 0.3, darkStone, { phys: false });
-    for (let zz = z0 + 2; zz < z1 - 1; zz += 5) {
-      box((x0 + x1) / 2, base + h + 1.2, zz, 1, 2, 2.2, darkStone, { phys: false });
-      for (let k = -0.6; k <= 0.61; k += 0.6) cyl((x0 + x1) / 2, base + h + 2.4, zz + k, 0.14, 0.14, 0.5, M(0xa0522d), { phys: false, seg: 6 });
+    // chimney stacks on the party walls
+    if (chimneys) for (const zz of [z0 + 0.6, z1 - 0.6]) { if (rand() < 0.25) continue;
+      const ch = 1.8 + rand() * 1.4, xx = cx + (rand() - 0.5) * w * 0.3;
+      solid('stone', xx, top + (ch + 1.5) / 2, zz, 2.4, ch + 1.5, 0.9, 0xb5a58a, { phys: false, tile: 2, grime: 0 });
+      for (let k = -0.75; k <= 0.76; k += 0.5) cyl('flat', xx + k, top + ch + 1.75, zz, 0.12, 0.15, 0.5, 0xa65a3a, { phys: false, seg: 6 });
     }
-    return mesh;
   }
 
   // ---------- ground ----------
-  const groundBody = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() });
-  groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(groundBody); statics.push(groundBody);
-  plane(0, -0.01, 0, 400, 400, M(0x9a948a, pbr('paving', 100, 100, { normal: false })));
-  plane(0, 0.005, -10, 9, 80, M(0xd0ccc4, pbr('cobble', 4.5, 40)));
-  // pavements (physical kerbs: the ball bounces off them)
+  const ground = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() });
+  ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(ground);
+  B.add('paving', QUAD, M4(0, -0.01, 0, 300, 300, 1, -Math.PI / 2), 0x9d968b, { tile: 2.4 });
+  B.add('cobble', QUAD, M4(0, 0.005, -10, 9.1, 80, 1, -Math.PI / 2), 0xd8d2c8, { tile: 1.8 });
   for (const s of [-1, 1]) {
-    box(s * 5.75, PAVE - 0.55, -10, 2.5, 1.1, 80, M(0xcfc8bc, pbr('paving', 1.25, 40)), { phys: false });
-    // physics: flat pavement from |x|=4.75 plus a bevelled kerb lip so balls and feet ride up it
+    B.add('paving', QUAD, M4(s * 5.85, PAVE, -10, 2.3, 80, 1, -Math.PI / 2), 0xd4cdc0, { tile: 1.5 });
+    solid('stone', s * 4.6, PAVE / 2, -10, 0.3, PAVE + 0.02, 80, 0xa49c90, { phys: false, tile: 1 }); // kerbstones
     const pv = new CANNON.Body({ mass: 0, material: mats.kerb, shape: new CANNON.Box(new CANNON.Vec3(1.125, 0.55, 40)) });
     pv.position.set(s * 5.875, PAVE - 0.55, -10); world.addBody(pv);
     const th = s * Math.atan2(PAVE, 0.3), kb = new CANNON.Body({ mass: 0, material: mats.kerb, shape: new CANNON.Box(new CANNON.Vec3(0.17, 0.05, 40)) });
-    kb.quaternion.setFromEuler(0, 0, th); kb.position.set(s * 4.6 + Math.sin(th) * 0.05, PAVE / 2 - Math.cos(th) * 0.05, -10); world.addBody(kb); // thick so the ball can't tunnel
-    box(s * 4.55, PAVE / 2 + 0.005, -10, 0.2, PAVE + 0.01, 80, M(0x9a958c), { phys: false });
+    kb.quaternion.setFromEuler(0, 0, th); kb.position.set(s * 4.6 + Math.sin(th) * 0.05, PAVE / 2 - Math.cos(th) * 0.05, -10); world.addBody(kb);
   }
-  // slope (Victoria Street) + upper terrace
-  const L = Math.hypot(RAMP.z1 - RAMP.z0, RAMP.rise), a = Math.atan2(RAMP.rise, RAMP.z1 - RAMP.z0);
-  const cobMat2 = M(0xd0ccc4, pbr('cobble', 7, 10));
-  box(0, RAMP.rise / 2 - 0.75 * Math.cos(a), (RAMP.z0 + RAMP.z1) / 2 + 0.75 * Math.sin(a), 14, 1.5, L, cobMat2, { rotX: -a });
-  box(0, RAMP.rise / 2, 58, 14, RAMP.rise, 16, [darkStone, darkStone, M(0xd0ccc4, pbr('cobble', 7, 8)), darkStone, darkStone, darkStone]);
+  // north section: slope + terrace (cobbled)
+  inNorth(() => {
+    const L = Math.hypot(RAMP.len, RAMP.rise), a = Math.atan2(RAMP.rise, RAMP.len);
+    const rc = [0, RAMP.rise / 2 - 0.75 * Math.cos(a), RAMP.len / 2 + 0.75 * Math.sin(a)];
+    boxBody(rc[0], rc[1], rc[2], 14, 1.5, L, { rx: -a });
+    B.add('cobble', QUAD, M4(0, RAMP.rise / 2 + 0.005, RAMP.len / 2, 14, L, 1, -Math.PI / 2 - a), 0xd8d2c8, { tile: 1.8, frame: FR });
+    solid('stone', 0, RAMP.rise / 2, 28, 14, RAMP.rise, 16, 0x9c8a72, { tile: 2.5 });
+    B.add('cobble', QUAD, M4(0, RAMP.rise + 0.006, 28, 14, 16, 1, -Math.PI / 2), 0xd8d2c8, { tile: 1.8, frame: FR });
+  });
 
-  // ---------- tenements ----------
-  let ti = 0;
-  const west = [[-50, -38, 15], [-38, -24, 17], [-24, -10, 14], [-8.5, 4, 16], [4, 17, 13], [17, 30, 18], [30, 40, 16], [40, 50, 19], [50, 58, 18], [58, 66, 20]];
-  const east = [[-50, -36, 16], [-36, -24, 13], [-24, -12, 17], [-12, 0, 15], [0, 10, 14], [10, 20, 18], [20, 30, 15], [30, 40, 17], [40, 50, 16], [50, 58, 19], [58, 66, 17]];
-  for (const [z0, z1, h] of west) tenement(-14, -7, z0, z1, h, 0, ti++);
-  for (const [z0, z1, h] of east) tenement(7, 14, z0, z1, h, 0, ti++);
-  // pend over the close
-  box(-10.5, 8.5, -9.25, 7, 11, 1.5, stoneMat);
-  sign("KICKER'S CLOSE", -6.98, 3.4, -9.25, 2.2, 0.32, Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial, sans-serif');
-  // back court behind the close
-  box(-24.5, 2, -9, 1, 4, 19, stoneMat); box(-19, 2, -18.5, 10, 4, 1, stoneMat); box(-19, 2, 0.5, 10, 4, 1, stoneMat);
-  // street-name plaques (black on white, Edinburgh style)
-  sign('GRASSMARKET', -6.98, 3.6, -42, 2.6, 0.4, Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial, sans-serif');
-  sign('GRASSMARKET', 6.98, 3.6, -30, 2.6, 0.4, -Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial, sans-serif');
-  sign('VICTORIA STREET', 6.98, 4.6, 33, 2.8, 0.4, -Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial, sans-serif');
-  sign('EDINBURGH', -6.98, 4.8, 31, 1.4, 0.26, Math.PI / 2, '#f4f1ea', '#888', 'bold 60px Arial, sans-serif');
+  // ---------- buildings ----------
+  const shopAt = (list) => (x, z) => list.some(([a, b]) => z > a && z < b);
+  const westShops = [[-46, -40], [-30.5, -25], [-22, -14], [6, 14]], eastShops = [[-49, -43], [-32, -26], [1, 9], [12, 18]];
+  // west row (street at +x side)
+  tenement(-14, -7, -50, -39, 15, 'classic', { groundSkip: shopAt(westShops) });
+  tenement(-14, -6.8, -39, -31, 19.5, 'grand', { roof: 'gable', groundSkip: shopAt(westShops) });
+  tenement(-14, -7, -31, -24, 10.5, 'harled', { floorH: 3.4, groundSkip: shopAt(westShops) });
+  tenement(-14, -7, -24, -10, 16, 'classic', { groundSkip: shopAt(westShops) });
+  tenement(-14, -7, -8.5, 4, 17.5, 'grand', {});
+  tenement(-14, -6.75, 4, 17, 13.5, 'classic', { roof: 'gable', groundSkip: shopAt(westShops) });
+  tenement(-14, -7, 17, 28, 18, 'sooty', {});
+  tenement(-15, -7.05, 28, 35, 23, 'grand', { roof: 'gable' }); // landmark corner at the bend
+  // east row (street at -x side)
+  tenement(7, 14, -50, -42, 13, 'classic', { street: -1, groundSkip: shopAt(eastShops) });
+  tenement(6.8, 14, -42, -36, 20.5, 'grand', { street: -1, roof: 'gable' });
+  tenement(6.75, 14, -36, -24, 15, 'sooty', { street: -1, groundSkip: shopAt(eastShops) });
+  tenement(7, 14, -24, -12, 17, 'classic', { street: -1 });
+  tenement(7, 14, -12, 0, 11.5, 'harled', { street: -1, floorH: 3.5 });
+  tenement(7, 14, 0, 10, 16, 'classic', { street: -1, groundSkip: shopAt(eastShops) });
+  tenement(7, 14, 10, 20, 19, 'grand', { street: -1, roof: 'gable', groundSkip: shopAt(eastShops) });
+  tenement(7, 14, 20, 30, 14, 'classic', { street: -1 });
+  // north section (Victoria Street side) in local coords
+  inNorth(() => {
+    tenement(-14, -7, 0, 10, 15, 'classic', { groundSkip: () => true });
+    tenement(-14, -7, 10, 20, 21, 'grand', { roof: 'gable', groundSkip: () => true });
+    tenement(-14, -7, 20, 28, 18, 'sooty', {});
+    tenement(-14, -7, 28, 36, 20, 'classic', {});
+    tenement(7, 14, 0, 10, 17, 'grand', { street: -1, groundSkip: () => true });
+    tenement(7, 14, 10, 20, 13, 'harled', { street: -1, groundSkip: () => true });
+    tenement(7, 14, 20, 28, 19, 'classic', { street: -1, roof: 'gable' });
+    tenement(7, 14, 28, 36, 16, 'sooty', { street: -1 });
+  });
 
-  // shopfronts (painted timber, gold lettering)
+  // ---------- Kicker's Close: a pend through the west row into a back court ----------
+  solid('stone', -10.5, 9.85, -9.25, 7, 13.3, 1.5, 0xd5c3a3, { tile: 2.5, grime: 0 });
+  quad('facade', -6.99, 6, -9.25, 1.5, 3.2, Math.PI / 2, cellUV(FACADE.small), 0xf0e4cc);
+  quad('facade', -6.99, 9.6, -9.25, 1.5, 3.2, Math.PI / 2, cellUV(FACADE.small), 0xf0e4cc);
+  for (let k = 0; k <= 8; k++) { const a = Math.PI * k / 8, r = 0.78; // stone arch voussoirs
+    solid('stone', -6.9, 2.45 + Math.sin(a) * r, -9.25 + Math.cos(a) * r, 0.3, 0.34, 0.24, k === 4 ? 0xf2e3c4 : 0xd9c8a6, { phys: false, rx: -(a - Math.PI / 2) }); }
+  solid('stone', -6.9, 3.35, -9.25, 0.3, 0.3, 2.2, 0xe5d5b6, { phys: false });
+  plaque("KICKER'S CLOSE", -6.73, 3.75, -9.25, 2.0, Math.PI / 2);
+  sign('ANNO 1687', -6.73, 1.85, -10.3, 0.55, 0.16, Math.PI / 2, '#d9c8a6', '#4a3a20', 'bold 60px Georgia', '#d9c8a6');
+  B.add('lamp', BOX, M4(-10.5, 2.7, -9.25, 0.18, 0.25, 0.18), 0xffffff, {});
+  B.add('cobble', QUAD, M4(-10.5, 0.006, -9.25, 7, 1.5, 1, -Math.PI / 2), 0x9a948a, { tile: 1.2 });
+  // back court
+  solid('stone', -24.5, 2, -9, 1, 4, 19, 0xcbb898, { tile: 2.5, grime: 0.3 });
+  solid('stone', -19, 2, -18.5, 10, 4, 1, 0xcbb898, { tile: 2.5, grime: 0.3 });
+  solid('stone', -19, 2, 0.5, 10, 4, 1, 0xcbb898, { tile: 2.5, grime: 0.3 });
+  cyl('wood', -22.5, 1.2, -2.5, 0.12, 0.16, 2.4, 0x6b4a2b, { seg: 6 });
+  B.add('flat', new THREE.IcosahedronGeometry(1.3, 0), M4(-22.5, 3.1, -2.5, 1, 1.2, 1), 0x4f6b3a, {});
+  for (const z of [-15, -12.5]) { cyl('metal', -24, 1.6, z, 0.03, 0.03, 3.2, 0x333333, { phys: false, seg: 4 }); }
+  solid('flat', -24, 2.9, -13.75, 0.02, 0.02, 2.5, 0xdddddd, { phys: false });
+  [[-0.5, 0xe8e2d0], [0.3, 0x9cb7d8], [1.0, 0xd65f5f]].forEach(([dz, c]) => solid('flat', -24, 2.55, -13.75 + dz, 0.02, 0.6, 0.45, c, { phys: false })); // washing line
+
+  // ---------- shopfronts (painted timber, gold lettering) ----------
   const shops = [
-    ['W', -46, -40, 'THE LAST DRAP', '#1d3b2a'], ['W', -36, -28, 'TARTAN TAT & TABLET', '#5b1b2a'],
-    ['W', -22, -14, 'HAGGIS EMPORIUM', '#1e2c4f'], ['W', 6, 14, 'BOOKS & BAWBEES', '#3a2a1a'],
-    ['E', -48, -40, 'THE WEE CHIPPY', '#0f3d5c'], ['E', -32, -26, 'IRN AGE CAFE', '#9a4a12'],
+    ['W', -46, -40, 'THE LAST DRAP', '#1d3b2a'], ['W', -30.5, -25, 'TARTAN TAT & TABLET', '#5b1b2a'],
+    ['W', -22, -14, 'HAGGIS EMPORIUM', '#1e2c4f'], ['W', 6, 14, 'BOOKS & BAWBEES', '#3a2a1a', 0, 6.75],
+    ['E', -49, -43, 'THE WEE CHIPPY', '#0f3d5c'], ['E', -32, -26, 'IRN AGE CAFE', '#9a4a12', 0, 6.75],
     ['E', 1, 9, "MACKAY'S BAKERY", '#2f4a2a'], ['E', 12, 18, 'TABLET & TEA', '#5b1b2a'],
-    ['W', 41, 48, 'WITCHERY WOOLS', '#3b2350'], ['E', 32, 39, 'CANDLEMAKER', '#1d3b2a'],
   ];
-  for (const [side, z0, z1, name, col] of shops) {
-    const s = side === 'W' ? -1 : 1, x = s * 6.94, len = z1 - z0, zc = (z0 + z1) / 2;
-    const yb = zc > RAMP.z0 ? RAMP.rise * Math.min(1, (zc - RAMP.z0) / (RAMP.z1 - RAMP.z0)) : 0;
-    box(x, yb + 1.6, zc, 0.12, 3.2, len, wood(col, len / 2, 1.6), { phys: false });
-    box(x - s * 0.02, yb + 1.5, zc - len * 0.15, 0.1, 1.8, len * 0.45, M(0x2b3a48, { emissive: 0x3a2f1a, roughness: 0.15, metalness: 0.3 }), { phys: false });
-    sign(name, x - s * 0.08, yb + 2.85, zc, Math.min(len - 0.4, 5.5), 0.55, -s * Math.PI / 2, col, '#f1d98a');
+  const northShops = [ // Victoria Street: famously colourful
+    ['W', 1.5, 5.5, 'WITCHERY WOOLS', '#3b2350'], ['W', 6, 9.5, 'WEE WIZARD WANDS', '#b8322a'], ['W', 11, 15, 'CANDLEMAKER', '#1d5c3a'], ['W', 15.5, 19, 'CHEESE & CHUCKLES', '#d9a520'],
+    ['E', 1, 5, 'BRUSH & BROGUE', '#1f4f8f'], ['E', 5.5, 9.5, 'THE SPORRAN SHOP', '#8a2a5a'], ['E', 11, 14.5, 'KILTS-R-US', '#2a6f6f'], ['E', 15, 19, 'PURE DEAD BRILLIANT', '#c4572a'],
+  ];
+  function shopfront(side, z0, z1, name, col, yb = 0, fronts = 7) {
+    const s = side === 'W' ? -1 : 1, x = s * (fronts - 0.06), len = z1 - z0, zc = (z0 + z1) / 2, c = new THREE.Color(col);
+    solid('wood', x, yb + 1.55, zc, 0.12, 3.1 + (yb ? 0.8 : 0), len, c, { phys: false, tile: 1.2 });
+    solid('glass', x - s * 0.04, yb + 1.55, zc - len * 0.12, 0.08, 1.7, len * 0.55, 0xffffff, { phys: false });
+    solid('wood', x - s * 0.08, yb + 0.35, zc, 0.06, 0.12, len - 0.2, c.clone().multiplyScalar(0.7), { phys: false });
+    solid('wood', x - s * 0.1, yb + 2.85, zc, 0.12, 0.7, len + 0.1, c.clone().multiplyScalar(0.8), { phys: false });
+    sign(name, x - s * 0.17, yb + 2.85, zc, Math.min(len - 0.3, 5.5), 0.52, -s * Math.PI / 2, col, '#f1d98a');
   }
+  for (const sp of shops) shopfront(...sp);
+  inNorth(() => { for (const [sd, z0, z1, n, c] of northShops) shopfront(sd, z0, z1, n, c, rampHeight((z0 + z1) / 2) - 0.4); });
+
+  // ---------- signs, plaques & humour ----------
+  plaque('GRASSMARKET', -6.97, 3.7, -42, 2.4, Math.PI / 2);
+  plaque('GRASSMARKET', 6.72, 3.7, -30, 2.4, -Math.PI / 2);
+  sign('CITY OF EDINBURGH COUNCIL', 6.72, 3.38, -30, 2.0, 0.14, -Math.PI / 2, '#f4f1ea', '#666', 'bold 50px Arial', '#f4f1ea');
+  sign("NAE BA' GAMES", -6.97, 2.4, -34.5, 1.3, 0.42, Math.PI / 2, '#f4f1ea', '#b01818', 'bold 70px Arial', '#b01818');
+  sign('(by order)', -6.97, 2.12, -34.5, 0.8, 0.12, Math.PI / 2, '#f4f1ea', '#444', 'italic 50px Georgia', '#f4f1ea');
+  inNorth(() => {
+    plaque('VICTORIA STREET', 6.97 * -1 + 0.03, 4.6, 2.5, 2.8, Math.PI / 2);
+    sign('PLEASE DINNAE FEED THE GULLS', 6.95, RAMP.rise + 2.3, 31, 2.2, 0.3, -Math.PI / 2, '#f4f1ea', '#1d3b6b', 'bold 50px Arial', '#1d3b6b');
+  });
+  // fingerpost at the bend
+  cyl('metal', 5.6, 1.6, 27.5, 0.06, 0.07, 3.2, 0x1c1f22, { seg: 6 });
+  sign('CASTLE  >', 5.05, 2.9, 27.5, 1.1, 0.24, 0, '#1d3b2a', '#f4f1ea', 'bold 60px Arial');
+  sign('CASTLE  >', 5.05, 2.9, 27.49, 1.1, 0.24, Math.PI, '#1d3b2a', '#f4f1ea', 'bold 60px Arial');
 
   // ---------- street furniture ----------
-  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffe2a0 });
-  const lamps = [];
-  function lamppost(x, z, base = PAVE) {
-    const p = cyl(x, base + 2.1, z, 0.07, 0.11, 4.2, iron);
-    cyl(x, base + 4.4, z, 0.22, 0.12, 0.45, lampMat, { phys: false, seg: 6 });
-    cyl(x, base + 4.7, z, 0.02, 0.26, 0.2, iron, { phys: false, seg: 6 });
-    lamps.push(p); return p;
+  const IRON = 0x1c1f22;
+  function lamppost(x, z, base = PAVE, target = null) {
+    const b = cyl('metal', x, base + 2.1, z, 0.07, 0.11, 4.2, IRON, { seg: 8, target });
+    cyl('metal', x, base + 0.25, z, 0.16, 0.18, 0.5, IRON, { phys: false, seg: 8 });
+    cyl('lamp', x, base + 4.4, z, 0.22, 0.12, 0.45, 0xffffff, { phys: false, seg: 6 });
+    cyl('metal', x, base + 4.7, z, 0.02, 0.26, 0.2, IRON, { phys: false, seg: 6 });
+    return b;
   }
-  for (let z = -44; z <= 26; z += 14) { lamppost(-4.85, z); if (z + 7 !== 5 && z + 7 < 30) lamppost(4.85, z + 7); }
-  function bollard(x, z, y = PAVE) { cyl(x, y + 0.45, z, 0.1, 0.13, 0.9, iron, { seg: 8 }); cyl(x, y + 0.95, z, 0.13, 0.13, 0.1, M(0xd4af37), { phys: false, seg: 8 }); }
-  for (const x of [-6.3, -5.4, 5.4, 6.3]) bollard(x, 28.8);
+  for (let z = -44; z <= 26; z += 14) { lamppost(-4.85, z); if (z + 7 !== 5 && z + 7 < 28) lamppost(4.85, z + 7); }
+  inNorth(() => { for (const zl of [4, 14]) for (const s of [-1, 1]) { // wall-bracket lamps
+    const y = rampHeight(zl) + 4; solid('metal', s * 6.4, y, zl, 1.2, 0.06, 0.06, IRON, { phys: false }); cyl('lamp', s * 5.85, y - 0.25, zl, 0.18, 0.1, 0.4, 0xffffff, { phys: false, seg: 6 }); } });
+  function bollard(x, z, y = PAVE) { cyl('metal', x, y + 0.45, z, 0.1, 0.13, 0.9, IRON, { seg: 8 }); cyl('flat', x, y + 0.95, z, 0.13, 0.13, 0.1, 0xd4af37, { phys: false, seg: 8 }); }
+  for (const x of [-6.3, -5.4]) bollard(x, 28.4);
   for (const z of [-11, -7.5]) bollard(-6.3, z);
-  // railings: south end and terrace edge (with view to the Castle)
+  // Edinburgh railings: black bars with spearhead finials on a stone plinth
   function railings(x0, x1, z, y) {
-    const n = Math.floor((x1 - x0) / 0.18), g = new THREE.CylinderGeometry(0.018, 0.018, 1.1, 4);
-    const im = new THREE.InstancedMesh(g, iron, n), m = new THREE.Matrix4();
-    for (let i = 0; i < n; i++) { m.makeTranslation(x0 + i * 0.18, y + 0.55, z); im.setMatrixAt(i, m); }
-    scene.add(im); box((x0 + x1) / 2, y + 1.1, z, x1 - x0, 0.05, 0.06, iron, { phys: false });
-    box((x0 + x1) / 2, y + 0.3, z, x1 - x0, 0.6, 0.35, stoneMat); // low wall
+    for (let x = x0 + 0.1; x < x1; x += 0.16) { cyl('metal', x, y + 0.9, z, 0.016, 0.016, 1.0, IRON, { phys: false, seg: 4 }); cyl('metal', x, y + 1.45, z, 0.0, 0.035, 0.12, IRON, { phys: false, seg: 4 }); }
+    solid('metal', (x0 + x1) / 2, y + 1.32, z, x1 - x0, 0.05, 0.05, IRON, { phys: false });
+    solid('metal', (x0 + x1) / 2, y + 0.55, z, x1 - x0, 0.04, 0.04, IRON, { phys: false });
+    solid('stone', (x0 + x1) / 2, y + 0.2, z, x1 - x0, 0.4, 0.4, 0xc9b896, { tile: 2 });
   }
-  railings(-7, 7, -50.2, 0); railings(-7, 7, 66.2, RAMP.rise);
-  invisibleWall(0, 6, -50.6, 14, 12, 0.4); invisibleWall(0, 9, 66.6, 14, 12, 0.4);
+  railings(-7, 7, -50.2, 0); boxBody(0, 6, -50.6, 14, 12, 0.4);
+  inNorth(() => { railings(-7, 7, 36.2, RAMP.rise); boxBody(0, 9, 36.6, 14, 12, 0.4); });
+  // wheelie bins: black (general) and green (recycling). Solid: the ball bounces off them.
+  function wheelie(x, z, col, ry = 0, y = PAVE) {
+    solid('flat', x, y + 0.5, z, 0.6, 0.95, 0.7, col, { ry });
+    solid('flat', x, y + 1.0, z, 0.66, 0.06, 0.76, new THREE.Color(col).multiplyScalar(0.8), { phys: false, ry });
+  }
+  wheelie(-6.4, -26, 0x1d1f1f); wheelie(-6.4, -25.2, 0x2e5a34); wheelie(6.35, -13, 0x1d1f1f); wheelie(6.35, 9.6, 0x2e5a34); wheelie(-6.4, 20, 0x1d1f1f);
+  inNorth(() => { wheelie(-6.2, 24, 0x1d1f1f, 0, RAMP.rise); wheelie(-6.2, 24.8, 0x2e5a34, 0, RAMP.rise); });
+
   // ---------- skyline: Castle on its rock, Old Town roofs, a spire ----------
-  const rockMat = M(0x4a4c44, { ...pbr('sandstone', 6, 3, { normal: false }), roughness: 1, envMapIntensity: 0.2 }), castleMat = M(0x9a9080, pbr('sandstone', 8, 2, { normal: false }));
-  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(40, 1), rockMat); rock.scale.set(1.6, 0.75, 1); rock.position.set(0, 6, 200); scene.add(rock);
-  const cbox = (x, y, z, w, h, d) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), castleMat); m.position.set(x, y, z); scene.add(m); };
-  cbox(0, 40, 190, 60, 14, 18); cbox(-24, 48, 188, 12, 16, 12); cbox(14, 50, 192, 16, 22, 14); cbox(30, 44, 186, 10, 12, 10);
-  cbox(-6, 44, 180, 30, 6, 4); // battery wall
-  for (let x = -28; x <= 28; x += 4) cbox(x, 48, 181, 2, 2, 2);
-  const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 10), iron); flagPole.position.set(14, 66, 192); scene.add(flagPole);
-  const saltire = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), new THREE.MeshBasicMaterial({ map: saltireTex(), side: THREE.DoubleSide }));
-  saltire.position.set(17, 69, 192); scene.add(saltire);
-  const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 40, 6), castleMat); spire.position.set(-70, 30, 150); scene.add(spire);
-  const roofs = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), M(0x7d6b55), 120), mm = new THREE.Matrix4();
-  for (let i = 0; i < 120; i++) {
-    const x = (Math.random() - 0.5) * 220, z = 75 + Math.random() * 90, h = 6 + Math.random() * 6 + Math.abs(x) * 0.08;
-    mm.compose(new THREE.Vector3(x, h / 2 - 4, z), new THREE.Quaternion(), new THREE.Vector3(8 + Math.random() * 10, h, 6 + Math.random() * 8));
-    roofs.setMatrixAt(i, mm);
+  const CX = 22, CZ = 215;
+  B.add('flat', new THREE.DodecahedronGeometry(45, 1), M4(CX, 4, CZ, 1.6, 0.9, 1), 0x5b5a50, {});
+  const cb = (x, y, z, w, h, d, c = 0xb3a68e) => solid('stone', CX + x, y, CZ + z, w, h, d, c, { phys: false, tile: 6 });
+  cb(0, 46, -6, 64, 16, 20); cb(-26, 55, -8, 12, 18, 12); cb(14, 58, -4, 16, 24, 14); cb(32, 50, -10, 10, 14, 10); cb(-6, 50, -18, 34, 6, 4, 0xa49680);
+  for (let x = -28; x <= 28; x += 4) cb(x, 54, -19, 2, 2, 2);
+  cyl('metal', CX + 14, 75, CZ - 4, 0.3, 0.3, 10, IRON, { phys: false });
+  B.add('flat', new THREE.ConeGeometry(4, 40, 6), M4(-70, 30, 150, 1, 1, 1), 0x9a9080, {});
+  for (let i = 0; i < 130; i++) {
+    const x = (rand() - 0.5) * 240, z = 80 + rand() * 110, h = 6 + rand() * 6 + Math.abs(x) * 0.06, w = 8 + rand() * 10, d = 6 + rand() * 8;
+    if (Math.abs(x - CX) < 40 && z > 160) continue;
+    const c = new THREE.Color().setHSL(0.08, 0.25, 0.3 + rand() * 0.15);
+    B.add('flat', BOX, M4(x, h / 2 - 4, z, w, h, d), c, {});
+    B.add('flat', ROOF, M4(x, h - 4, z, w, 2.5, d), 0x4a4d55, {});
   }
-  scene.add(roofs);
 
   // ---------- targets ----------
-  const ring = (x, y, z, r) => {
-    const m = new THREE.Mesh(new THREE.RingGeometry(r, r + 0.12, 32), new THREE.MeshBasicMaterial({ color: 0xffd75e, transparent: true, opacity: 0, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2; m.position.set(x, y + 0.03, z); scene.add(m); return m;
-  };
-  function addTarget(t) { t.ring = ring(t.pos.x, t.pos.y, t.pos.z, t.ringR || 1.0); t.done = false; targets.push(t); return t; }
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const tag = (body, id) => { body.userData = { target: id }; };
-
+  const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
+  function addTarget(t) {
+    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd75e, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    m.rotation.x = -Math.PI / 2; const r = t.ringR || 1; m.scale.set(r, r, r);
+    m.position.copy(t.pos).add(V(0, 0.03, 0)); m.visible = false; scene.add(m); t.ring = m;
+    if (t.zone) { t.zoneInv = FR.clone().invert(); }
+    t.done = false; targets.push(t); return t;
+  }
   // 1. Communal bin (get it in)
   {
-    const x = 5.6, z = -22, w = 1.5, d = 1.0, h = 1.15, y = PAVE, th = 0.06, bm = M(0x3f5a3f);
-    box(x, y + 0.05, z, w, 0.1, d, bm);
-    box(x - w / 2, y + h / 2, z, th, h, d, bm); box(x + w / 2, y + h / 2, z, th, h, d, bm);
-    box(x, y + h / 2, z - d / 2, w, h, th, bm); box(x, y + h / 2, z + d / 2, w, h, th, bm);
-    const lid = box(x + 0.15, y + h + 0.45, z + d / 2 + 0.05, w, 0.9, 0.05, M(0x2f4a2f), { phys: false }); lid.mesh.rotation.x = -0.3;
+    const x = 5.6, z = -22, w = 1.5, d = 1.0, h = 1.15, y = PAVE, th = 0.06, c = 0x3f5a3f;
+    solid('flat', x, y + 0.05, z, w, 0.1, d, c);
+    solid('flat', x - w / 2, y + h / 2, z, th, h, d, c); solid('flat', x + w / 2, y + h / 2, z, th, h, d, c);
+    solid('flat', x, y + h / 2, z - d / 2, w, h, th, c); solid('flat', x, y + h / 2, z + d / 2, w, h, th, c);
+    solid('flat', x + 0.15, y + h + 0.45, z + d / 2 + 0.05, w, 0.9, 0.05, 0x2f4a2f, { phys: false, rx: -0.3 });
     sign('GENERAL WASTE', x - w / 2 - 0.04, y + 0.75, z, 0.9, 0.18, -Math.PI / 2, '#2f4a2f', '#fff', 'bold 60px Arial');
-    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'get it IN the bin', points: 150, kind: 'zone', pos: V(x, y, z), ringR: 1.3,
+    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'get it IN the bin', points: 150, kind: 'zone', pos: V(x, y, z), ringR: 1.3, stand: V(-0.5, 0, z), aim: V(x, y + 0.6, z),
       zone: new THREE.Box3(V(x - w / 2, y + 0.05, z - d / 2), V(x + w / 2, y + h, z + d / 2)),
-      lines: ["Straight in the bucket! The cooncil thanks you.", "Recycling? Close enough.", "Bin there, done that."] });
+      lines: ['Straight in the bucket! The cooncil thanks you.', 'Recycling? Close enough.', 'Bin there, done that.'] });
   }
   // 2. Bench
   {
-    const x = -5.9, z = -18, bm = wood(0x8a6a48, 1, 2);
-    const parts = [box(x, PAVE + 0.45, z, 0.5, 0.08, 1.9, bm), box(x - 0.25, PAVE + 0.8, z, 0.08, 0.6, 1.9, bm)];
-    for (const dz of [-0.8, 0.8]) parts.push(box(x, PAVE + 0.22, z + dz, 0.45, 0.44, 0.08, iron));
-    parts.forEach((q) => tag(q.body, 'bench'));
-    const back = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Box(new CANNON.Vec3(0.3, 0.45, 0.95)) });
-    back.position.set(x - 0.05, PAVE + 0.5, z); world.addBody(back); tag(back, 'bench');
-    const plaque = sign('In memory of Jimmy, who loved this street', x + 0.04, PAVE + 0.95, z, 1.2, 0.12, Math.PI / 2, '#d4af37', '#3a2a10', 'bold 40px Georgia');
-    addTarget({ id: 'bench', name: 'Memorial Bench', hint: 'hit the bench', points: 50, kind: 'hit', pos: V(x, PAVE, z), ringR: 1.2,
-      lines: ["Jimmy would've been proud.", "Thunk! Best seat in the Grassmarket.", "That bench has seen worse."] });
+    const x = -5.9, z = -18, c = 0x8a6a48;
+    solid('wood', x, PAVE + 0.45, z, 0.5, 0.08, 1.9, c, { target: 'bench', tile: 1 }); solid('wood', x - 0.25, PAVE + 0.8, z, 0.08, 0.6, 1.9, c, { target: 'bench', tile: 1 });
+    for (const dz of [-0.8, 0.8]) solid('metal', x, PAVE + 0.22, z + dz, 0.45, 0.44, 0.08, IRON, { target: 'bench' });
+    boxBody(x - 0.05, PAVE + 0.5, z, 0.6, 0.9, 1.9, { target: 'bench' });
+    sign('In memory of Jimmy, who loved this street', x + 0.04, PAVE + 0.95, z, 1.2, 0.12, Math.PI / 2, '#d4af37', '#3a2a10', 'bold 40px Georgia');
+    addTarget({ id: 'bench', name: 'Memorial Bench', hint: 'hit the bench', points: 50, kind: 'hit', pos: V(x, PAVE, z), ringR: 1.2, stand: V(-2.6, 0, z), aim: V(x, 0.4, z),
+      lines: ["Jimmy would've been proud.", 'Thunk! Best seat in the Grassmarket.', 'That bench has seen worse.'] });
   }
-  // 3. Traffic cone (knock it over) - dynamic
+  // 3. Traffic cone (knock it over) - dynamic, one merged mesh
   {
-    const x = 1.2, z = -11;
-    const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 12), M(0xff6a00)); mesh.castShadow = sh; scene.add(mesh);
-    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.1, 12), M(0xffffff)); stripe.position.y = 0.05; mesh.add(stripe);
-    const baseM = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.45), M(0x222222)); baseM.position.y = -0.33; mesh.add(baseM);
-    const body = new CANNON.Body({ mass: 0.6, material: mats.ground, shape: new CANNON.Box(new CANNON.Vec3(0.16, 0.35, 0.16)) }); // box hull: cannon convex-vs-sphere is mushy
-    body.position.set(x, 0.36, z); world.addBody(body); tag(body, 'cone');
-    dynamics.push({ mesh, body, home: body.position.clone() });
-    addTarget({ id: 'cone', name: 'Traffic Cone', hint: 'knock it over', points: 75, kind: 'topple', body, pos: V(x, 0, z),
-      lines: ["Cone down! Somewhere in Glasgow, a statue weeps.", "Health and safety has left the chat.", "That cone had it coming."] });
+    const x = 1.2, z = -11, parts = [];
+    const add = (geo, m, col) => { const gg = geo.clone().applyMatrix4(m).toNonIndexed(); const c = new THREE.Color(col), n = gg.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3); gg.setAttribute('color', new THREE.BufferAttribute(a, 3)); parts.push(gg); };
+    add(new THREE.ConeGeometry(0.2, 0.7, 12), new THREE.Matrix4(), 0xff6a00);
+    add(new THREE.CylinderGeometry(0.09, 0.13, 0.1, 12), new THREE.Matrix4().makeTranslation(0, 0.05, 0), 0xffffff);
+    add(new THREE.BoxGeometry(0.45, 0.04, 0.45), new THREE.Matrix4().makeTranslation(0, -0.33, 0), 0x222222);
+    const geo = mergeSimple(parts);
+    const b = new CANNON.Body({ mass: 0.6, material: mats.ground, shape: new CANNON.Box(new CANNON.Vec3(0.16, 0.35, 0.16)) }); // box hull: cannon convex-vs-sphere is mushy
+    b.position.set(x, 0.36, z); b.userData = { target: 'cone' }; world.addBody(b);
+    dynamics.push({ geo, body: b, home: b.position.clone() });
+    addTarget({ id: 'cone', name: 'Traffic Cone', hint: 'knock it over', points: 75, kind: 'topple', body: b, pos: V(x, 0, z), stand: V(x, 0, z - 3.6), aim: V(x, 0.3, z),
+      lines: ['Cone down! Somewhere in Glasgow, a statue weeps.', 'Health and safety has left the chat.', 'That cone had it coming.'] });
   }
-  // 4. Lamppost (thin, pricier)
+  // 4. Lamppost with a blue ribbon
   {
-    const p = lamppost(4.85, -5 + 0); tag(p.body, 'lamp');
-    const rib = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.6), new THREE.MeshLambertMaterial({ color: 0x1e4fa8, side: THREE.DoubleSide }));
-    rib.position.set(4.85, 2.4, -5.15); scene.add(rib);
-    addTarget({ id: 'lamp', name: 'Lamppost (blue ribbon)', hint: 'ping the post', points: 100, kind: 'hit', pos: V(4.85, PAVE, -5), ringR: 0.8,
-      lines: ["PING! Off the post!", "Clang! The whole street heard that.", "Woodwork! ...well, ironwork."] });
+    lamppost(4.85, -5, PAVE, 'lamp');
+    solid('flat', 4.85, 2.4, -5.15, 0.03, 0.6, 0.25, 0x1e4fa8, { phys: false });
+    addTarget({ id: 'lamp', name: 'Lamppost (blue ribbon)', hint: 'ping the post', points: 100, kind: 'hit', pos: V(4.85, PAVE, -5), ringR: 0.8, stand: V(1.6, 0, -5), aim: V(4.85, 0.6, -5),
+      lines: ['PING! Off the post!', 'Clang! The whole street heard that.', 'Woodwork! ...well, ironwork.'] });
   }
   // 5. Close passage (kick it through)
-  addTarget({ id: 'close', name: "Kicker's Close", hint: 'kick it through the close', points: 125, kind: 'zone', pos: V(-7.5, 0, -9.25), ringR: 0.7,
+  addTarget({ id: 'close', name: "Kicker's Close", hint: 'kick it through the close', points: 125, kind: 'zone', pos: V(-7.5, 0, -9.25), ringR: 0.7, stand: V(-2.5, 0, -9.25), aim: V(-12, 0.3, -9.25),
     zone: new THREE.Box3(V(-13.5, 0, -10), V(-9, 3, -8.5)), minSpeed: 1,
-    lines: ["Threaded the needle! Right through the close.", "Through the pend like a ghost on a tour.", "Sneaky. Very Old Town."] });
+    lines: ['Threaded the needle! Right through the close.', 'Through the pend like a ghost on a tour.', 'Sneaky. Very Old Town.'] });
   // 6. Wee dug statue in the back court
   {
-    const x = -20, z = -12; tag(box(x, 0.6, z, 1.2, 1.2, 1.2, darkStone).body, 'dug');
-    const dog = M(0x3d3a33);
-    box(x, 1.5, z, 0.35, 0.3, 0.75, dog, { phys: false }); box(x, 1.75, z - 0.42, 0.28, 0.28, 0.3, dog, { phys: false });
-    for (const [dx, dz] of [[-0.12, -0.25], [0.12, -0.25], [-0.12, 0.25], [0.12, 0.25]]) box(x + dx, 1.28, z + dz, 0.08, 0.18, 0.08, dog, { phys: false });
-    const b = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Box(new CANNON.Vec3(0.62, 1.0, 0.62)) });
-    b.position.set(x, 1.0, z); world.addBody(b); tag(b, 'dug');
+    const x = -20, z = -12, dog = 0x3d3a33;
+    solid('stone', x, 0.6, z, 1.2, 1.2, 1.2, 0x9c8a72, { target: 'dug', tile: 1.5 });
+    solid('metal', x, 1.5, z, 0.35, 0.3, 0.75, dog, { phys: false }); solid('metal', x, 1.75, z - 0.42, 0.28, 0.28, 0.3, dog, { phys: false });
+    for (const [dx, dz] of [[-0.12, -0.25], [0.12, -0.25], [-0.12, 0.25], [0.12, 0.25]]) solid('metal', x + dx, 1.28, z + dz, 0.08, 0.18, 0.08, dog, { phys: false });
+    boxBody(x, 1.0, z, 1.24, 2.0, 1.24, { target: 'dug' });
     sign('A FAITHFUL WEE DUG', x + 0.61, 0.8, z, 1.0, 0.16, Math.PI / 2, '#d4af37', '#3a2a10', 'bold 44px Georgia');
-    addTarget({ id: 'dug', name: 'Wee Dug Statue', hint: 'hit the statue (find the back court)', points: 125, kind: 'hit', pos: V(x, 0, z), ringR: 1.4,
-      lines: ["Sorry, pal! Rub his nose for luck.", "Bobby's cousin did not appreciate that.", "Good boy. Didnae even flinch."] });
+    addTarget({ id: 'dug', name: 'Wee Dug Statue', hint: 'hit the statue (find the back court)', points: 125, kind: 'hit', pos: V(x, 0, z), ringR: 1.4, stand: V(-16.5, 0, z), aim: V(x, 0.5, z),
+      lines: ['Sorry, pal! Rub his nose for luck.', "Bobby's cousin did not appreciate that.", 'Good boy. Didnae even flinch.'] });
   }
-  // 7. Bakery door (marked door)
+  // 7. Bakery door (marked)
   {
-    const door = box(6.84, PAVE + 1.1, 5, 0.1, 2.2, 1.1, M(0xffffff, { map: doorTargetTexture() }));
-    tag(door.body, 'door');
-    addTarget({ id: 'door', name: "Bakery Door", hint: 'strike the marked door', points: 75, kind: 'hit', pos: V(6.3, PAVE, 5), ringR: 0.9,
-      lines: ["Knock knock! 'We're SHUT, son.'", "Mrs Mackay is coming oot. Run.", "One steak bake, special delivery."] });
+    solid('wood', 6.84, PAVE + 1.1, 5, 0.1, 2.2, 1.1, 0x8e1c1c, { target: 'door' });
+    quad('atlas', 6.785, PAVE + 1.1, 5, 1.1, 2.2, -Math.PI / 2, atlas.draw(128, 256, drawTargetDoor));
+    addTarget({ id: 'door', name: 'Bakery Door', hint: 'strike the marked door', points: 75, kind: 'hit', pos: V(6.3, PAVE, 5), ringR: 0.9, stand: V(2.4, 0, 5), aim: V(6.8, 0.6, 5),
+      lines: ["Knock knock! 'We're SHUT, son.'", 'Mrs Mackay is coming oot. Run.', 'One steak bake, special delivery.'] });
   }
   // 8. Pillar box
   {
-    const p = cyl(-5.5, PAVE + 0.75, 12, 0.3, 0.3, 1.5, M(0xc8102e), { seg: 14 });
-    cyl(-5.5, PAVE + 1.55, 12, 0.34, 0.34, 0.12, M(0xc8102e), { phys: false, seg: 14 });
-    tag(p.body, 'post');
-    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(-5.5, PAVE, 12), ringR: 0.8,
-      lines: ["First class!", "Signed for. Delivered.", "Royal Mail: 'Is this a parcel?'"] });
+    cyl('flat', -5.5, PAVE + 0.75, 12, 0.3, 0.3, 1.5, 0xc8102e, { seg: 14, target: 'post' });
+    cyl('flat', -5.5, PAVE + 1.55, 12, 0.34, 0.34, 0.12, 0xc8102e, { phys: false, seg: 14 });
+    solid('flat', -5.22, PAVE + 1.15, 12, 0.08, 0.06, 0.3, 0x1a1a1a, { phys: false });
+    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(-5.5, PAVE, 12), ringR: 0.8, stand: V(-2.2, 0, 12), aim: V(-5.5, 0.6, 12),
+      lines: ['First class!', 'Signed for. Delivered.', "Royal Mail: 'Is this a parcel?'"] });
   }
   // 9. Busker's open guitar case (roll it in)
   {
-    const x = -1.8, z = 22, cm = M(0x222222), lining = M(0x7a1030);
-    box(x, 0.03, z, 1.3, 0.04, 0.6, lining, { phys: false });
-    box(x, 0.06, z - 0.32, 1.3, 0.12, 0.04, cm); box(x, 0.06, z + 0.32, 1.3, 0.12, 0.04, cm); box(x - 0.65, 0.06, z, 0.04, 0.12, 0.6, cm);
-    const lidC = box(x + 0.0, 0.25, z + 0.55, 1.3, 0.5, 0.04, cm, { phys: false }); lidC.mesh.rotation.x = 0.4;
-    sign('TIPS WELCOME', x, 0.08, z, 0.8, 0.14, 0, '#7a1030', '#f1d98a').rotation.x = -Math.PI / 2;
-    addTarget({ id: 'case', name: "Busker's Case", hint: 'roll it into the case (open end faces east)', points: 100, kind: 'zone', pos: V(x, 0, z), ringR: 1.0,
+    const x = -1.8, z = 22, cm = 0x222222;
+    solid('flat', x, 0.03, z, 1.3, 0.04, 0.6, 0x7a1030, { phys: false });
+    solid('flat', x, 0.06, z - 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x, 0.06, z + 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x - 0.65, 0.06, z, 0.04, 0.12, 0.6, cm);
+    solid('flat', x, 0.25, z + 0.55, 1.3, 0.5, 0.04, cm, { phys: false, rx: 0.4 });
+    quad('atlas', x, 0.06, z, 0.8, 0.14, 0, atlas.sign('TIPS WELCOME', '#7a1030', '#f1d98a', 0.8 / 0.14), 0xffffff, { rx: -Math.PI / 2 });
+    addTarget({ id: 'case', name: "Busker's Case", hint: 'roll it into the case (open end faces east)', points: 100, kind: 'zone', pos: V(x, 0, z), ringR: 1.0, stand: V(2.2, 0, z), aim: V(x, 0.1, z),
       zone: new THREE.Box3(V(x - 0.62, 0, z - 0.3), V(x + 0.65, 0.4, z + 0.3)), maxSpeed: 4,
-      lines: ["Busker: 'Cheers pal, but I wanted a fiver.'", "Into the case! Encore!", "That's mair than he made all day."] });
+      lines: ["Busker: 'Cheers pal, but I wanted a fiver.'", 'Into the case! Encore!', "That's mair than he made all day."] });
   }
-  // 10. Police box on the terrace
-  {
-    const x = 5.2, z = 56, y = RAMP.rise, pb = M(0x123a7a);
-    const b = box(x, y + 1.3, z, 1.3, 2.6, 1.3, pb); tag(b.body, 'tardis');
-    box(x, y + 2.75, z, 1.1, 0.3, 1.1, pb, { phys: false });
-    sign('POLICE BOX', x - 0.66, y + 2.35, z, 1.1, 0.2, -Math.PI / 2, '#111', '#fff', 'bold 60px Arial');
-    addTarget({ id: 'tardis', name: 'Police Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: V(x - 0.9, y, z), ringR: 1.0,
-      lines: ["It's bigger on the inside, but you hit the outside.", "Polis! ...no, it's empty. Phew.", "Exterminate! Wait, wrong show."] });
-  }
-  // 11. Builders' skip on the terrace (get it in)
-  {
-    const x = -4.2, z = 61, y = RAMP.rise, w = 2.6, d = 1.6, h = 0.9, th = 0.08, sm = M(0xe0a400);
-    box(x, y + 0.05, z, w, 0.1, d, sm);
-    box(x - w / 2, y + h / 2, z, th, h, d, sm); box(x + w / 2, y + h / 2, z, th, h, d, sm);
-    box(x, y + h / 2, z - d / 2, w, h, th, sm); box(x, y + h / 2, z + d / 2, w, h, th, sm);
-    box(x + 0.4, y + 0.25, z + 0.2, 0.8, 0.3, 0.5, M(0x6b5a45), { phys: false });
-    addTarget({ id: 'skip', name: "Builders' Skip", hint: 'chip it into the skip', points: 150, kind: 'zone', pos: V(x, y, z), ringR: 1.8,
-      zone: new THREE.Box3(V(x - w / 2, y + 0.05, z - d / 2), V(x + w / 2, y + h, z + d / 2)),
-      lines: ["In the skip! Tidy.", "Builder: 'Oi! That's ma lunch in there!'", "Chipped in like a pro."] });
-  }
-  // decorative bench on terrace (with castle view)
-  { const x = 0, z = 64.6, y = RAMP.rise, bm = wood(0x8a6a48, 2, 1); box(x, y + 0.45, z, 1.9, 0.08, 0.5, bm); box(x, y + 0.22, z, 1.7, 0.44, 0.3, iron); }
+  // 10 + 11 on the terrace (north section)
+  inNorth(() => {
+    const y = RAMP.rise;
+    { const x = 5.2, z = 26, pb = 0x123a7a;
+      solid('flat', x, y + 1.3, z, 1.3, 2.6, 1.3, pb, { target: 'tardis' });
+      solid('flat', x, y + 2.75, z, 1.1, 0.3, 1.1, pb, { phys: false });
+      sign('POLICE BOX', x - 0.66, y + 2.35, z, 1.1, 0.2, -Math.PI / 2, '#111', '#fff', 'bold 60px Arial');
+      for (const k of [-0.3, 0.3]) solid('glass', x - 0.66, y + 1.8, z + k, 0.02, 0.4, 0.4, 0xffffff, { phys: false });
+      addTarget({ id: 'tardis', name: 'Police Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: W(x - 0.9, y, z), ringR: 1.0, stand: W(1.6, y, z), aim: W(x - 0.6, y + 0.6, z),
+        lines: ["It's bigger on the inside, but you hit the outside.", 'Polis! ...no, it\'s empty. Phew.', 'Exterminate! Wait, wrong show.'] }); }
+    { const x = -4.2, z = 31, w = 2.6, d = 1.6, h = 0.9, th = 0.08, sm = 0xe0a400;
+      solid('flat', x, y + 0.05, z, w, 0.1, d, sm);
+      solid('flat', x - w / 2, y + h / 2, z, th, h, d, sm); solid('flat', x + w / 2, y + h / 2, z, th, h, d, sm);
+      solid('flat', x, y + h / 2, z - d / 2, w, h, th, sm); solid('flat', x, y + h / 2, z + d / 2, w, h, th, sm);
+      solid('flat', x + 0.4, y + 0.25, z + 0.2, 0.8, 0.3, 0.5, 0x6b5a45, { phys: false });
+      addTarget({ id: 'skip', name: "Builders' Skip", hint: 'chip it into the skip', points: 150, kind: 'zone', pos: W(x, y, z), ringR: 1.8, stand: W(x, y, z - 6), aim: W(x, y + 0.5, z),
+        zone: new THREE.Box3(V(x - w / 2, y + 0.05, z - d / 2), V(x + w / 2, y + h, z + d / 2)),
+        lines: ['In the skip! Tidy.', "Builder: 'Oi! That's ma lunch in there!'", 'Chipped in like a pro.'] }); }
+    // decorative bench facing the Castle view
+    solid('wood', 0, y + 0.45, 34.6, 1.9, 0.08, 0.5, 0x8a6a48, { tile: 1 }); solid('metal', 0, y + 0.22, 34.6, 1.7, 0.44, 0.3, IRON);
+  });
 
-  // pigeons
-  const pigeons = [];
-  const pg = new THREE.SphereGeometry(0.09, 6, 4), ph = new THREE.SphereGeometry(0.05, 6, 4), pmat = M(0x6f7480), phm = M(0x4b5f6a);
-  for (const [cx, cy, cz] of [[-1, 0, -26], [3, 0, 8], [-3, 0, 16], [-18, 0, -5], [1, RAMP.rise, 60]]) {
-    for (let i = 0; i < 4; i++) {
-      const g = new THREE.Group(); const b = new THREE.Mesh(pg, pmat); b.scale.set(1, 0.8, 1.4); g.add(b);
-      const hd = new THREE.Mesh(ph, phm); hd.position.set(0, 0.08, -0.1); g.add(hd);
-      const home = new THREE.Vector3(cx + (Math.random() - 0.5) * 2, cy + 0.08, cz + (Math.random() - 0.5) * 2);
-      g.position.copy(home); g.rotation.y = Math.random() * 6.28; scene.add(g);
-      pigeons.push({ g, home, state: 'idle', t: Math.random() * 3, vel: new THREE.Vector3() });
-    }
-  }
-  return { targets, dynamics, pigeons };
+  // ---------- pigeons (2 instanced meshes, 20 birds) ----------
+  const groups = [[-1, 0, -26], [3, 0, 8], [-3, 0, 16], [-18, 0, -5]].map((p) => V(...p));
+  inNorth(() => groups.push(W(1, RAMP.rise, 30)));
+  const pig = { list: [], body: null, head: null };
+  const N = groups.length * 4;
+  pig.body = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), null, N);
+  pig.head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 6, 4), null, N);
+  groups.forEach((c, gi) => { for (let i = 0; i < 4; i++) {
+    const home = V(c.x + (rand() - 0.5) * 2, c.y + 0.08, c.z + (rand() - 0.5) * 2);
+    pig.list.push({ home, pos: home.clone(), rot: rand() * 6.28, state: 'idle', t: rand() * 3, vel: V(0, 0, 0) }); } });
+
+  // ---------- materials + build ----------
+  const materials = makeMaterials(P, facadeTex, atlas.tex);
+  pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead;
+  scene.add(pig.body, pig.head);
+  for (const d of dynamics) { d.mesh = new THREE.Mesh(d.geo, materials.flat); d.mesh.castShadow = P.shadows; scene.add(d.mesh); }
+  const batches = B.build(scene, materials, { shadows: P.shadows });
+
+  const tz = northToWorld(0, 0, 24);
+  const views = { spawn: [0, -36, 180, -12], midstreet: [0, 0, 180, -5], terrace: [tz.x, tz.z, 180 + BEND.yaw * 180 / Math.PI, 6, RAMP.rise + 0.9] };
+  return { targets, dynamics, pigeons: pig, materials, batches, views };
 }
 
-function saltireTex() {
-  const c = document.createElement('canvas'); c.width = 120; c.height = 80; const g = c.getContext('2d');
-  g.fillStyle = '#005eb8'; g.fillRect(0, 0, 120, 80); g.strokeStyle = '#fff'; g.lineWidth = 14;
-  g.beginPath(); g.moveTo(0, 0); g.lineTo(120, 80); g.moveTo(120, 0); g.lineTo(0, 80); g.stroke();
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+function mergeSimple(parts) {
+  const g = new THREE.BufferGeometry(); const keys = ['position', 'normal', 'uv', 'color'];
+  for (const k of keys) { const arrs = parts.map((p) => p.attributes[k].array); const n = arrs.reduce((a, b) => a + b.length, 0); const out = new Float32Array(n); let o = 0; for (const a of arrs) { out.set(a, o); o += a.length; } g.setAttribute(k, new THREE.BufferAttribute(out, parts[0].attributes[k].itemSize)); }
+  return g;
 }
 
-export function groundHeightAt(z) {
-  if (z <= RAMP.z0) return 0;
-  if (z >= RAMP.z1) return RAMP.rise;
-  return RAMP.rise * (z - RAMP.z0) / (RAMP.z1 - RAMP.z0);
+// One material per bucket, shared by everything. Lambert on low/medium, PBR on high.
+function makeMaterials(P, facadeTex, atlasTex) {
+  const mk = (params) => {
+    const p = { vertexColors: true, ...params };
+    if (!P.pbr) { delete p.roughness; delete p.metalness; delete p.roughnessMap; delete p.envMapIntensity; return new THREE.MeshLambertMaterial(p); }
+    return new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...p });
+  };
+  return {
+    flat: mk({}),
+    metal: mk({ metalness: 0.65, roughness: 0.4 }),
+    glass: mk({ color: P.pbr ? 0x2b3a48 : 0x41505c, emissive: 0x2e2616, roughness: 0.12, metalness: 0.3 }),
+    lamp: new THREE.MeshBasicMaterial({ color: 0xffe2a0 }),
+    facade: mk({ map: facadeTex, roughness: 0.9 }),
+    stone: mk({ ...pbrMaps('sandstone') }),
+    roof: mk({ ...pbrMaps('slate', { normal: false }) }),
+    cobble: mk({ ...pbrMaps('cobble') }),
+    paving: mk({ ...pbrMaps('paving') }),
+    wood: mk({ ...pbrMaps('wood', { normal: false }) }),
+    atlas: mk({ map: atlasTex, roughness: 0.7 }),
+    pigeon: new THREE.MeshLambertMaterial({ color: 0x6f7480 }),
+    pigeonHead: new THREE.MeshLambertMaterial({ color: 0x4b5f6a }),
+  };
 }
