@@ -184,3 +184,16 @@ export function ballTexture() {
   return tx;
 }
 function norm(p) { const l = Math.hypot(...p); return [p[0] / l, p[1] / l, p[2] / l]; }
+
+// Harling / pebbledash: small procedural speckle (256 px, tiled). Tinted per building with vertex colours.
+let harlCache = null;
+export function harlTexture() {
+  if (harlCache) return harlCache;
+  const S = 256, [c, g] = canvas(S, S), img = g.createImageData(S, S), d = img.data;
+  let seed = 9; const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < S * S; i++) { const v = 205 + r() * 40 - (r() < 0.08 ? 70 * r() : 0); d[i * 4] = v; d[i * 4 + 1] = v * 0.99; d[i * 4 + 2] = v * 0.96; d[i * 4 + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  // faint rain streaks
+  g.globalAlpha = 0.06; g.fillStyle = '#3a3a3a'; for (let i = 0; i < 40; i++) g.fillRect(r() * S, r() * S * 0.3, 1 + r() * 2, 40 + r() * 120);
+  harlCache = canvasTex(c, true); return harlCache;
+}

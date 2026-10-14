@@ -37,3 +37,20 @@ body.touch #crosshair{width:8px;height:8px}
 .gfx{font-size:13px;margin:6px 0;opacity:.95}
 .card .gfx button{font-size:12px;padding:4px 10px;margin:2px;background:#3d4352;color:#fff;border:1px solid #777}
 .card .gfx button.on{background:#ffd75e;color:#222}
+
+#wallet{pointer-events:none;font-size:15px;margin-top:2px}
+#wallet b{color:#9fe08a}
+#wallet .coin{display:inline-block;width:20px;height:20px;border-radius:50%;background:#e6c34a;color:#5a4300;text-align:center;font-weight:800;line-height:20px;font-size:13px;text-shadow:none}
+#goalBar{width:150px;height:7px;background:rgba(0,0,0,.45);border-radius:4px;overflow:hidden;margin:3px 0 1px;border:1px solid rgba(255,255,255,.35)}
+#goalFill{height:100%;width:0;background:linear-gradient(90deg,#f7a234,#ffd75e);transition:width .5s}
+#goalTxt{font-size:11px;opacity:.9}
+#wallet.full #goalFill{background:#5fd35f}
+#wallet.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.18)}}
+#goalCard{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,18,28,.55);z-index:25;padding:12px}
+#goalCard.hidden{display:none}
+.card.goal{border-color:#ffd75e;animation:pop .6s}
+.card.goal .big{font-size:44px}
+.levels{font-size:14px;margin:6px 0}
+.card .levels button{font-size:14px;padding:6px 14px;margin:3px;background:#3d4352;color:#fff;border:1px solid #777}
+.card .levels button.on{background:#ffd75e;color:#222}

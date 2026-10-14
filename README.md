@@ -67,6 +67,39 @@ See CREDITS.md for licences.
 - Whether the phone gets hot.
 - Any control problems: joystick, look drag, kick charge, BALL button.
 
+## Levels (v1.4)
+- **1. West Pilton** (default for new players). A fictionalised north-Edinburgh scheme inspired by the 1930s–50s Edinburgh Corporation housing (City Architect E. J. MacRae). It has:
+  - harled three-storey flatted blocks with pitched roofs, and a flat-roofed post-war block;
+  - four-in-a-block cottage flats with low walls, hedges and green bins;
+  - a drying green up a grassy bank, lock-up garages, a bus stop, and a shop parade with The Pilton Plaice chippy;
+  - views to the Forth, Fife, the Granton gasholder frame and the tower blocks.
+- **2. The Grassmarket**: unchanged, 11 targets.
+- Switch levels with the level buttons in the menu, **Travel** (pause menu), or `?level=pilton` / `?level=grassmarket`. The last level played is remembered.
+- Code layout:
+  - `src/levels/*.js` are per-level data modules: builder, targets, spawn, ball spawns, bounds, intro text.
+  - `src/levels/index.js` picks the level.
+  - The core systems (player, controls, ball, kick, hold-on-hill, scoring, HUD, wallet, audio, presets) are in `main.js`, `controls.js`, `wallet.js`, `audio.js` and `settings.js`.
+
+### West Pilton targets
+| Target | Difficulty | £ |
+|---|---|---|
+| Garage door No.4 | easy | 0.40 |
+| Abandoned trolley | easy | 0.50 |
+| Bus stop | medium | 0.75 |
+| Lamppost (lost cat) | medium | 0.75 |
+| Communal bin (chip in) | medium | 1.00 |
+| Drying green poles (up the bank) | hard | 1.25 |
+| Green wheelie bin (chip in) | hard | 1.50 |
+| "No Ball Games" sign | hard | 1.25 |
+
+## Pocket money
+- Every target pays out (Grassmarket targets pay half their points in pence).
+- Bonus +25p for a **Bullseye** (a hit near the centre with no bounce on the way) or **Clean in** (straight into a zone target).
+- Goal: a chippy and an Irn-Bru, £6.50. The HUD shows a progress bar, and a "Chippy unlocked!" card appears when you reach it.
+- Walk up to the counter at The Pilton Plaice to buy a supper (£6.50).
+- Saved on the device. Reset it from the pause menu.
+- No shops, inventory or upgrades. Kicking and exploring are never restricted.
+
 ## Ball recall (v1.2.1)
 - **BALL** (or R) brings back the ball you last kicked. If you haven't kicked one yet, it brings the nearest. It never creates a ball. The 3 placed balls (street, back court, terrace) are spares by design.
 - The recalled ball is held at your feet: it can't roll downhill. Kick it as normal (it flies exactly like a resting ball), or walk more than 1.6 m away to let it go.

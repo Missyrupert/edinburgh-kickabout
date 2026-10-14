@@ -14,7 +14,7 @@ export const NORTH = new THREE.Matrix4().makeTranslation(0, 0, BEND.pivotZ).mult
 export const northToWorld = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(NORTH);
 export const rampHeight = (zl) => RAMP.rise * THREE.MathUtils.clamp(zl / RAMP.len, 0, 1);
 
-function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+export function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 export function buildWorld(scene, world, mats, P) {
   const rand = mulberry32(1707); // deterministic layout (tests + screenshots)
@@ -414,13 +414,13 @@ export function buildWorld(scene, world, mats, P) {
   return { targets, dynamics, pigeons: pig, materials, batches, views };
 }
 
-function mergeSimple(parts) {
+export function mergeSimple(parts) {
   const g = new THREE.BufferGeometry(); const keys = ['position', 'normal', 'uv', 'color'];
   for (const k of keys) { const arrs = parts.map((p) => p.attributes[k].array); const n = arrs.reduce((a, b) => a + b.length, 0); const out = new Float32Array(n); let o = 0; for (const a of arrs) { out.set(a, o); o += a.length; } g.setAttribute(k, new THREE.BufferAttribute(out, parts[0].attributes[k].itemSize)); }
   return g;
 }
 
-function hazed(m, k) {
+export function hazed(m, k) {
   m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', `#ifdef USE_FOG
     float fogFactor = smoothstep( fogNear, fogFar, vFogDepth * ${k.toFixed(2)} );
     gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
@@ -428,7 +428,7 @@ function hazed(m, k) {
   m.customProgramCacheKey = () => 'hazed' + k; return m;
 }
 // One material per bucket, shared by everything. Lambert on low/medium, PBR on high.
-function makeMaterials(P, facadeTex, atlasTex) {
+export function makeMaterials(P, facadeTex, atlasTex) {
   const mk = (params) => {
     const p = { vertexColors: true, ...params };
     if (!P.pbr) { delete p.roughness; delete p.metalness; delete p.roughnessMap; delete p.envMapIntensity; return new THREE.MeshLambertMaterial(p); }

@@ -2,7 +2,7 @@
 import { chromium } from 'playwright-core';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-const PORT = 4179, URL = `http://127.0.0.1:${PORT}/`;
+const PORT = 4179, BASE = `http://127.0.0.1:${PORT}/`, URL = BASE + '?level=grassmarket';
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
 mkdirSync('screenshots', { recursive: true });
@@ -91,7 +91,7 @@ try {
     for (const t of g.targets) {
       const s = t.stand, a = t.aim, L = Math.hypot(a.x - s.x, a.z - s.z), ux = (a.x - s.x) / L, uz = (a.z - s.z) / L, yawDeg = Math.atan2(-ux, -uz) * 180 / Math.PI;
       let ok = null;
-      outer: for (const pw of [0.15, 0.25, 0.35, 0.45, 0.55, 0.7, 0.85, 1]) for (const p of [-25, -15, -5, 5, 15, 25, 35]) {
+      outer: for (const pw of [0.1, 0.125, 0.15, 0.175, 0.2, 0.25, 0.35, 0.45, 0.55, 0.7, 0.85, 1]) for (const p of [-25, -15, -5, 5, 15, 25, 35]) {
         g.restart(); g.start(); g.teleport(s.x, s.z, yawDeg, p, s.y + 1); g.placeBall(0, s.x + ux * 0.8, s.y + 0.4, s.z + uz * 0.8);
         g.simulate(0.4); g.teleport(s.x, s.z, yawDeg, p); g.kick(pw); g.simulate(3);
         if (t.done) { ok = [pw, p]; break outer; }
@@ -100,7 +100,7 @@ try {
     }
     Math.random = rnd; g.restart(); return { n: g.targets.length, res };
   });
-  check('all 11 targets scoreable', all.n === 11 && Object.values(all.res).every(Boolean), JSON.stringify(all));
+  check('Grassmarket: all 11 targets scoreable', all.n === 11 && Object.values(all.res).every(Boolean), JSON.stringify(all));
   // fixed timestep: same kick, frame steps of 1/30 vs 1/144 -> same trajectory
   const fts = await page.evaluate(() => {
     const g = window.__game; const r = Math.random; Math.random = () => 0.5; const run = (dt) => {
@@ -116,7 +116,7 @@ try {
   // graphics presets
   for (const [name, mat, sh] of [['low', 'MeshLambertMaterial', false], ['medium', 'MeshLambertMaterial', false], ['high', 'MeshStandardMaterial', true]]) {
     const pp = await browser.newPage({ viewport: { width: 960, height: 540 } }); const pe = []; pp.on('pageerror', (e) => pe.push(String(e)));
-    await pp.goto(URL + '?preset=' + name + (name === 'low' ? '&perf=1' : '')); await pp.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 30000 }).catch(() => {});
+    await pp.goto(URL + '&preset=' + name + (name === 'low' ? '&perf=1' : '')); await pp.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 30000 }).catch(() => {});
     await pp.evaluate(() => window.__game.start()); await wait(pp, 1200);
     const info = await pp.evaluate(() => { const g = window.__game; const types = new Set(); g.scene.traverse((o) => o.isMesh && o.material?.type && types.add(o.material.type)); return { preset: g.preset, src: g.presetSource, shadows: g.renderer.shadowMap.enabled, types: [...types], calls: g.renderer.info.render.calls, perf: document.getElementById('perf').classList.contains('hidden') ? '' : document.getElementById('perf').textContent }; });
     const cs = await pp.evaluate(() => { const ms = []; window.__game.scene.traverse((o) => o.isMesh && /^batch:castle/.test(o.name) && ms.push(o)); return { calls: ms.length, tris: ms.reduce((t, m) => t + (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3, 0), shadow: ms.some((m) => m.castShadow), newTex: ms.flatMap((m) => [m.material.map]).filter(Boolean).every((t) => /sandstone/.test(t.image?.src || t.image?.currentSrc || '')) }; });
@@ -224,6 +224,94 @@ try {
   const mft = await mp.evaluate(() => new Promise((res) => { const ts = []; const f = (t) => { ts.push(t); ts.length < 61 ? requestAnimationFrame(f) : res(ts); }; requestAnimationFrame(f); }));
   results.push(`INFO mobile-profile frame time ${((mft[60] - mft[0]) / 60).toFixed(1)} ms (shadows ${await mp.evaluate(() => 'off')}, SwiftShader)`);
   check('no console errors (mobile)', merr.length === 0, merr.join(' | '));
+  await ctx.close();
+  // ================= West Pilton (level 1) =================
+  const pc = await browser.newContext({ viewport: { width: 1280, height: 720 } }); const pg = await pc.newPage();
+  const perr = []; pg.on('console', (m) => m.type() === 'error' && perr.push(m.text())); pg.on('pageerror', (e) => perr.push(String(e)));
+  const ready = async (p = pg) => { await p.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 60000 }); };
+  const go = async (url, p = pg) => { await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 }); await ready(p); };
+  await go(BASE); // brand-new player: no ?level, empty storage
+  check('new players start in West Pilton', await pg.evaluate(() => window.__game.level === 'pilton' && window.__game.targets.length >= 5 && window.__game.targets.length <= 8), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
+  await pg.screenshot({ path: 'screenshots/pilton-menu.png' });
+  // level select: menu button -> Grassmarket, travel button -> back to Pilton, ?level= param
+  await Promise.all([pg.waitForURL(/level=grassmarket/, { timeout: 60000 }), pg.click('[data-level="grassmarket"]')]); await ready();
+  const lv1 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
+  await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000 }), pg.click('#travelBtn')]); await ready();
+  const lv2 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
+  await go(BASE); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
+  check('level transition both ways (menu + travel button + saved)', lv1[0] === 'grassmarket' && lv1[1] === 11 && lv2[0] === 'pilton' && lv3 === 'pilton', JSON.stringify({ lv1, lv2, lv3 }));
+  await go(BASE + '?level=pilton');
+  await pg.evaluate(() => { window.__game.resetWallet(); window.__game.start(); }); await wait(pg, 1200);
+  await pg.screenshot({ path: 'screenshots/pilton-desktop-spawn.png' });
+  // every Pilton target scoreable from its stand point; wallet earns per target (difficulty + bonus)
+  const ps = await pg.evaluate(() => {
+    const g = window.__game; const res = {}; const rnd = Math.random; Math.random = () => 0.5; let pence = 0;
+    for (const t of g.targets) {
+      const s = t.stand, a = t.aim, L = Math.hypot(a.x - s.x, a.z - s.z), ux = (a.x - s.x) / L, uz = (a.z - s.z) / L, yawDeg = Math.atan2(-ux, -uz) * 180 / Math.PI;
+      let ok = null;
+      outer: for (const pw of [0.1, 0.125, 0.15, 0.175, 0.2, 0.25, 0.35, 0.45, 0.55, 0.7, 0.85, 1]) for (const p of [-25, -15, -5, 5, 15, 25, 35]) {
+        g.restart(); g.start(); g.teleport(s.x, s.z, yawDeg, p, s.y + 1); g.placeBall(0, s.x + ux * 0.8, s.y + 0.4, s.z + uz * 0.8);
+        g.simulate(0.4); g.teleport(s.x, s.z, yawDeg, p); g.kick(pw); g.simulate(3);
+        if (t.done) { ok = { pw, p, pence: g.lastEarn.pence, bonus: g.lastEarn.bonus, diff: t.diff }; pence += g.lastEarn.pence; break outer; }
+      }
+      res[t.id] = ok;
+    }
+    Math.random = rnd; g.restart(); return { n: g.targets.length, res, pence, wallet: g.wallet.pence };
+  });
+  check('Pilton: every target scoreable from a standing spot', Object.values(ps.res).every(Boolean), JSON.stringify(ps.res));
+  check('wallet earns per target (difficulty + bonus)', ps.pence === ps.wallet && ps.pence > 0 && new Set(Object.values(ps.res).map((r) => r && r.pence)).size >= 3, `earned ${ps.pence}p, wallet ${ps.wallet}p`);
+  // stand spots are reachable on foot from the spawn (autopilot uses normal movement + collisions)
+  const preach = await pg.evaluate(() => { const g = window.__game; const out = {};
+    for (const t of g.targets) { g.restart(); g.start(); const route = t.id === 'gap' ? [[0, -20], [6, -4], [t.stand.x, t.stand.z]] : t.stand.x < -4 ? [[-2, t.stand.z], [t.stand.x, t.stand.z]] : [[2, t.stand.z], [t.stand.x, t.stand.z]];
+      const ap = g.walk(route); let s = 0; while (!ap.done && s < 40) { g.simulate(0.5); s += 0.5; } out[t.id] = ap.done && Math.hypot(g.player.position.x - t.stand.x, g.player.position.z - t.stand.z) < 1; }
+    g.restart(); return out; });
+  check('Pilton: every stand spot reachable on foot', Object.values(preach).every(Boolean), JSON.stringify(preach));
+  // slope (grassy bank up to the drying green): no drift, recalled ball held, kick works
+  const pslope = await pg.evaluate(() => { const g = window.__game; const out = [];
+    for (const x of [8.8, 10.5, 12.3]) { g.restart(); g.start(); g.teleport(x, -4, 90, 0, 0.5 + (x - 8) * 0.24 + 0.5); g.simulate(0.6); const a = g.player.position.clone(); g.simulate(5); out.push(+g.player.position.distanceTo(a).toFixed(4)); }
+    g.restart(); g.start(); g.teleport(10.5, -4, 90, -10, 1.5); g.simulate(0.6); const held = [];
+    for (let i = 0; i < 3; i++) { g.fetchBall(); g.simulate(0.3); const b = g.balls[g.lastTouched].body, p = b.position.clone(); g.simulate(5); held.push(+b.position.distanceTo(p).toFixed(4)); }
+    const b = g.balls[g.lastTouched].body, p0 = b.position.clone(); const k = g.kick(0.5); g.simulate(1.5);
+    return { idle: out, held, kick: k, kd: +Math.hypot(b.position.x - p0.x, b.position.z - p0.z).toFixed(2), balls: g.balls.length }; });
+  check('Pilton bank: zero input => no drift; recalled ball held 5 s; kick works', pslope.idle.every((v) => v < 0.01) && pslope.held.every((v) => v < 0.005) && pslope.kick && pslope.kd > 4 && pslope.balls === 3, JSON.stringify(pslope));
+  // wallet persistence + reset + goal + chippy counter
+  await pg.reload({ waitUntil: 'domcontentloaded', timeout: 60000 }); await ready();
+  const persisted = await pg.evaluate(() => window.__game.wallet.pence);
+  check('wallet persists across reloads', persisted === ps.wallet, `${persisted}p after reload`);
+  await pg.evaluate(() => { const g = window.__game; g.resetWallet(); g.start(); g.teleport(-2, 18, 0, -10); }); await wait(pg, 1000);
+  const afterReset = await pg.evaluate(() => window.__game.wallet.pence);
+  // earn to the goal: score targets via the normal scoring path until >= goal
+  const goal = await pg.evaluate(async () => { const g = window.__game; const before = g.wallet.pence; for (const t of g.targets) { if (g.wallet.pence >= g.GOAL.pence) break; g.scoreTarget(t, 'Bullseye'); }
+    await new Promise((r) => setTimeout(r, 2600)); return { before, after: g.wallet.pence, goal: g.GOAL.pence, card: !document.getElementById('goalCard').classList.contains('hidden'), title: document.getElementById('goalTitle').textContent }; });
+  await pg.screenshot({ path: 'screenshots/pilton-goal-reached.png' });
+  check('wallet reset + goal reached shows "Chippy unlocked" card', afterReset === 0 && goal.after >= goal.goal && goal.card && /Chippy unlocked/.test(goal.title), JSON.stringify(goal));
+  await pg.click('#goalOk');
+  const buy = await pg.evaluate(async () => { const g = window.__game; const c = g.counter, before = g.wallet.pence; g.teleport(c.x, c.z - 1.2, 0, 0); g.simulate(0.2);
+    return { before, after: g.wallet.pence, suppers: g.wallet.suppers, title: document.getElementById('goalTitle').textContent, card: !document.getElementById('goalCard').classList.contains('hidden') }; });
+  await wait(pg, 600); await pg.screenshot({ path: 'screenshots/pilton-chippy-counter.png' });
+  check('chippy counter: buy a supper with the wallet', buy.after === buy.before - 650 && buy.suppers === 1 && buy.card && /fish supper/.test(buy.title), JSON.stringify(buy));
+  await pg.click('#goalOk');
+  // HUD + views
+  await pg.evaluate(() => { const g = window.__game; g.restart(); g.start(); g.teleport(0, -12, 180, -6); }); await wait(pg, 900);
+  await pg.screenshot({ path: 'screenshots/pilton-wallet-hud.png' });
+  for (const [n, v] of Object.entries(await pg.evaluate(() => window.__game.views))) { await pg.evaluate((v) => window.__game.teleport(v[0], v[1], v[2], v[3], v[4]), v); await wait(pg, 900); await pg.screenshot({ path: `screenshots/pilton-desktop-${n}.png` }); }
+  check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | '));
+  await pc.close();
+  // Pilton on a phone (landscape) with touch
+  const pm = await browser.newContext({ viewport: { width: 915, height: 412 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true });
+  const pmp = await pm.newPage(); const pmerr = []; pmp.on('pageerror', (e) => pmerr.push(String(e))); pmp.on('console', (m) => m.type() === 'error' && pmerr.push(m.text()));
+  await go(BASE, pmp); await wait(pmp, 800);
+  await pmp.screenshot({ path: 'screenshots/pilton-phone-menu.png' });
+  await pmp.tap('#startBtn'); await wait(pmp, 1500);
+  await pmp.screenshot({ path: 'screenshots/pilton-phone-landscape.png' });
+  const pt = await pmp.evaluate(async () => { const g = window.__game; g.teleport(0, -30, 180, -20); g.placeBall(0, 0, 0.3, -29.2); g.simulate(0.5); return g.balls[0].body.position.z; });
+  const kb2 = await pmp.locator('#btnKick').boundingBox(); const cdp2 = await pm.newCDPSession(pmp);
+  await cdp2.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: kb2.x + 30, y: kb2.y + 30 }] }); await wait(pmp, 400);
+  await cdp2.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pmp.evaluate(() => window.__game.waitSim(1.2));
+  const pt2 = await pmp.evaluate(() => window.__game.balls[0].body.position.z);
+  check('Pilton phone: touch KICK works, wallet HUD visible', pt2 - pt > 3 && await pmp.evaluate(() => getComputedStyle(document.getElementById('wallet')).display !== 'none'), `${pt.toFixed(2)} -> ${pt2.toFixed(2)}`);
+  await pmp.evaluate(() => window.__game.teleport(16, -4, 90, 0, 2.1)); await wait(pmp, 800); await pmp.screenshot({ path: 'screenshots/pilton-phone-drying-green.png' });
+  check('Pilton: no console errors (mobile)', pmerr.length === 0, pmerr.join(' | '));
 } catch (e) { check('script', false, String(e)); }
 await browser.close(); server.kill();
 console.log(results.join('\n'));
