@@ -67,6 +67,14 @@ See CREDITS.md for licences.
 - Whether the phone gets hot.
 - Any control problems: joystick, look drag, kick charge, BALL button.
 
+## Ball recall (v1.2.1)
+- **BALL** (or R) brings back the ball you last kicked. If you haven't kicked one yet, it brings the nearest. It never creates a ball. The 3 placed balls (street, back court, terrace) are spares by design.
+- The recalled ball is held at your feet: it can't roll downhill. Kick it as normal (it flies exactly like a resting ball), or walk more than 1.6 m away to let it go.
+- With no input you stand still on any slope.
+
+## To do later
+- Castle silhouette needs a better pass.
+
 ## Verify / profile
 - `npm run build && npm run verify`: headless checks.
 - `node scripts/profile.mjs dist <label> [?query]`: same views and same profile, saved to `perf/<label>.json`.

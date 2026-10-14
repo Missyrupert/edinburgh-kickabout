@@ -169,12 +169,31 @@ function nearestBall() {
   for (const b of balls) { const d = b.body.position.distanceTo(player.position); if (d < bd) { bd = d; best = b; } }
   return best;
 }
+// BALL recall: moves an existing ball (never spawns). Picks the ball you last kicked (the one you're
+// playing with), falling back to the nearest; the placed spare balls stay where they are.
+// The recalled ball is "trapped" at your feet: held still (kinematic, no gravity) so it can't roll
+// downhill, until you kick it or walk more than TRAP_RELEASE m away.
+const TRAP_DIST = 0.85, TRAP_RELEASE = 1.6;
+let lastTouched = null;
+function trap(b, x, y, z) {
+  b.trapped = true; b.body.type = CANNON.Body.KINEMATIC; b.body.updateMassProperties();
+  b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.copy(b.body.position);
+}
+function release(b) {
+  if (!b.trapped) return; b.trapped = false;
+  b.body.type = CANNON.Body.DYNAMIC; b.body.updateMassProperties(); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.body.wakeUp();
+  $('nearby').classList.remove('trap');
+}
 function fetchBall() {
   if (paused) return;
-  const b = nearestBall(), f = forwardFlat();
-  b.body.position.set(player.position.x + f.x * 1.2, player.position.y + 0.2, player.position.z + f.z * 1.2);
-  b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.copy(b.body.position);
-  toast('Here\'s your ba\'.', 1000);
+  const b = lastTouched || nearestBall(), f = forwardFlat();
+  const x = player.position.x + f.x * TRAP_DIST, z = player.position.z + f.z * TRAP_DIST;
+  // sit the ball snug on the ground under that spot (works on the ramp)
+  rayRes.reset(); const from = new CANNON.Vec3(x, player.position.y + 1, z); rayTo.set(x, player.position.y - 2, z);
+  world.raycastClosest(from, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
+  const y = rayRes.hasHit ? rayRes.hitPointWorld.y + BALL_R - 2e-6 :  player.position.y + 0.2;
+  release(b); trap(b, x, y, z); lastTouched = b;
+  toast('Here\'s your ba\' - foot on it. Kick, or walk off to let it go.', 1600);
 }
 let lastKickInfo = null;
 function kick(power) {
@@ -189,6 +208,7 @@ function kick(power) {
     if (dot < 0.3 && dist > 0.8) continue;
     const s = dot - dist * 0.3; if (s > bestScore) { bestScore = s; target = b; }
   }
+  if (target) { release(target); lastTouched = target; } // a trapped ball kicks exactly like a resting one
   if (!target) { sfx.whiff(); lastKickInfo = { power, hit: false }; return false; }
   const elev = THREE.MathUtils.clamp(pitch + 0.38, 0.03, 1.05);
   const speed = 4 + power * 19;
@@ -226,7 +246,8 @@ function scoreTarget(t) {
 function restart() {
   score = 0;
   for (const t of targets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd75e); }
-  for (const b of balls) { b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; b.prevP.copy(b.home); }
+  lastTouched = null;
+  for (const b of balls) { release(b); b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; b.prevP.copy(b.home); }
   for (const d of dynamics) { d.body.position.copy(d.home); d.body.quaternion.set(0, 0, 0, 1); d.body.velocity.setZero(); d.body.angularVelocity.setZero(); }
   player.position.copy(PLAYER_SPAWN); player.velocity.setZero(); yaw = Math.PI; pitch = -0.25; prevPlayer.copy(player.position);
   updateHud();
@@ -276,6 +297,13 @@ function fixedUpdate(h) {
   player.velocity.x += (wish.x * speed - player.velocity.x) * k;
   player.velocity.z += (wish.z * speed - player.velocity.z) * k;
   if (onGround && player.velocity.y > 0 && player.velocity.y < 2 && wish.lengthSq() > 0) player.velocity.y = Math.min(player.velocity.y, 1.5);
+  // Idle on the ground: the player sphere is frictionless (so it slides along walls), so on the ramp gravity
+  // used to slide it downhill (~0.15 m/s) with no input. Hold it still: zero velocity and cancel gravity.
+  if (onGround && wish.lengthSq() === 0 && player.velocity.y < 0.5) { player.velocity.set(0, 0, 0); player.force.y += player.mass * -world.gravity.y; }
+  for (const b of balls) if (b.trapped) {
+    b.body.velocity.setZero(); b.body.angularVelocity.setZero();
+    if (Math.hypot(b.body.position.x - player.position.x, b.body.position.z - player.position.z) > TRAP_RELEASE) release(b);
+  }
   world.step(h);
   for (const b of balls) { // rolling resistance on the ground
     const p = b.body.position; rayRes.reset(); rayTo.set(p.x, p.y - BALL_R - 0.06, p.z);
@@ -386,8 +414,8 @@ window.__game = {
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
-  placeBall(i, x, y, z) { const b = balls[i]; b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  kick, restart, world, renderer, scene, camera,
+  placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
+  kick, restart, fetchBall, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests

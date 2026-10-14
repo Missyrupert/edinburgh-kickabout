@@ -171,6 +171,48 @@ try {
   await mp.tap('#btnBall'); await wait(mp, 300);
   const bd = await mp.evaluate(() => { const g = window.__game, b = g.balls[0].body.position, p = g.player.position; return Math.min(...g.balls.map((bb) => Math.hypot(bb.body.position.x - p.x, bb.body.position.z - p.z))); });
   check('BALL button resets ball near player', bd < 2.5, `dist ${bd.toFixed(2)} m`);
+  // ---- v1.2.1 slope regressions (ramp, 10 deg, steepest walkable slope) ----
+  const RAMP = [3.15, 39.5], UPHILL = -161.7;
+  // touch release mid-move and pointercancel: player stops, then no drift for 5 s on the slope
+  for (const how of ['touchEnd', 'touchCancel']) {
+    await mp.evaluate(([x, z, yw]) => { const g = window.__game; g.restart(); g.start(); g.teleport(x, z, yw, 0, 2.6); g.simulate(0.3); }, [...RAMP, UPHILL]);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: cy }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx + 10, y: cy - 50 }] });
+    await mp.evaluate(() => window.__game.waitSim(0.5));
+    await cdp.send('Input.dispatchTouchEvent', { type: how, touchPoints: [] });
+    const d = await mp.evaluate(async () => { const g = window.__game; await g.waitSim(0.3); const a = g.player.position.clone(); const mi = { ...g.moveInput }; g.simulate(5); const b = g.player.position; return { moved: +Math.hypot(b.x - a.x, b.z - a.z).toFixed(4), input: mi }; });
+    check(`slope: ${how} mid-move stops player, no drift 5 s`, d.moved < 0.02 && !d.input.x && !d.input.y, JSON.stringify(d));
+  }
+  // idle on every slope point (bottom, middle, top of ramp)
+  const idle = await mp.evaluate(() => { const g = window.__game; const out = [];
+    for (const zl of [3, 10, 17]) { g.restart(); g.start(); const x = zl * Math.sin(0.32), z = 30 + zl * Math.cos(0.32); g.teleport(x, z, 0, 0, 0.6 + zl * 0.18); g.simulate(0.6); const a = g.player.position.clone(); g.simulate(5); out.push(+Math.hypot(g.player.position.x - a.x, g.player.position.z - a.z).toFixed(4)); } return out; });
+  check('slope: zero input => zero movement (ramp bottom/mid/top)', idle.every((v) => v < 0.01), JSON.stringify(idle));
+  // repeated recall on the ramp: no new balls, recalled ball stays put 5 s, then kick from trap works
+  const rec = await mp.evaluate(([x, z, yw]) => { const g = window.__game; g.restart(); g.start(); g.teleport(x, z, yw, -10, 2.6); g.simulate(0.4);
+    const nb = g.balls.length, nBodies = g.world.bodies.length, n3d = g.scene.children.length; const res = [];
+    for (let i = 0; i < 4; i++) { g.fetchBall(); g.simulate(0.3); const b = g.balls[g.lastTouched].body, p = b.position.clone(); g.simulate(5); res.push(+b.position.distanceTo(p).toFixed(4)); }
+    const b = g.balls[g.lastTouched].body, p = b.position.clone(); const k = g.kick(0.6); g.simulate(2);
+    const kd = Math.hypot(b.position.x - p.x, b.position.z - p.z);
+    // kick it, recall again: the SAME (last-kicked) ball comes back
+    const kicked = g.lastTouched; g.simulate(2); g.fetchBall(); const back = g.lastTouched;
+    return { balls: [nb, g.balls.length], bodies: [nBodies, g.world.bodies.length], meshes: [n3d, g.scene.children.length], heldDrift: res, kick: k, kickDist: +kd.toFixed(2), sameBall: kicked === back }; }, [...RAMP, UPHILL]);
+  check('slope: repeated BALL recall keeps ball count, ball held still 5 s each time', rec.balls[0] === 3 && rec.balls[1] === 3 && rec.bodies[0] === rec.bodies[1] && rec.meshes[0] === rec.meshes[1] && rec.heldDrift.every((v) => v < 0.005), JSON.stringify(rec));
+  check('slope: kick from trapped ball works; recall returns last-kicked ball', rec.kick && rec.kickDist > 5 && rec.sameBall, JSON.stringify(rec));
+  // trapped kick == normal kick (flat, identical setup), and multiple kicks in a row
+  const eq = await mp.evaluate(() => { const g = window.__game; const r = Math.random; Math.random = () => 0.5;
+    const run = (trapIt) => { g.restart(); g.start(); g.teleport(0, -30, 180, -10); g.simulate(0.5); if (trapIt) g.fetchBall(); else g.placeBall(0, 0, 0.22, -29.15);
+      g.simulate(0.5); const b = g.balls[0].body, s = b.position.clone(); g.kick(0.6); g.simulate(2.5); return Math.hypot(b.position.x - s.x, b.position.z - s.z); };
+    const a = run(false), b = run(true);
+    // multiple kicks: recall + kick 3 times on the ramp
+    g.restart(); g.start(); g.teleport(3.15, 39.5, -161.7, -10, 2.6); g.simulate(0.4); const ks = [];
+    for (let i = 0; i < 3; i++) { g.fetchBall(); g.simulate(0.3); const bb = g.balls[g.lastTouched].body, p = bb.position.clone(); const ok = g.kick(0.5); g.simulate(1.5); ks.push(ok && Math.hypot(bb.position.x - p.x, bb.position.z - p.z) > 4); }
+    Math.random = r; g.restart(); return { flat: +a.toFixed(3), trapped: +b.toFixed(3), multi: ks }; });
+  check('trapped-ball kick distance == resting-ball kick (flat)', Math.abs(eq.flat - eq.trapped) < 0.05, JSON.stringify(eq));
+  check('slope: multiple recall+kick cycles all launch', eq.multi.every(Boolean), JSON.stringify(eq.multi));
+  // walking away releases the trap (ball then obeys physics again)
+  const wa = await mp.evaluate(() => { const g = window.__game; g.restart(); g.start(); g.teleport(3.15, 39.5, -161.7, -10, 2.6); g.simulate(0.4); g.fetchBall(); g.simulate(0.3);
+    const held = g.trapped[g.lastTouched]; const ap = g.walk([[3.15 - 3 * Math.sin(0.32), 39.5 - 3 * Math.cos(0.32)]]); g.simulate(2); return { held, released: !g.trapped.some(Boolean) }; });
+  check('trap releases when player walks away', wa.held && wa.released, JSON.stringify(wa));
   await mp.evaluate(() => window.__game.teleport(0, -36, 180, -18)); await wait(mp, 600);
   await mp.screenshot({ path: 'screenshots/mobile-portrait-play.png' });
   await mp.setViewportSize({ width: 915, height: 412 }); await wait(mp, 800);

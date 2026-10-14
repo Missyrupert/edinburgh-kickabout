@@ -50,6 +50,13 @@ export class Controls {
     joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) upd(e); });
     const joyEnd = (e) => { if (e.pointerId !== joyId) return; joyId = null; this.move.x = this.move.y = 0; this.run = false; knob.style.transform = ''; };
     joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+    // never leave the stick "held": capture can be lost (system gesture, notification shade, tab switch)
+    // without a pointerup reaching the zone
+    joy.addEventListener('lostpointercapture', joyEnd);
+    addEventListener('pointerup', joyEnd); addEventListener('pointercancel', joyEnd);
+    const resetAll = () => { joyId = null; lookId = null; this.move.x = this.move.y = 0; this.run = false; knob.style.transform = ''; this.keys = {}; this.charging = false; };
+    addEventListener('blur', resetAll); document.addEventListener('visibilitychange', () => { if (document.hidden) resetAll(); });
+    addEventListener('touchend', (e) => { if (e.touches.length === 0) { joyId = null; this.move.x = this.move.y = 0; this.run = false; knob.style.transform = ''; } });
     look.addEventListener('pointerdown', (e) => { lookId = e.pointerId; look.setPointerCapture(e.pointerId); lx = e.clientX; ly = e.clientY; e.preventDefault(); });
     look.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; this.lookDX += (e.clientX - lx) * 1.6; this.lookDY += (e.clientY - ly) * 1.6; lx = e.clientX; ly = e.clientY; });
     const lookEnd = (e) => { if (e.pointerId === lookId) lookId = null; };
