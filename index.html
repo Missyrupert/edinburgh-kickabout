@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#2b2f3a" />
+<link rel="icon" href="/favicon.svg" />
+<title>Edinburgh Kickabout</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="hud">
+  <div id="score">Score <b id="scoreVal">0</b></div>
+  <div id="targets">Targets <b id="targetVal">0/0</b></div>
+  <div id="nearby"></div>
+</div>
+<div id="toast"></div>
+<div id="crosshair"></div>
+<div id="power"><div id="powerFill"></div></div>
+<div id="touch">
+  <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
+  <div id="lookZone"></div>
+  <button id="btnKick">KICK</button>
+  <button id="btnJump">JUMP</button>
+  <button id="btnBall">BALL</button>
+  <button id="btnPause">II</button>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>Edinburgh Kickabout</h1>
+    <p class="sub">A wee kickabout in the Old Town. Find a ba', find a target, take a shot.</p>
+    <div class="cols">
+      <div class="desk"><h3>Keyboard &amp; mouse</h3>
+        <ul><li><b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump</li>
+        <li><b>Mouse</b> look</li>
+        <li><b>Hold &amp; release left click</b> to kick (aim up to chip it)</li>
+        <li><b>R</b> fetch nearest ball · <b>Esc</b> pause</li></ul></div>
+      <div class="mob"><h3>Touch</h3>
+        <ul><li><b>Left thumb</b> joystick to walk (push far to run)</li>
+        <li><b>Drag right side</b> to look</li>
+        <li><b>Hold KICK</b>, release to shoot</li>
+        <li><b>BALL</b> fetches the ball · <b>JUMP</b></li></ul></div>
+    </div>
+    <p class="sub">11 targets are hidden around the street, the close and up the hill. Glowing rings mark them when you're near.</p>
+    <button id="startBtn">Play</button>
+    <button id="restartBtn" class="ghost">Restart game</button>
+  </div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
