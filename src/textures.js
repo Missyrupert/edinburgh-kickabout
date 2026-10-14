@@ -136,7 +136,10 @@ export function drawTargetDoor(g) {
 // ---------- football: original 1970s-style "triad" ball (no branding) ----------
 // The pattern is computed in 3D for every texel of an equirectangular map that matches
 // THREE.SphereGeometry's UV layout, so there is no stretching or seam at the poles/date line.
-export function ballTexture() {
+const ballCache = {};
+// style 'tango' (default, Tango/Telstar-inspired) or 'winter' (unlockable: 1980s-style orange winter ball, black pentagons)
+export function ballTexture(style = 'tango') {
+  if (ballCache[style]) return ballCache[style];
   const W = PRESET.texSize <= 512 ? 512 : 1024, H = W / 2;
   const [c, g] = canvas(W, H), img = g.createImageData(W, H), d = img.data;
   const t = (1 + Math.sqrt(5)) / 2;
@@ -156,7 +159,7 @@ export function ballTexture() {
   const R_IN = Math.cos(22 * deg), R_OUT = Math.cos(28 * deg), R_GAP = Math.cos(9 * deg), R_HUB = Math.cos(3.5 * deg);
   const SS = 2;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
-    let acc = 0, seam = 0;
+    let acc = 0, seam = 0, pent = 0;
     for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
       const u = (px + (sx + 0.5) / SS) / W, v = (py + (sy + 0.5) / SS) / H;
       const phi = u * Math.PI * 2, th = v * Math.PI;
@@ -168,6 +171,7 @@ export function ballTexture() {
       const band = bv < R_IN && bv > R_OUT && be < R_GAP;
       const black = band || (bf > R_HUB && bv < R_IN);
       acc += black ? 1 : 0;
+      if (bv / HP > bf / HH) pent++; // inside one of the 12 pentagon panels
       // panel seams: edges of the 32-panel truncated icosahedron (12 pentagons + 20 hexagons),
       // i.e. where the two best face-plane scores (n.p / plane distance) tie.
       const a1 = bv / HP, a2 = bv2 / HP, c1 = bf / HH, c2 = bf2 / HH;
@@ -176,12 +180,13 @@ export function ballTexture() {
     }
     const k = acc / (SS * SS), s = seam / (SS * SS), o = (py * W + px) * 4;
     let r = 244 - k * 226, gg = 243 - k * 225, b = 238 - k * 220;
+    if (style === 'winter') { const pk = pent / (SS * SS); r = 246 - pk * 226; gg = 118 - pk * 100; b = 24 - pk * 8; }
     r -= s * 45; gg -= s * 45; b -= s * 42;
     d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255;
   }
   g.putImageData(img, 0, 0);
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; track(W, H);
-  return tx;
+  ballCache[style] = tx; return tx;
 }
 function norm(p) { const l = Math.hypot(...p); return [p[0] / l, p[1] / l, p[2] / l]; }
 

@@ -317,6 +317,63 @@ try {
     }, ids);
     check(`${lv}: into-targets drop-in scores, side hits miss, chips score fairly`, Object.values(ot).every((r) => r.drops === r.dropN && r.miss === 0 && r.side === 0 && r.share >= 0.05 && r.share <= 0.55), JSON.stringify(ot));
   }
+  // ---------- experimental challenges + unlocks ----------
+  await go(BASE + '?level=pilton');
+  const ch = await pg.evaluate(() => {
+    const g = window.__game; g.resetProgress(); const rnd = Math.random; Math.random = () => 0.5; const out = {};
+    for (const t of g.challenges) {
+      const s = t.stand, a = t.aim, L = Math.hypot(a.x - s.x, a.z - s.z), ux = (a.x - s.x) / L, uz = (a.z - s.z) / L, yw = Math.atan2(-ux, -uz) * 180 / Math.PI;
+      let n = 0, ok = 0, first = null;
+      for (const d of [0]) for (let pw = 0.1; pw <= 1.001; pw += 0.05) for (let p = -10; p <= 50; p += 5) {
+        const sx = s.x - ux * d, sz = s.z - uz * d; g.restart(); g.start(); g.teleport(sx, sz, yw, p, s.y + 1); g.placeBall(0, sx + ux * 0.8, s.y + 0.4, sz + uz * 0.8); g.simulate(0.4); g.teleport(sx, sz, yw, p); g.kick(pw); g.simulate(3.5);
+        n++; if (t.done) { ok++; first ||= [d, +pw.toFixed(2), p]; }
+      }
+      out[t.id] = { ok, n, share: +(ok / n).toFixed(3), first };
+    }
+    Math.random = rnd; g.resetProgress(); g.restart();
+    return { out, counted: g.targets.length, chN: g.challenges.length };
+  });
+  check('challenges: 3 optional, not in main 8 counter', ch.counted === 8 && ch.chN === 3, JSON.stringify({ counted: ch.counted, chN: ch.chN }));
+  check('challenges: each scorable from its spot but hard (sweep share 0.5-25%)', Object.values(ch.out).every((r) => r.share > 0.004 && r.share <= 0.25), JSON.stringify(ch.out));
+  // long-range rule: the same pole gap from close range does not count
+  const close = await pg.evaluate(() => { const g = window.__game; const t = g.challenges.find((c) => c.id === 'c_longpoles'); g.restart(); g.start();
+    g.teleport(16.5, -4, -90, 0, 3); g.placeBall(0, 17.3, 2.6, -4); g.simulate(0.4); g.teleport(16.5, -4, -90, 5); g.kick(0.35); g.simulate(3); const r = { ch: t.done, gap: g.targets.find((x) => x.id === 'gap')?.done }; g.restart(); return r; });
+  check('long-range challenge needs range (close pole shot does not count)', close.ch === false, JSON.stringify(close));
+  // unlocks fire once + persist across reload; Mars bar only after unlock; ball swap is cosmetic
+  const pre = await pg.evaluate(() => { const g = window.__game; g.resetWallet(); g.resetProgress(); return { buy: g.buyItem('mars'), map: g.ballMap.uuid }; });
+  const fire = await pg.evaluate(async () => { const g = window.__game; g.restart(); g.start(); const t = g.challenges.find((c) => c.id === 'c_roof');
+    g.placeBall(0, -13.4, 3.6, 12); g.balls[0].lastKick = performance.now(); g.simulate(1.5); const u1 = g.lastUnlock?.id; const w1 = g.wallet.pence; return { u1, w1 }; });
+  await wait(pg, 500); await pg.screenshot({ path: 'screenshots/challenge-unlock-card.png' });
+  const fire2 = await pg.evaluate(async () => { const g = window.__game; const t = g.challenges.find((c) => c.id === 'c_roof');
+    document.getElementById('goalOk').click(); g.restart(); g.start(); g.placeBall(0, -13.4, 3.6, 12); g.balls[0].lastKick = performance.now(); g.simulate(1.5);
+    return { w2: g.wallet.pence, done: t.done, unlocks: g.unlocks }; }); Object.assign(fire, fire2);
+  check('unlock fires once (roof -> Winter ball), repeat pays nothing', fire.u1 === 'c_roof' && fire.w1 === 100 && fire.w2 === 100 && fire.unlocks.balls.includes('winter'), JSON.stringify(fire));
+  await go(BASE + '?level=pilton');
+  const per = await pg.evaluate(() => window.__game.unlocks);
+  check('unlocks persist across reload', per.done.c_roof && per.balls.includes('winter'), JSON.stringify(per));
+  const phys = await pg.evaluate(() => { const g = window.__game; const r = Math.random; Math.random = () => 0.5; const run = () => { g.restart(); g.start(); g.teleport(0, -30, 180, -10); g.placeBall(0, 0, 0.3, -29.2); g.simulate(0.5); g.teleport(0, -30, 180, -10); g.kick(0.6); g.simulate(2); const b = g.balls[0].body; return [b.position.x, b.position.y, b.position.z, b.mass, b.shapes[0].radius]; };
+    const m0 = g.ballMap.uuid, a = run(); const ok = g.applyBall('winter'); const m1 = g.ballMap.uuid, b = run(); const locked = g.applyBall('nope'); Math.random = r;
+    return { ok, locked, swapped: m0 !== m1, d: Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]), same: a[3] === b[3] && a[4] === b[4] }; });
+  check('ball selector swaps texture only (same trajectory/mass/radius)', phys.ok && !phys.locked && phys.swapped && phys.d < 1e-6 && phys.same, JSON.stringify(phys));
+  await pg.evaluate(() => { const g = window.__game; g.restart(); g.start(); g.teleport(0, -30, 180, -18); g.placeBall(0, 0, 0.3, -29.0); });
+  await wait(pg, 700); await pg.screenshot({ path: 'screenshots/ball-winter.png' });
+  await pg.evaluate(() => document.getElementById('overlay').classList.remove('hidden')); await wait(pg, 400);
+  await pg.screenshot({ path: 'screenshots/ball-selector.png' });
+  const mars = await pg.evaluate(() => { const g = window.__game; const before = g.buyItem('mars'); const t = g.challenges.find((c) => c.id === 'c_window'); g.restart(); g.start();
+    g.teleport(t.stand.x, t.stand.z, -90, 0); g.placeBall(0, t.aim.x - 0.5, t.aim.y, t.aim.z); g.balls[0].body.velocity.set(6, 0, 0); g.balls[0].lastKick = performance.now(); g.simulate(1);
+    const u = g.unlocks; g.resetWallet(); return { before, unlocked: u.items.includes('mars'), done: u.done.c_window }; });
+  const mars2 = await pg.evaluate(() => { const g = window.__game; const poor = g.buyItem('mars'); g.resetWallet(); return poor; });
+  check('Mars bar: not buyable before unlock, unlocked by Mrs Kerr\'s windae', pre.buy === false && mars.before === false && mars.unlocked && mars.done && mars2 === false, JSON.stringify({ pre, mars, mars2 }));
+  await pg.evaluate(() => document.getElementById('overlay').classList.add('hidden'));
+  await pg.evaluate(() => document.getElementById('goalOk').click());
+  await pg.evaluate(() => { const g = window.__game; g.restart(); g.start(); });
+  for (const [id, v] of [['c_roof', [-2.5, 12, 90, 14, 1.6]], ['c_window', [4.5, -28.5, -90, 22, 1.6]], ['c_longpoles', [-4.6, -4, -90, 6, 1.6]]]) { await pg.evaluate((v) => window.__game.teleport(...v), v); await wait(pg, 800); await pg.screenshot({ path: `screenshots/challenge-${id}.png` }); }
+  await pg.evaluate(() => { localStorage.setItem('ek-wallet', JSON.stringify({ pence: 900, goalSeen: true, suppers: 0, total: 900 })); });
+  await go(BASE + '?level=pilton');
+  const shop = await pg.evaluate(() => { const g = window.__game; g.start(); g.openCounter(); const b = document.getElementById('cntMars'); const dis = b.disabled; b.click(); return { dis, wallet: g.wallet.pence, bought: g.unlocks.bought.mars, line: document.getElementById('cntLine').textContent }; });
+  await wait(pg, 400); await pg.screenshot({ path: 'screenshots/chippy-mars-bar.png' });
+  check('Mars bar purchasable after unlock (priced in wallet)', !shop.dis && shop.wallet === 780 && shop.bought === 1 && /Mars/.test(shop.line), JSON.stringify(shop));
+  await pg.evaluate(() => { document.getElementById('cntClose').click(); const g = window.__game; g.resetProgress(); g.resetWallet(); });
   await go(BASE + '?level=pilton');
 check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | '));
   await pc.close();

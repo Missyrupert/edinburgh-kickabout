@@ -54,3 +54,10 @@ body.touch #crosshair{width:8px;height:8px}
 .levels{font-size:14px;margin:6px 0}
 .card .levels button{font-size:14px;padding:6px 14px;margin:3px;background:#3d4352;color:#fff;border:1px solid #777}
 .card .levels button.on{background:#ffd75e;color:#222}
+#counterCard{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,18,28,.55);z-index:25;padding:12px}
+#counterCard.hidden,#chal.hidden{display:none}
+#counterCard button{margin:4px}
+#counterCard button:disabled,.ballsel button:disabled{opacity:.45}
+.ballsel{margin-top:10px;font-size:14px}
+.ballsel button{margin:3px;padding:6px 10px;font-size:13px}
+.ballsel button.on{outline:2px solid #ffd75e}

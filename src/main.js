@@ -4,7 +4,8 @@ import * as CANNON from 'cannon-es';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
 import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
-import { wallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor } from './wallet.js';
+import { unlocks, completeChallenge, selectBall, resetProgress, BALLS, ITEMS, REWARDS, saveUnlocks } from './unlocks.js';
+import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
 import { Sfx } from './audio.js';
 import { Controls } from './controls.js';
@@ -83,7 +84,9 @@ const G_STATIC = 1, G_PLAYER = 2, G_BALL = 4;
 const built = LEVEL.build(scene, world, mats, P);
 const { targets, dynamics, pigeons, materials, views } = built;
 const SPAWN_YAW = LEVEL.spawnYaw * Math.PI / 180, BOUNDS = LEVEL.bounds;
-const targetById = Object.fromEntries(targets.map((t) => [t.id, t]));
+const challenges = built.challenges || [];
+const allTargets = targets.concat(challenges); // challenges share the scoring code but have their own counter
+const targetById = Object.fromEntries(allTargets.map((t) => [t.id, t]));
 // Static bodies were positioned after construction: refresh their AABBs once, or AABB broadphase misses them.
 // (This stale-AABB effect is also what made SAPBroadphase look "broken" in v1.)
 for (const b of world.bodies) b.updateAABB();
@@ -97,7 +100,7 @@ let yaw = SPAWN_YAW, pitch = -0.25;
 // balls (mass, size, damping unchanged from v1)
 const BALL_R = 0.22;
 const ballGeo = new THREE.SphereGeometry(BALL_R, P.ballSeg[0], P.ballSeg[1]);
-const ballTex = ballTexture();
+const ballTex = ballTexture(unlocks.ball);
 const ballMat = P.pbr ? new THREE.MeshStandardMaterial({ map: ballTex, roughness: 0.36, metalness: 0 }) : new THREE.MeshLambertMaterial({ map: ballTex });
 const BALL_HOMES = LEVEL.ballHomes(views);
 const balls = BALL_HOMES.map(([x, y, z]) => {
@@ -127,7 +130,8 @@ const $ = (id) => document.getElementById(id);
 const sfx = new Sfx();
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
-function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`; }
+function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
+  $('chal').classList.toggle('hidden', !challenges.length); if (challenges.length) $('chalVal').textContent = `${challenges.filter((c) => unlocks.done[c.id]).length}/${challenges.length}`; }
 updateHud();
 // ---------- wallet (pocket money) ----------
 let lastEarn = null;
@@ -140,7 +144,7 @@ function updateWallet(pop = false) {
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
 function showGoal(bought = false) {
-  $('goalTitle').textContent = bought ? 'One fish supper an\' an Irn-Bru!' : 'Chippy unlocked!';
+  $('goalBig').textContent = '🍟 🥤'; $('goalTitle').textContent = bought ? 'One fish supper an\' an Irn-Bru!' : 'Chippy unlocked!';
   $('goalLine').innerHTML = bought
     ? `"That's ${fmt(GOAL.pence)}, son. Salt an' vinegar? ...Course ye dae."<br><small>Suppers bought: ${wallet.suppers}. Wallet: ${fmt(wallet.pence)}</small>`
     : `You've saved ${fmt(wallet.pence)} - enough for a chippy an' an Irn-Bru.<br><small>${LEVEL.id === 'pilton' ? 'Head to the counter at The Pilton Plaice (top of the street).' : 'Get yersel tae West Pilton - The Pilton Plaice is open.'}</small>`;
@@ -155,9 +159,34 @@ function checkCounter() { // the chippy counter (West Pilton): buy a supper when
   if (!built.counter || simTime < counterCool) return;
   if (Math.hypot(player.position.x - built.counter.x, player.position.z - built.counter.z) > 1.8) return;
   counterCool = simTime + 4;
+  if (unlocks.items.includes('mars')) { openCounter(); return; }
   if (buySupper()) { updateWallet(true); showGoal(true); }
   else toast(`<b>The Pilton Plaice</b><br>"A supper's ${fmt(GOAL.pence)}, pal. You've got ${fmt(wallet.pence)}. Away an' hit some targets."`, 3000);
 }
+function openCounter() {
+  const m = ITEMS.mars;
+  $('cntWallet').textContent = fmt(wallet.pence);
+  $('cntSupper').disabled = wallet.pence < GOAL.pence; $('cntMars').disabled = wallet.pence < m.pence;
+  $('cntLine').innerHTML = '"What can I get ye, pal?"';
+  $('counterCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
+}
+function buyItem(id) {
+  const m = ITEMS[id]; if (!m || !unlocks.items.includes(id) || wallet.pence < m.pence) return false;
+  wallet.pence -= m.pence; saveWallet(); unlocks.bought[id] = (unlocks.bought[id] || 0) + 1; saveUnlocks(); updateWallet(true); return true;
+}
+$('cntSupper').addEventListener('click', () => { if (buySupper()) { $('counterCard').classList.add('hidden'); updateWallet(true); showGoal(true); } });
+$('cntMars').addEventListener('click', () => { if (buyItem('mars')) { $('cntLine').innerHTML = ITEMS.mars.line + `<br><small>Bought: ${unlocks.bought.mars}</small>`; $('cntWallet').textContent = fmt(wallet.pence); $('cntMars').disabled = wallet.pence < ITEMS.mars.pence; $('cntSupper').disabled = wallet.pence < GOAL.pence; sfx.success(false); } });
+$('cntClose').addEventListener('click', () => { $('counterCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
+// ---------- ball selector (cosmetic only: same body, mass, size) ----------
+function applyBall(id) { if (!selectBall(id)) return false; ballMat.map = ballTexture(id); ballMat.needsUpdate = true; buildBallMenu(); return true; }
+function buildBallMenu() {
+  const el = $('ballSel'); el.innerHTML = 'Ball: ';
+  for (const [id, b] of Object.entries(BALLS)) { const on = unlocks.balls.includes(id); const btn = document.createElement('button');
+    btn.textContent = on ? b.name : '🔒 ' + b.name; btn.disabled = !on; btn.dataset.ball = id; if (unlocks.ball === id) btn.classList.add('on');
+    btn.addEventListener('click', () => applyBall(id)); el.appendChild(btn); }
+}
+buildBallMenu();
+$('progressReset').addEventListener('click', () => { if (confirm('Reset challenges and unlocks (balls, chippy items)? Your pocket money is kept.')) { resetProgress(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; buildBallMenu(); updateHud(); } });
 // ---------- levels ----------
 $('levelNow').textContent = LEVEL.name; $('levelBlurb').textContent = LEVEL.blurb;
 document.querySelectorAll('[data-level]').forEach((b) => { if (b.dataset.level === LEVEL.id) b.classList.add('on'); b.addEventListener('click', () => { if (b.dataset.level !== LEVEL.id) travelTo(b.dataset.level); }); });
@@ -177,7 +206,7 @@ addEventListener('keydown', (e) => { if (e.code === 'KeyP') setPerf(!perfOn); })
 const controls = new Controls(renderer.domElement, {
   jump, fetchBall,
   requestLock: () => { if (started) renderer.domElement.requestPointerLock?.(); },
-  unlocked: () => { if (started && $('goalCard').classList.contains('hidden')) pause(); },
+  unlocked: () => { if (started && $('goalCard').classList.contains('hidden') && $('counterCard').classList.contains('hidden')) pause(); },
   pause,
   chargeStart: () => { if (!paused) { chargeT0 = performance.now(); $('power').classList.add('on'); } },
   chargeEnd: () => { $('power').classList.remove('on'); if (!paused && chargeT0) kick(Math.min(1, (performance.now() - chargeT0) / 1000)); chargeT0 = 0; },
@@ -253,7 +282,7 @@ function kick(power) {
   v.set(f.x * Math.cos(elev) * speed, Math.sin(elev) * speed, f.z * Math.cos(elev) * speed);
   const w = (speed * Math.cos(elev) / BALL_R) * 0.2; // topspin roughly matching roll
   target.body.angularVelocity.set(f.z * w, (Math.random() - 0.5) * 3, -f.x * w);
-  target.lastKick = performance.now(); target.kickSim = simTime; target.bounces = 0;
+  target.lastKick = performance.now(); target.kickSim = simTime; target.bounces = 0; target.kickFrom = { x: player.position.x, z: player.position.z };
   lastKickInfo = { power, hit: true, speed };
   sfx.kick(power);
   return true;
@@ -277,6 +306,7 @@ let lastRepeat = 0;
 function scoreTarget(t, bonus = null) {
   const now = performance.now();
   if (t.done) { if (now - lastRepeat > 2500) { lastRepeat = now; toast(`Already bagged the ${t.name}.`, 1200); } return; }
+  if (t.challenge) return scoreChallenge(t);
   t.done = true; score += t.points;
   const pence = cashFor(t) + (bonus ? BONUS : 0);
   lastEarn = { id: t.id, pence, bonus };
@@ -290,9 +320,24 @@ function scoreTarget(t, bonus = null) {
   if (all) setTimeout(() => toast(`<b>Pure dead brilliant!</b><br>All ${targets.length} targets done in ${LEVEL.name}.<br><small>Pause to restart, or travel to ${LEVELS[LEVEL.next].name}.</small>`, 7000), 2600);
   updateHud();
 }
+function scoreChallenge(t) {
+  t.done = true;
+  const reward = completeChallenge(t.id); // null if already unlocked earlier (fires once)
+  const line = t.lines[Math.floor(Math.random() * t.lines.length)];
+  if (!reward) { toast(`<b>${t.name}</b> - done again!<br>${line}`, 2400); sfx.success(false); return; }
+  const pence = (t.cash || 0) + (reward.cash || 0); if (pence) { const reached = earn(pence); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
+  lastEarn = { id: t.id, pence, bonus: null }; lastUnlock = { id: t.id, ...reward };
+  toast(`<b>CHALLENGE! ${t.name.replace('Challenge: ', '')}</b>${pence ? ' +' + fmt(pence) : ''}<br>${line}`, 3500);
+  sfx.success(true); setTimeout(() => sfx.success(true), 350);
+  $('goalTitle').textContent = 'Unlocked!'; $('goalBig').textContent = reward.ball ? '⚽' : reward.item ? '🍫' : '🏆';
+  $('goalLine').innerHTML = `<b>${t.name.replace('Challenge: ', '')}</b><br>${reward.text}<br><small>Challenges: ${challenges.filter((c) => unlocks.done[c.id]).length}/${challenges.length}</small>`;
+  $('goalCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
+  buildBallMenu(); updateHud();
+}
+let lastUnlock = null;
 function restart() {
   score = 0;
-  for (const t of targets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd75e); }
+  for (const t of allTargets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd75e); }
   lastTouched = null;
   for (const b of balls) { release(b); b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; b.prevP.copy(b.home); }
   for (const d of dynamics) { d.body.position.copy(d.home); d.body.quaternion.set(0, 0, 0, 1); d.body.velocity.setZero(); d.body.angularVelocity.setZero(); }
@@ -301,7 +346,7 @@ function restart() {
 }
 
 function checkZones(now) {
-  for (const t of targets) {
+  for (const t of allTargets) {
     if (t.done && t.kind !== 'zone') continue;
     if (t.kind === 'zone') {
       for (const b of balls) {
@@ -310,6 +355,7 @@ function checkZones(now) {
         // (plus a small lip allowance) and not rising - it has dropped in, even if it then bounces on the floor.
         const z = t.zone, inside = z.containsPoint(tmpV) || (t.openTop && tmpV.x > z.min.x && tmpV.x < z.max.x && tmpV.z > z.min.z && tmpV.z < z.max.z && tmpV.y > z.min.y && tmpV.y < z.max.y + 0.08 && b.body.velocity.y < 0.5);
         if (!inside || now - b.lastKick > 8000) continue;
+        if (t.minRange && (!b.kickFrom || Math.hypot(b.kickFrom.x - t.rangeFrom.x, b.kickFrom.z - t.rangeFrom.z) < t.minRange)) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
         if (t.maxSpeed && sp > t.maxSpeed) continue;
@@ -393,13 +439,18 @@ function render(dt, t) {
   boot.visible = kickAnim < 1 || pitch < -0.6;
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
-  for (const tg of targets) {
+  for (const tg of allTargets) {
     const d = Math.hypot(tg.pos.x - iP.x, tg.pos.z - iP.z);
+    if (tg.challenge) { // hidden: ring only when you're right there
+      const o = tg.done ? 0 : THREE.MathUtils.clamp((6 - d) / 3, 0, 0.6) * (0.6 + 0.4 * Math.sin(t * 0.008));
+      tg.ring.material.opacity = o; tg.ring.visible = o > 0.01; if (!tg.done && d < 6 && d < nd) { nd = d; near = tg; } continue;
+    }
     const o = tg.done ? (d < 20 ? 0.25 : 0) : THREE.MathUtils.clamp((16 - d) / 8, 0, 0.85) * (0.75 + 0.25 * Math.sin(t * 0.005));
     tg.ring.material.opacity = o; tg.ring.visible = o > 0.01;
     if (!tg.done && d < 14 && d < nd) { nd = d; near = tg; }
   }
-  $('nearby').textContent = near ? `Nearby: ${near.name} - ${near.hint} (${fmt(cashFor(near))})` : '';
+  $('nearby').textContent = near ? (near.challenge ? `${near.name} - ${near.hint}` : `Nearby: ${near.name} - ${near.hint} (${fmt(cashFor(near))})`) : '';
+  if (built.sparkles) { const left = challenges.some((c) => !unlocks.done[c.id]); built.sparkles.visible = left; built.sparkles.material.opacity = 0.25 + 0.3 * (0.5 + 0.5 * Math.sin(t * 0.004)); }
   pigeons.list.forEach((pg, i) => {
     if (pg.state === 'idle') {
       pg.t -= dt; if (pg.t < 0) { pg.t = 1 + Math.random() * 3; pg.rot += (Math.random() - 0.5) * 2; }
@@ -461,7 +512,7 @@ window.__game = {
   get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
-  get wallet() { return { ...wallet }; }, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
+  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },

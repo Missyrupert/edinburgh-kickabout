@@ -262,6 +262,33 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'noballs', name: "'No Ball Games' Sign", hint: 'hit the sign. Go on.', points: 125, cash: 125, diff: 'hard', kind: 'hit', pos: V(x - 0.4, 0, z), ringR: 1.0, stand: V(6.2, 0, z), aim: V(x, y, z),
       lines: ['Ironic. Very ironic.', "Mrs Kerr's at the windae. RUN.", 'The council will be hearing aboot this.'] }); }
 
+  // ---------- optional CHALLENGES (experimental): hidden, hard, separate from the 8 targets ----------
+  const challenges = [];
+  const addChallenge = (t) => { addTarget(t); targets.pop(); t.challenge = true; challenges.push(t); return t; };
+  // C1. Garage roof: lob it up onto the lock-up roof (and keep it there long enough to count)
+  { const yR = 2.86; solid('flat', -13.4, yR + 0.12, GZ0 + 0.1, 7.4, 0.12, 0.14, 0x55575a, { phys: true }); // wee upstand at the back edge
+    addChallenge({ id: 'c_roof', name: 'Challenge: On the Lock-up Roof', hint: 'lob it ONTO the garage roof', points: 0, cash: 100, kind: 'zone', pos: V(-13.4, yR, GZ0 + GN * GW / 2), ringR: 1.6,
+      stand: V(-2.5, 0, 12), aim: V(-13.4, yR + 0.3, 12), zone: new THREE.Box3(V(-16.9, yR, GZ0 + 0.2), V(-10.1, yR + 0.45, GZ0 + GN * GW - 0.2)),
+      lines: ["It's up there wi' the other forty balls.", "Wee Tam's da: 'That's comin' oot yer pocket money.'"] }); }
+  // C2. Mrs Kerr's open upstairs windae (2nd floor of the pitched-roof block)
+  { const x = 10.96, y = 4.65, z = -28.5;
+    quad('flat', x - 0.005, y, z, 1.45, 1.5, -Math.PI / 2, null, 0xf2f2f0);
+    quad('flat', x - 0.012, y - 0.08, z, 1.2, 1.1, -Math.PI / 2, null, 0x0f1012); // open: dark room behind
+    quad('glass', x - 0.016, y + 0.42, z, 1.2, 0.5, -Math.PI / 2, null, 0xffffff); // sash pushed up
+    quad('flat', x - 0.02, y - 0.1, z + 0.45, 0.25, 0.9, -Math.PI / 2, null, 0xd77a9a); // curtain blowing
+    solid('flat', x - 0.1, y - 0.7, z, 0.2, 0.08, 1.45, 0xd8d4cc, { phys: false }); // sill
+    boxBody(x - 0.03, y - 0.05, z, 0.06, 1.05, 1.15, { target: 'c_window' });
+    addChallenge({ id: 'c_window', name: "Challenge: Mrs Kerr's Windae", hint: 'the open window, 2nd floor...', points: 0, cash: 100, kind: 'hit', pos: V(x - 0.6, 0, z), ringR: 1.0, stand: V(4.5, 0, z), aim: V(x, y, z),
+      lines: ["MRS KERR: 'WHO KICKED THAT?!'", 'Straight in the front room. Mind the good china.'] }); }
+  // C3. Long-range drying green: through the poles from the far pavement (14 m+, up the bank)
+  addChallenge({ id: 'c_longpoles', name: 'Challenge: Worldie Through the Poles', hint: 'through the poles from the far side of the road', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
+    stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -4), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(18.7, rise + 0.3, -4.9), V(19.3, rise + 1.5, -3.1)), minSpeed: 1,
+    lines: ['WORLDIE! Fiona would be proud.', 'From there?! Absolute screamer.'] });
+  // faint sparkles mark the challenge spots (one Points draw call)
+  const spk = new THREE.Points(new THREE.BufferGeometry().setFromPoints([V(-13.4, 3.5, 12), V(10.7, 4.9, -28.5), V(-4.6, 0.25, -4)]),
+    new THREE.PointsMaterial({ color: 0xfff2b0, size: 0.22, transparent: true, opacity: 0.5, depthWrite: false }));
+  spk.name = 'challengeSparkles'; scene.add(spk);
+
   // ---------- gulls & pigeons (same instanced system as the Grassmarket) ----------
   const groups = [[-1, 0, -24], [2, 0, 20], [17, rise, -6]].map((p) => V(...p));
   const pig = { list: [], body: new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), null, groups.length * 4), head: new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 6, 4), null, groups.length * 4) };
@@ -273,7 +300,7 @@ function build(scene, world, mats, P) {
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   const batches = B.build(scene, materials, { shadows: P.shadows });
   const views = { spawn: [0, -36, 180, -8], midstreet: [0, 0, 180, -4], terrace: [15, -4, -90, 2, rise + 0.9] };
-  return { targets, dynamics, pigeons: pig, materials, batches, views, counter: COUNTER };
+  return { targets, challenges, sparkles: spk, dynamics, pigeons: pig, materials, batches, views, counter: COUNTER };
 }
 
 export default {
