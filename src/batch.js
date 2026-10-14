@@ -8,7 +8,7 @@ export class Batcher {
   constructor() { this.buckets = new Map(); }
   // local: placement matrix (in the street-section frame); frame: section -> world (bend);
   // tile: box-mapped UVs in metres per texture repeat (computed before the bend so textures follow the street).
-  add(key, geo, local, color = 0xffffff, { grime = 0, uvScale = null, uvRect = null, shade = null, tile = 0, frame = null } = {}) {
+  add(key, geo, local, color = 0xffffff, { grime = 0, uvScale = null, uvRect = null, shade = null, tile = 0, frame = null, vcol = null } = {}) {
     let g = geo.index ? geo.toNonIndexed() : geo.clone();
     for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
     if (local) g.applyMatrix4(local);
@@ -29,6 +29,7 @@ export class Batcher {
       let f = 1;
       if (grime) f *= 1 - grime * Math.max(0, 1 - pos.getY(i) / 5);
       if (shade) f *= shade(pos.getX(i), pos.getY(i), pos.getZ(i));
+      if (vcol) { const nor = g.attributes.normal; const k = vcol(i, pos.getX(i), pos.getY(i), pos.getZ(i), nor.getX(i), nor.getY(i), nor.getZ(i)); col[i * 3] = k.r * f; col[i * 3 + 1] = k.g * f; col[i * 3 + 2] = k.b * f; continue; }
       col[i * 3] = c.r * f; col[i * 3 + 1] = c.g * f; col[i * 3 + 2] = c.b * f;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
@@ -43,7 +44,7 @@ export class Batcher {
       merged.computeBoundingSphere();
       const m = new THREE.Mesh(merged, materials[key]);
       m.matrixAutoUpdate = false; m.updateMatrix();
-      m.castShadow = shadows && !['sky', 'lamp', 'atlas', 'glass'].includes(key); m.receiveShadow = shadows;
+      m.castShadow = shadows && !['sky', 'lamp', 'atlas', 'glass', 'castleRock', 'castleStone'].includes(key); m.receiveShadow = shadows;
       m.name = 'batch:' + key; scene.add(m); meshes[key] = m;
     }
     this.buckets.clear();

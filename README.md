@@ -72,8 +72,14 @@ See CREDITS.md for licences.
 - The recalled ball is held at your feet: it can't roll downhill. Kick it as normal (it flies exactly like a resting ball), or walk more than 1.6 m away to let it go.
 - With no input you stand still on any slope.
 
-## To do later
-- Castle silhouette needs a better pass.
+## Castle (v1.3)
+- `src/castle.js` builds a low-poly Edinburgh Castle as seen from the Grassmarket. It has:
+  - the crag-and-tail Castle Rock, with dark basalt facets and scrub;
+  - the New Barracks to the west, and Crown Square (Great Hall, Palace and its tower with the Saltire, War Memorial);
+  - the Half Moon Battery drum, the gatehouse turrets and the Esplanade;
+  - stepped curtain walls with battlements.
+- Budget: 2 draw calls and about 3.2k triangles. No shadow pass, and it reuses the sandstone texture. Distance haze comes from the scene fog at half its distance, which keeps the silhouette readable.
+
 
 ## Verify / profile
 - `npm run build && npm run verify`: headless checks.

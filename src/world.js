@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from './batch.js';
+import { buildCastle } from './castle.js';
 import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps } from './textures.js';
 
 // Layout (metres). Lower street (Grassmarket-style) runs along +Z, z -50..30.
@@ -264,16 +265,13 @@ export function buildWorld(scene, world, mats, P) {
 
   // ---------- skyline: Castle on its rock, Old Town roofs, a spire ----------
   const CX = 22, CZ = 215;
-  B.add('flat', new THREE.DodecahedronGeometry(45, 1), M4(CX, 4, CZ, 1.6, 0.9, 1), 0x5b5a50, {});
-  const cb = (x, y, z, w, h, d, c = 0xb3a68e) => solid('stone', CX + x, y, CZ + z, w, h, d, c, { phys: false, tile: 6 });
-  cb(0, 46, -6, 64, 16, 20); cb(-26, 55, -8, 12, 18, 12); cb(14, 58, -4, 16, 24, 14); cb(32, 50, -10, 10, 14, 10); cb(-6, 50, -18, 34, 6, 4, 0xa49680);
-  for (let x = -28; x <= 28; x += 4) cb(x, 54, -19, 2, 2, 2);
-  cyl('metal', CX + 14, 75, CZ - 4, 0.3, 0.3, 10, IRON, { phys: false });
+  buildCastle(B, CX, CZ, mulberry32(1544));
   B.add('flat', new THREE.ConeGeometry(4, 40, 6), M4(-70, 30, 150, 1, 1, 1), 0x9a9080, {});
   for (let i = 0; i < 130; i++) {
     const x = (rand() - 0.5) * 240, z = 80 + rand() * 110, h = 6 + rand() * 6 + Math.abs(x) * 0.06, w = 8 + rand() * 10, d = 6 + rand() * 8;
     if (Math.abs(x - CX) < 40 && z > 160) continue;
     const c = new THREE.Color().setHSL(0.08, 0.25, 0.3 + rand() * 0.15);
+    if (z + d / 2 > 172 && x > CX - 100 && x < CX + 130) continue; // keep clear of the rock's foot (rand() already consumed: layout after this is unchanged)
     B.add('flat', BOX, M4(x, h / 2 - 4, z, w, h, d), c, {});
     B.add('flat', ROOF, M4(x, h - 4, z, w, 2.5, d), 0x4a4d55, {});
   }
@@ -357,7 +355,7 @@ export function buildWorld(scene, world, mats, P) {
     cyl('flat', -5.5, PAVE + 0.75, 12, 0.3, 0.3, 1.5, 0xc8102e, { seg: 14, target: 'post' });
     cyl('flat', -5.5, PAVE + 1.55, 12, 0.34, 0.34, 0.12, 0xc8102e, { phys: false, seg: 14 });
     solid('flat', -5.22, PAVE + 1.15, 12, 0.08, 0.06, 0.3, 0x1a1a1a, { phys: false });
-    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(-5.5, PAVE, 12), ringR: 0.8, stand: V(-2.2, 0, 12), aim: V(-5.5, 0.6, 12),
+    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(-5.5, PAVE, 12), ringR: 0.8, stand: V(-5.5, PAVE, 9.4), aim: V(-5.5, 0.6, 12),
       lines: ['First class!', 'Signed for. Delivered.', "Royal Mail: 'Is this a parcel?'"] });
   }
   // 9. Busker's open guitar case (roll it in)
@@ -422,6 +420,13 @@ function mergeSimple(parts) {
   return g;
 }
 
+function hazed(m, k) {
+  m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', `#ifdef USE_FOG
+    float fogFactor = smoothstep( fogNear, fogFar, vFogDepth * ${k.toFixed(2)} );
+    gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+  #endif`); };
+  m.customProgramCacheKey = () => 'hazed' + k; return m;
+}
 // One material per bucket, shared by everything. Lambert on low/medium, PBR on high.
 function makeMaterials(P, facadeTex, atlasTex) {
   const mk = (params) => {
@@ -441,6 +446,9 @@ function makeMaterials(P, facadeTex, atlasTex) {
     paving: mk({ ...pbrMaps('paving') }),
     wood: mk({ ...pbrMaps('wood', { normal: false }) }),
     atlas: mk({ map: atlasTex, roughness: 0.7 }),
+    // distant castle: lighter, partial haze (fog distance scaled) so it reads as far away but stays legible
+    castleRock: hazed(mk({ side: THREE.DoubleSide }), 0.5),
+    castleStone: hazed(mk({ ...pbrMaps('sandstone', { normal: false }) }), 0.5),
     pigeon: new THREE.MeshLambertMaterial({ color: 0x6f7480 }),
     pigeonHead: new THREE.MeshLambertMaterial({ color: 0x4b5f6a }),
   };

@@ -87,7 +87,7 @@ try {
   check('back court + terrace reachable on foot (close, ramp)', Object.values(reach).every((r) => r.done) && reach.tardis.y > 3, JSON.stringify(reach));
   // all 11 targets scoreable from their stand points (grid over power x pitch)
   const all = await page.evaluate(() => {
-    const g = window.__game; const res = {};
+    const g = window.__game; const res = {}; const rnd = Math.random; Math.random = () => 0.5; // kick sidespin is random: make the sweep deterministic
     for (const t of g.targets) {
       const s = t.stand, a = t.aim, L = Math.hypot(a.x - s.x, a.z - s.z), ux = (a.x - s.x) / L, uz = (a.z - s.z) / L, yawDeg = Math.atan2(-ux, -uz) * 180 / Math.PI;
       let ok = null;
@@ -98,7 +98,7 @@ try {
       }
       res[t.id] = ok;
     }
-    g.restart(); return { n: g.targets.length, res };
+    Math.random = rnd; g.restart(); return { n: g.targets.length, res };
   });
   check('all 11 targets scoreable', all.n === 11 && Object.values(all.res).every(Boolean), JSON.stringify(all));
   // fixed timestep: same kick, frame steps of 1/30 vs 1/144 -> same trajectory
@@ -119,6 +119,8 @@ try {
     await pp.goto(URL + '?preset=' + name + (name === 'low' ? '&perf=1' : '')); await pp.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 30000 }).catch(() => {});
     await pp.evaluate(() => window.__game.start()); await wait(pp, 1200);
     const info = await pp.evaluate(() => { const g = window.__game; const types = new Set(); g.scene.traverse((o) => o.isMesh && o.material?.type && types.add(o.material.type)); return { preset: g.preset, src: g.presetSource, shadows: g.renderer.shadowMap.enabled, types: [...types], calls: g.renderer.info.render.calls, perf: document.getElementById('perf').classList.contains('hidden') ? '' : document.getElementById('perf').textContent }; });
+    const cs = await pp.evaluate(() => { const ms = []; window.__game.scene.traverse((o) => o.isMesh && /^batch:castle/.test(o.name) && ms.push(o)); return { calls: ms.length, tris: ms.reduce((t, m) => t + (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3, 0), shadow: ms.some((m) => m.castShadow), newTex: ms.flatMap((m) => [m.material.map]).filter(Boolean).every((t) => /sandstone/.test(t.image?.src || t.image?.currentSrc || '')) }; });
+    check(`castle budget (${name}): <=3 draw calls, <8k tris, no shadow pass, no new textures`, cs.calls >= 1 && cs.calls <= 3 && cs.tris < 8000 && !cs.shadow && cs.newTex, JSON.stringify(cs));
     check(`preset ${name} applied`, info.preset === name && info.types.includes(mat) && info.shadows === sh && pe.length === 0, JSON.stringify({ ...info, perf: undefined, errors: pe }));
     if (name === 'low') check('?perf=1 overlay shows live stats', /fps/i.test(info.perf) && /draws \d+/.test(info.perf) && /tris/.test(info.perf), JSON.stringify(info.perf.slice(0, 120)));
     await pp.close();
