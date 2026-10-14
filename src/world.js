@@ -276,6 +276,13 @@ export function buildWorld(scene, world, mats, P) {
     B.add('flat', ROOF, M4(x, h - 4, z, w, 2.5, d), 0x4a4d55, {});
   }
 
+  // dark liner inside open-topped bins/skips so the opening reads (visual only)
+  function dark(x, y0, z, w, d, h, th) {
+    const k = 0x161a17, e = th / 2 + 0.006, iw = w - th - 0.012, id = d - th - 0.012;
+    solid('flat', x, y0 + 0.006, z, iw, 0.01, id, k, { phys: false });
+    solid('flat', x - w / 2 + e, y0 + h / 2, z, 0.006, h - 0.03, id, k, { phys: false }); solid('flat', x + w / 2 - e, y0 + h / 2, z, 0.006, h - 0.03, id, k, { phys: false });
+    solid('flat', x, y0 + h / 2, z - d / 2 + e, iw, h - 0.03, 0.006, k, { phys: false }); solid('flat', x, y0 + h / 2, z + d / 2 - e, iw, h - 0.03, 0.006, k, { phys: false });
+  }
   // ---------- targets ----------
   const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
   function addTarget(t) {
@@ -293,7 +300,8 @@ export function buildWorld(scene, world, mats, P) {
     solid('flat', x, y + h / 2, z - d / 2, w, h, th, c); solid('flat', x, y + h / 2, z + d / 2, w, h, th, c);
     solid('flat', x + 0.15, y + h + 0.45, z + d / 2 + 0.05, w, 0.9, 0.05, 0x2f4a2f, { phys: false, rx: -0.3 });
     sign('GENERAL WASTE', x - w / 2 - 0.04, y + 0.75, z, 0.9, 0.18, -Math.PI / 2, '#2f4a2f', '#fff', 'bold 60px Arial');
-    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'get it IN the bin', points: 150, kind: 'zone', pos: V(x, y, z), ringR: 1.3, stand: V(-0.5, 0, z), aim: V(x, y + 0.6, z),
+    dark(x, y + 0.1, z, w, d, h - 0.1, th);
+    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'get it IN the bin', points: 150, kind: 'zone', openTop: true, pos: V(x, y, z), ringR: 1.3, stand: V(-0.5, 0, z), aim: V(x, y + 0.6, z),
       zone: new THREE.Box3(V(x - w / 2, y + 0.05, z - d / 2), V(x + w / 2, y + h, z + d / 2)),
       lines: ['Straight in the bucket! The cooncil thanks you.', 'Recycling? Close enough.', 'Bin there, done that.'] });
   }
@@ -384,7 +392,8 @@ export function buildWorld(scene, world, mats, P) {
       solid('flat', x - w / 2, y + h / 2, z, th, h, d, sm); solid('flat', x + w / 2, y + h / 2, z, th, h, d, sm);
       solid('flat', x, y + h / 2, z - d / 2, w, h, th, sm); solid('flat', x, y + h / 2, z + d / 2, w, h, th, sm);
       solid('flat', x + 0.4, y + 0.25, z + 0.2, 0.8, 0.3, 0.5, 0x6b5a45, { phys: false });
-      addTarget({ id: 'skip', name: "Builders' Skip", hint: 'chip it into the skip', points: 150, kind: 'zone', pos: W(x, y, z), ringR: 1.8, stand: W(x, y, z - 6), aim: W(x, y + 0.5, z),
+      dark(x, y + 0.1, z, w, d, h - 0.1, th);
+      addTarget({ id: 'skip', name: "Builders' Skip", hint: 'chip it into the skip', points: 150, kind: 'zone', openTop: true, pos: W(x, y, z), ringR: 1.8, stand: W(x, y, z - 6), aim: W(x, y + 0.5, z),
         zone: new THREE.Box3(V(x - w / 2, y + 0.05, z - d / 2), V(x + w / 2, y + h, z + d / 2)),
         lines: ['In the skip! Tidy.', "Builder: 'Oi! That's ma lunch in there!'", 'Chipped in like a pro.'] }); }
     // decorative bench facing the Castle view

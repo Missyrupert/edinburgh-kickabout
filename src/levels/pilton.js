@@ -194,11 +194,21 @@ function build(scene, world, mats, P) {
     if (t.zone) t.zoneInv = new THREE.Matrix4();
     t.done = false; targets.push(t); return t;
   }
+  // dark liner + pale rim so the opening reads as an open top (visual only)
+  function darkInside(x, y0, z, w, d, h, th) {
+    const k = 0x161a17, e = th / 2 + 0.006, iw = w - th - 0.012, id = d - th - 0.012;
+    solid('flat', x, y0 + 0.006, z, iw, 0.01, id, k, { phys: false });
+    solid('flat', x - w / 2 + e, y0 + h / 2, z, 0.006, h - 0.03, id, k, { phys: false }); solid('flat', x + w / 2 - e, y0 + h / 2, z, 0.006, h - 0.03, id, k, { phys: false });
+    solid('flat', x, y0 + h / 2, z - d / 2 + e, iw, h - 0.03, 0.006, k, { phys: false }); solid('flat', x, y0 + h / 2, z + d / 2 - e, iw, h - 0.03, 0.006, k, { phys: false });
+    for (const [sx, sz, ww, dd] of [[-1, 0, th + 0.02, d + 0.02], [1, 0, th + 0.02, d + 0.02], [0, -1, w + 0.02, th + 0.02], [0, 1, w + 0.02, th + 0.02]])
+      solid('flat', x + sx * w / 2, y0 + h + 0.012, z + sz * d / 2, ww, 0.025, dd, 0x9aa39a, { phys: false });
+  }
   const bin = (x, z, w, d, h, c, id) => { // hollow bin: floor + 4 thin walls; the zone is the inside
     const th = 0.06;
     solid('flat', x, 0.05, z, w, 0.1, d, c);
     solid('flat', x - w / 2, h / 2, z, th, h, d, c); solid('flat', x + w / 2, h / 2, z, th, h, d, c);
     solid('flat', x, h / 2, z - d / 2, w, h, th, c); solid('flat', x, h / 2, z + d / 2, w, h, th, c);
+    darkInside(x, 0.1, z, w, d, h - 0.1, th);
     return new THREE.Box3(V(x - w / 2, 0.1, z - d / 2), V(x + w / 2, h, z + d / 2));
   };
   // 1. Garage door (easy): the one with the goal painted on it
@@ -231,9 +241,9 @@ function build(scene, world, mats, P) {
       lines: ['PING! The cat has not been found.', 'Concrete clang!', 'Off the post and doon.'] }); }
   // 5. Communal bin by the garages (medium chip)
   { const x = -7.4, z = 24.5; const zone = bin(x, z, 1.3, 1.0, 1.25, 0x3f5a3f);
-    solid('flat', x + 0.6, 1.7, z, 0.06, 0.9, 1.0, 0x2f4a2f, { phys: false, rz: -0.3 }); // open lid
+    solid('flat', x - 0.79, 1.68, z, 0.06, 0.9, 1.0, 0x2f4a2f, { rz: 0.3 }); // open lid, hinged at the back (away from the street)
     sign('RECYCLING', x + 0.66, 0.75, z, 0.9, 0.18, Math.PI / 2, '#2f4a2f', '#fff', 'bold 60px Arial');
-    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'chip it IN the bin', points: 100, cash: 100, diff: 'medium', kind: 'zone', pos: V(x, 0, z), ringR: 1.3, stand: V(-1.5, 0, z), aim: V(x, 0.6, z), zone,
+    addTarget({ id: 'bin', name: 'Communal Bin', hint: 'chip it IN the bin', points: 100, cash: 100, diff: 'medium', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 1.3, stand: V(-1.5, 0, z), aim: V(x, 0.6, z), zone,
       lines: ['In the bucket! The cooncil thanks you.', 'Recycling? Close enough.', 'Bin day came early.'] }); }
   // 6. Drying green: through the poles (hard), up the bank
   addTarget({ id: 'gap', name: 'Drying Green Poles', hint: 'kick it between the poles (up the bank)', points: 125, cash: 125, diff: 'hard', kind: 'zone', pos: V(19, rise, -4), ringR: 1.0, stand: V(14.5, rise, -4), aim: V(22, rise + 0.3, -4),
@@ -241,8 +251,8 @@ function build(scene, world, mats, P) {
     lines: ["Through the posts! Mind Mrs Kerr's sheets.", 'GOAL! The washing applauds.', 'Wembley? Naw. Pilton drying green.'] });
   // 7. Wheelie bin chip (hard): open green wheelie by the gate
   { const x = -6.6, z = -19.5; const zone = bin(x, z, 0.72, 0.82, 1.0, 0x2e5a34); zone.max.y += 0.15;
-    solid('flat', x - 0.36, 1.25, z, 0.06, 0.6, 0.76, 0x244a2a, { phys: false, rz: 0.5 });
-    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', kind: 'zone', pos: V(x, 0, z), ringR: 0.8, stand: V(-2.5, 0, z), aim: V(x, 0.6, z), zone,
+    solid('flat', x - 0.47, 1.25, z, 0.06, 0.55, 0.84, 0x244a2a, { rz: 0.5 }); // lid flipped open at the back
+    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 0.8, stand: V(-2.5, 0, z), aim: V(x, 0.6, z), zone,
       lines: ['Garden waste: ONE football. Lovely.', 'Chipped in! Messi who?', 'Brown bin? Naw, green. Still counts.'] }); }
   // 8. "NO BALL GAMES" sign on the block (cheeky, hard)
   { const x = 10.94, y = 2.4, z = -24;

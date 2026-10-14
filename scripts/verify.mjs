@@ -295,7 +295,30 @@ try {
   await pg.evaluate(() => { const g = window.__game; g.restart(); g.start(); g.teleport(0, -12, 180, -6); }); await wait(pg, 900);
   await pg.screenshot({ path: 'screenshots/pilton-wallet-hud.png' });
   for (const [n, v] of Object.entries(await pg.evaluate(() => window.__game.views))) { await pg.evaluate((v) => window.__game.teleport(v[0], v[1], v[2], v[3], v[4]), v); await wait(pg, 900); await pg.screenshot({ path: `screenshots/pilton-desktop-${n}.png` }); }
-  check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | '));
+    // open-top 'into' targets: drop-in scores, side hits don't, realistic chips score at a fair share
+  for (const [lv, ids] of [['pilton', ['bin', 'wheelie']], ['grassmarket', ['bin', 'skip']]]) {
+    await go(BASE + '?level=' + lv);
+    const ot = await pg.evaluate((ids) => {
+      const g = window.__game; g.start(); const V = g.camera.position.constructor; const out = {}; const rnd = Math.random; Math.random = () => 0.5;
+      for (const id of ids) {
+        const t = g.targets.find((x) => x.id === id); const z = t.zone, fwd = t.zoneInv.clone().invert();
+        const W = (lx, ly, lz) => new V(lx, ly, lz).applyMatrix4(fwd);
+        const drop = (lx, ly, lz) => { g.restart(); g.start(); g.teleport(t.stand.x, t.stand.z, 0, 0); const p = W(lx, ly, lz); g.placeBall(0, p.x, p.y, p.z); g.balls[0].lastKick = performance.now(); g.balls[0].bounces = 0; g.simulate(2.5); return t.done; };
+        const cx = (z.min.x + z.max.x) / 2, cz = (z.min.z + z.max.z) / 2, hx = (z.max.x - z.min.x) / 2, hz = (z.max.z - z.min.z) / 2;
+        const drops = []; for (const fx of [-0.6, 0, 0.6]) for (const fz of [-0.6, 0, 0.6]) drops.push(drop(cx + fx * (hx - 0.22), z.max.y + 0.8, cz + fz * (hz - 0.22)));
+        const miss = []; for (const [sx, sz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) miss.push(drop(cx + sx * (hx + 0.4), z.max.y + 0.8, cz + sz * (hz + 0.4)));
+        const s = t.stand, a = t.aim, L = Math.hypot(a.x - s.x, a.z - s.z), ux = (a.x - s.x) / L, uz = (a.z - s.z) / L, yw = Math.atan2(-ux, -uz) * 180 / Math.PI;
+        const kick = (pw, p, d = 0) => { const sx = s.x - ux * d, sz = s.z - uz * d; g.restart(); g.start(); g.teleport(sx, sz, yw, p, s.y + 1); g.placeBall(0, sx + ux * 0.8, s.y + 0.4, sz + uz * 0.8); g.simulate(0.4); g.teleport(sx, sz, yw, p); g.kick(pw); g.simulate(3); return t.done; };
+        const side = [[0.5, -25], [0.7, -25], [0.9, -20]].map(([pw, p]) => kick(pw, p));
+        let n = 0, ok = 0; for (const d of [0, 1.5]) for (let pw = 0.1; pw <= 0.5501; pw += 0.05) for (let p = 10; p <= 50; p += 10) { n++; if (kick(pw, p, d)) ok++; }
+        out[id] = { drops: drops.filter(Boolean).length, dropN: drops.length, miss: miss.filter(Boolean).length, side: side.filter(Boolean).length, chips: ok, chipN: n, share: +(ok / n).toFixed(3) };
+      }
+      Math.random = rnd; g.restart(); return out;
+    }, ids);
+    check(`${lv}: into-targets drop-in scores, side hits miss, chips score fairly`, Object.values(ot).every((r) => r.drops === r.dropN && r.miss === 0 && r.side === 0 && r.share >= 0.05 && r.share <= 0.55), JSON.stringify(ot));
+  }
+  await go(BASE + '?level=pilton');
+check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | '));
   await pc.close();
   // Pilton on a phone (landscape) with touch
   const pm = await browser.newContext({ viewport: { width: 915, height: 412 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true });

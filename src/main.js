@@ -306,7 +306,10 @@ function checkZones(now) {
     if (t.kind === 'zone') {
       for (const b of balls) {
         const p = b.body.position; tmpV.set(p.x, p.y, p.z).applyMatrix4(t.zoneInv);
-        if (!t.zone.containsPoint(tmpV) || now - b.lastKick > 8000) continue;
+        // open-topped bins/skips: also count a ball whose centre is over the opening and just below the rim
+        // (plus a small lip allowance) and not rising - it has dropped in, even if it then bounces on the floor.
+        const z = t.zone, inside = z.containsPoint(tmpV) || (t.openTop && tmpV.x > z.min.x && tmpV.x < z.max.x && tmpV.z > z.min.z && tmpV.z < z.max.z && tmpV.y > z.min.y && tmpV.y < z.max.y + 0.08 && b.body.velocity.y < 0.5);
+        if (!inside || now - b.lastKick > 8000) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
         if (t.maxSpeed && sp > t.maxSpeed) continue;
