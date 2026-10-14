@@ -31,3 +31,11 @@ src/audio.js     procedural WebAudio (kick, bounces, clang, success, wind, traff
 src/textures.js  canvas textures (sandstone tenement, cobbles, flagstones, ball, signs, door)
 scripts/verify.mjs  headless Playwright checks + screenshots
 ```
+
+## Visuals (v1.1)
+CC0 Poly Haven photo PBR textures (colour + normal + roughness, 1K JPEG) and a 1K CC0 HDRI for sky and reflections,
+ACES tone mapping, warm low sun + hemisphere fill, distance haze. Phones: shadows off, pixel ratio capped at 1.5.
+See CREDITS.md for licences.
+
+## Deploy
+`./scripts/deploy.sh` builds and force-pushes dist/ to the gh-pages branch -> https://missyrupert.github.io/edinburgh-kickabout/

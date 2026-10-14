@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+export const LOW_POWER = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
 function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 function tex(c, rx = 1, ry = 1) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -6,21 +7,45 @@ function tex(c, rx = 1, ry = 1) {
 }
 function speckle(g, w, h, n, cols) { for (let i = 0; i < n; i++) { g.fillStyle = cols[i % cols.length]; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }
 
-export function tenementTexture() { // one bay: stone courses + sash window
-  const [c, g] = canvas(256, 256);
-  g.fillStyle = '#b89a72'; g.fillRect(0, 0, 256, 256);
-  speckle(g, 256, 256, 2500, ['#a3865f', '#c7ab84', '#8f7552']);
-  g.strokeStyle = 'rgba(70,50,30,.35)'; g.lineWidth = 2;
-  for (let y = 0; y < 256; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(256, y); g.stroke();
-    for (let x = (y / 32) % 2 ? 0 : 40; x < 256; x += 80) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 32); g.stroke(); } }
-  g.fillStyle = '#d8c3a0'; g.fillRect(72, 44, 112, 176); // stone surround
-  g.fillStyle = '#2a3340'; g.fillRect(82, 54, 92, 156);
-  const gr = g.createLinearGradient(82, 54, 174, 210); gr.addColorStop(0, '#6d8aa6'); gr.addColorStop(1, '#25303c');
-  g.fillStyle = gr; g.fillRect(86, 58, 84, 148);
-  g.fillStyle = '#eee8dc'; g.fillRect(86, 128, 84, 6); g.fillRect(125, 58, 6, 148); // sash bars
-  g.fillStyle = '#c9b38d'; g.fillRect(66, 216, 124, 10); // sill
-  return tex(c);
+// Tenement bay: CC0 photo sandstone (Poly Haven) with a painted sash window on top.
+// Draws a procedural stone first, then redraws with the photo once it has loaded.
+export function tenementTexture(stoneUrl) {
+  const [c, g] = canvas(512, 512);
+  const draw = (img) => {
+    if (img) g.drawImage(img, 0, 0, 512, 512);
+    else { g.fillStyle = '#b89a72'; g.fillRect(0, 0, 512, 512); speckle(g, 512, 512, 6000, ['#a3865f', '#c7ab84', '#8f7552']); }
+    g.fillStyle = 'rgba(70,52,30,0.18)'; g.fillRect(0, 0, 512, 512); // weathering tint
+    g.fillStyle = '#cdb690'; g.fillRect(144, 88, 224, 352); // dressed stone surround
+    g.fillStyle = 'rgba(60,45,25,.35)'; g.fillRect(144, 432, 224, 8);
+    g.fillStyle = '#1e2630'; g.fillRect(164, 108, 184, 312);
+    const gr = g.createLinearGradient(164, 108, 348, 420); gr.addColorStop(0, '#9fb6c9'); gr.addColorStop(0.45, '#4d6276'); gr.addColorStop(1, '#1b232c');
+    g.fillStyle = gr; g.fillRect(172, 116, 168, 296);
+    g.fillStyle = '#efe9dc'; g.fillRect(172, 256, 168, 12); g.fillRect(250, 116, 12, 296);
+    g.fillRect(172, 116, 168, 6); g.fillRect(172, 406, 168, 6); g.fillRect(172, 116, 6, 296); g.fillRect(334, 116, 6, 296);
+    g.fillStyle = '#bda57c'; g.fillRect(132, 432, 248, 20);
+    t.needsUpdate = true;
+  };
+  const t = tex(c); draw(null);
+  if (stoneUrl) { const img = new Image(); img.onload = () => draw(img); img.src = stoneUrl; }
+  return t;
 }
+const loader = new THREE.TextureLoader();
+const cache = {};
+function load(url, srgb) {
+  if (!cache[url]) { const t = loader.load(url); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = LOW_POWER ? 2 : 4; if (srgb) t.colorSpace = THREE.SRGBColorSpace; cache[url] = t; }
+  const t = cache[url].clone(); return t; // clones share the image; each can have its own repeat
+}
+// PBR set from public/tex/<name>_{diff,nor,rough}.jpg. Returns material params.
+// Phones skip normal + roughness maps (big fragment-cost saving); desktop gets the full set.
+export function pbr(name, rx = 1, ry = 1, { normal = true, normalScale = 1 } = {}) {
+  if (LOW_POWER) { const m = load(import.meta.env.BASE_URL + 'tex/' + name + '_diff.jpg', true); m.repeat.set(rx, ry); return { map: m, roughness: 0.9 }; }
+  const base = import.meta.env.BASE_URL + 'tex/' + name;
+  const p = { map: load(base + '_diff.jpg', true), roughnessMap: load(base + '_rough.jpg', false) };
+  if (normal) { p.normalMap = load(base + '_nor.jpg', false); p.normalScale = new THREE.Vector2(normalScale, normalScale); }
+  for (const k of ['map', 'roughnessMap', 'normalMap']) if (p[k]) p[k].repeat.set(rx, ry);
+  return p;
+}
+export const texManager = THREE.DefaultLoadingManager;
 export function cobbleTexture() {
   const [c, g] = canvas(256, 256); g.fillStyle = '#3c3a38'; g.fillRect(0, 0, 256, 256);
   for (let r = 0; r < 16; r++) for (let k = 0; k < 9; k++) {

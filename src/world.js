@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { tenementTexture, cobbleTexture, flagTexture, signTexture, doorTargetTexture } from './textures.js';
+import { tenementTexture, signTexture, doorTargetTexture, pbr, LOW_POWER } from './textures.js';
 
 // Layout (metres). Street runs along +Z ("north", uphill toward the Castle).
 // Grassmarket-style street z -50..30, Victoria-Street-style slope z 30..50 (rises 3 m),
@@ -12,12 +12,17 @@ export function buildWorld(scene, world, mats, opts = {}) {
   const statics = [];
   const targets = [];
   const dynamics = []; // {mesh, body}
-  const winTex = tenementTexture();
-  const M = (c, extra = {}) => new THREE.MeshLambertMaterial({ color: c, ...extra });
-  const roofMat = M(0x3b3f47);
-  const stoneMat = M(0xa88d68);
-  const darkStone = M(0x6e5f4c);
-  const iron = M(0x1c1f22);
+  const winTex = tenementTexture(import.meta.env.BASE_URL + 'tex/sandstone_diff.jpg');
+  // Desktop: PBR (MeshStandard + HDRI reflections). Phones: Lambert with the same photo colour maps (much cheaper per pixel).
+  const M = (c, extra = {}) => {
+    if (LOW_POWER) { const { map, emissive } = extra; return new THREE.MeshLambertMaterial({ color: c, ...(map ? { map } : {}), ...(emissive ? { emissive } : {}) }); }
+    return new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0, ...extra });
+  };
+  const wood = (c, rx = 1, ry = 1) => M(c, pbr('wood', rx, ry, { normal: false }));
+  const roofMat = M(0x8a8e96, pbr('slate', 3, 3, { normal: false }));
+  const stoneMat = M(0xd8c4a4, pbr('sandstone', 2, 2));
+  const darkStone = M(0x9c8a72, pbr('sandstone', 3, 3));
+  const iron = M(0x1c1f22, { roughness: 0.45, metalness: 0.7 });
   const sh = !!opts.shadows;
 
   function box(x, y, z, w, h, d, mat, { phys = true, rotX = 0, material = mats.ground, cast = true } = {}) {
@@ -61,7 +66,7 @@ export function buildWorld(scene, world, mats, opts = {}) {
     const tx = winTex.clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, Math.round(d / 3.4)), Math.round(h / 3.3));
     const tz = winTex.clone(); tz.needsUpdate = true; tz.repeat.set(Math.max(1, Math.round(w / 3.4)), Math.round(h / 3.3));
     const col = tints[tint % tints.length];
-    const mx = M(col, { map: tx }), mz = M(col, { map: tz });
+    const mx = M(col, { map: tx, roughness: 0.9 }), mz = M(col, { map: tz, roughness: 0.9 });
     const { mesh } = box((x0 + x1) / 2, base + h / 2, (z0 + z1) / 2, w, h, d, [mx, mx, roofMat, roofMat, mz, mz]);
     // chimney stacks + cornice for Old Town skyline
     box((x0 + x1) / 2, base + h + 0.25, (z0 + z1) / 2, w + 0.3, 0.5, d + 0.3, darkStone, { phys: false });
@@ -75,14 +80,11 @@ export function buildWorld(scene, world, mats, opts = {}) {
   // ---------- ground ----------
   const groundBody = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() });
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(groundBody); statics.push(groundBody);
-  const flag = flagTexture(); flag.repeat.set(20, 20);
-  plane(0, -0.01, 0, 400, 400, M(0x6f6a62, { map: flag }));
-  const cob = cobbleTexture(); cob.repeat.set(3, 30);
-  plane(0, 0.005, -10, 9, 80, M(0xffffff, { map: cob }));
+  plane(0, -0.01, 0, 400, 400, M(0x9a948a, pbr('paving', 100, 100, { normal: false })));
+  plane(0, 0.005, -10, 9, 80, M(0xd0ccc4, pbr('cobble', 4.5, 40)));
   // pavements (physical kerbs: the ball bounces off them)
-  const pave = flagTexture(); pave.repeat.set(1.2, 40);
   for (const s of [-1, 1]) {
-    box(s * 5.75, PAVE - 0.55, -10, 2.5, 1.1, 80, M(0xb9b2a6, { map: pave }), { phys: false });
+    box(s * 5.75, PAVE - 0.55, -10, 2.5, 1.1, 80, M(0xcfc8bc, pbr('paving', 1.25, 40)), { phys: false });
     // physics: flat pavement from |x|=4.75 plus a bevelled kerb lip so balls and feet ride up it
     const pv = new CANNON.Body({ mass: 0, material: mats.kerb, shape: new CANNON.Box(new CANNON.Vec3(1.125, 0.55, 40)) });
     pv.position.set(s * 5.875, PAVE - 0.55, -10); world.addBody(pv);
@@ -92,11 +94,9 @@ export function buildWorld(scene, world, mats, opts = {}) {
   }
   // slope (Victoria Street) + upper terrace
   const L = Math.hypot(RAMP.z1 - RAMP.z0, RAMP.rise), a = Math.atan2(RAMP.rise, RAMP.z1 - RAMP.z0);
-  const cob2 = cobbleTexture(); cob2.repeat.set(4, 9);
-  const cobMat2 = M(0xffffff, { map: cob2 });
+  const cobMat2 = M(0xd0ccc4, pbr('cobble', 7, 10));
   box(0, RAMP.rise / 2 - 0.75 * Math.cos(a), (RAMP.z0 + RAMP.z1) / 2 + 0.75 * Math.sin(a), 14, 1.5, L, cobMat2, { rotX: -a });
-  const cob3 = cobbleTexture(); cob3.repeat.set(4, 4);
-  box(0, RAMP.rise / 2, 58, 14, RAMP.rise, 16, [darkStone, darkStone, M(0xffffff, { map: cob3 }), darkStone, darkStone, darkStone]);
+  box(0, RAMP.rise / 2, 58, 14, RAMP.rise, 16, [darkStone, darkStone, M(0xd0ccc4, pbr('cobble', 7, 8)), darkStone, darkStone, darkStone]);
 
   // ---------- tenements ----------
   let ti = 0;
@@ -126,8 +126,8 @@ export function buildWorld(scene, world, mats, opts = {}) {
   for (const [side, z0, z1, name, col] of shops) {
     const s = side === 'W' ? -1 : 1, x = s * 6.94, len = z1 - z0, zc = (z0 + z1) / 2;
     const yb = zc > RAMP.z0 ? RAMP.rise * Math.min(1, (zc - RAMP.z0) / (RAMP.z1 - RAMP.z0)) : 0;
-    box(x, yb + 1.6, zc, 0.12, 3.2, len, M(col), { phys: false });
-    box(x - s * 0.02, yb + 1.5, zc - len * 0.15, 0.1, 1.8, len * 0.45, M(0x2b3a48, { emissive: 0x2a2416 }), { phys: false });
+    box(x, yb + 1.6, zc, 0.12, 3.2, len, wood(col, len / 2, 1.6), { phys: false });
+    box(x - s * 0.02, yb + 1.5, zc - len * 0.15, 0.1, 1.8, len * 0.45, M(0x2b3a48, { emissive: 0x3a2f1a, roughness: 0.15, metalness: 0.3 }), { phys: false });
     sign(name, x - s * 0.08, yb + 2.85, zc, Math.min(len - 0.4, 5.5), 0.55, -s * Math.PI / 2, col, '#f1d98a');
   }
 
@@ -155,7 +155,7 @@ export function buildWorld(scene, world, mats, opts = {}) {
   railings(-7, 7, -50.2, 0); railings(-7, 7, 66.2, RAMP.rise);
   invisibleWall(0, 6, -50.6, 14, 12, 0.4); invisibleWall(0, 9, 66.6, 14, 12, 0.4);
   // ---------- skyline: Castle on its rock, Old Town roofs, a spire ----------
-  const rockMat = M(0x4c4a44), castleMat = M(0x8a8174);
+  const rockMat = M(0x4a4c44, { ...pbr('sandstone', 6, 3, { normal: false }), roughness: 1, envMapIntensity: 0.2 }), castleMat = M(0x9a9080, pbr('sandstone', 8, 2, { normal: false }));
   const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(40, 1), rockMat); rock.scale.set(1.6, 0.75, 1); rock.position.set(0, 6, 200); scene.add(rock);
   const cbox = (x, y, z, w, h, d) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), castleMat); m.position.set(x, y, z); scene.add(m); };
   cbox(0, 40, 190, 60, 14, 18); cbox(-24, 48, 188, 12, 16, 12); cbox(14, 50, 192, 16, 22, 14); cbox(30, 44, 186, 10, 12, 10);
@@ -196,7 +196,7 @@ export function buildWorld(scene, world, mats, opts = {}) {
   }
   // 2. Bench
   {
-    const x = -5.9, z = -18, bm = M(0x6b4a2b);
+    const x = -5.9, z = -18, bm = wood(0x8a6a48, 1, 2);
     const parts = [box(x, PAVE + 0.45, z, 0.5, 0.08, 1.9, bm), box(x - 0.25, PAVE + 0.8, z, 0.08, 0.6, 1.9, bm)];
     for (const dz of [-0.8, 0.8]) parts.push(box(x, PAVE + 0.22, z + dz, 0.45, 0.44, 0.08, iron));
     parts.forEach((q) => tag(q.body, 'bench'));
@@ -289,7 +289,7 @@ export function buildWorld(scene, world, mats, opts = {}) {
       lines: ["In the skip! Tidy.", "Builder: 'Oi! That's ma lunch in there!'", "Chipped in like a pro."] });
   }
   // decorative bench on terrace (with castle view)
-  { const x = 0, z = 64.6, y = RAMP.rise, bm = M(0x6b4a2b); box(x, y + 0.45, z, 1.9, 0.08, 0.5, bm); box(x, y + 0.22, z, 1.7, 0.44, 0.3, iron); }
+  { const x = 0, z = 64.6, y = RAMP.rise, bm = wood(0x8a6a48, 2, 1); box(x, y + 0.45, z, 1.9, 0.08, 0.5, bm); box(x, y + 0.22, z, 1.7, 0.44, 0.3, iron); }
 
   // pigeons
   const pigeons = [];

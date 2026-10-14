@@ -2,7 +2,8 @@ import './style.css';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { buildWorld } from './world.js';
-import { ballTexture } from './textures.js';
+import { ballTexture, texManager } from './textures.js';
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { Sfx } from './audio.js';
 import { Controls } from './controls.js';
 
@@ -11,24 +12,38 @@ const lowPower = isTouch || /Android|iPhone|iPad/i.test(navigator.userAgent);
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: !lowPower, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.5 : 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.25 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = !lowPower;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-const SKY = 0xaebfcf;
+const SKY = 0xc4ccd2; // haze colour, close to the HDRI horizon
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 70, 300);
+scene.fog = new THREE.Fog(SKY, 55, 330);
+// CC0 HDRI (Poly Haven, kloofendal_48d_partly_cloudy_puresky, 1K): sky backdrop + image-based reflections.
+let assetsLoaded = false;
+texManager.onLoad = () => { assetsLoaded = true; };
+new HDRLoader(texManager).load(import.meta.env.BASE_URL + 'hdri/sky_1k.hdr', (hdr) => {
+  hdr.mapping = THREE.EquirectangularReflectionMapping;
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose();
+  scene.environmentIntensity = 0.55;
+  scene.background = hdr; scene.backgroundIntensity = 0.9;
+});
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 600);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-scene.add(new THREE.HemisphereLight(0xe4ecf5, 0x6a5a48, 1.6));
-const sun = new THREE.DirectionalLight(0xffe0b5, 2.2);
-sun.position.set(30, 60, -20);
+scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x6b5640, 0.9));
+const sun = new THREE.DirectionalLight(0xffc98f, 3.0); // warm, lowish sun from the south-west
+sun.position.set(18, 38, -55);
 if (renderer.shadowMap.enabled) {
   sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 150 });
+  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 160 });
+  sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
 }
 scene.add(sun, sun.target);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
@@ -59,7 +74,7 @@ let yaw = Math.PI, pitch = -0.25;
 // balls
 const BALL_R = 0.22;
 const ballGeo = new THREE.SphereGeometry(BALL_R, lowPower ? 16 : 24, lowPower ? 12 : 16);
-const ballMat = new THREE.MeshLambertMaterial({ map: ballTexture() });
+const ballMat = new THREE.MeshStandardMaterial({ map: ballTexture(), roughness: 0.45 });
 const balls = [[0.3, 0.4, -33.6], [-19, 0.4, -6], [2, 3.4, 54]].map(([x, y, z]) => {
   const body = new CANNON.Body({ mass: 0.43, material: mats.ball, shape: new CANNON.Sphere(BALL_R), linearDamping: 0.08, angularDamping: 0.25, collisionFilterGroup: G_BALL });
   body.position.set(x, y, z); world.addBody(body);
@@ -260,7 +275,7 @@ function render(dt, t) {
       if (pg.t < 0) { pg.state = 'gone'; pg.g.visible = false; pg.t = 15; }
     } else { pg.t -= dt; if (pg.t < 0 && Math.hypot(p.x - pg.home.x, p.z - pg.home.z) > 10) { pg.state = 'idle'; pg.g.visible = true; pg.g.position.copy(pg.home); } }
   }
-  sun.position.set(p.x + 30, 60, p.z - 20); sun.target.position.set(p.x, 0, p.z);
+  sun.position.set(p.x + 18, 38, p.z - 55); sun.target.position.set(p.x, 0, p.z);
   renderer.render(scene, camera);
 }
 
@@ -275,7 +290,7 @@ requestAnimationFrame(loop);
 
 // Test/debug hooks (used by scripts/verify.mjs).
 window.__game = {
-  get score() { return score; }, get simTime() { return simTime; },
+  get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; },
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },

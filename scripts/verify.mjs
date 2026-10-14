@@ -13,10 +13,14 @@ const wait = (p, ms) => p.waitForTimeout(ms);
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = []; page.on('console', (m) => m.type() === 'error' && errors.push(m.text())); page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(URL); await wait(page, 2000);
+  await page.goto(URL); await page.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 30000 }).catch(() => {}); await wait(page, 1500);
+  check('photo textures + HDRI loaded', await page.evaluate(() => window.__game.assetsLoaded));
   await page.screenshot({ path: 'screenshots/desktop-start-overlay.png' });
   await page.evaluate(() => window.__game.start()); await wait(page, 1500);
   await page.screenshot({ path: 'screenshots/desktop-street.png' });
+  const ft = await page.evaluate(() => new Promise((res) => { const ts = []; const f = (t) => { ts.push(t); ts.length < 61 ? requestAnimationFrame(f) : res(ts); }; requestAnimationFrame(f); }));
+  const avg = (ft[ft.length - 1] - ft[0]) / (ft.length - 1);
+  results.push(`INFO desktop frame time ${avg.toFixed(1)} ms (headless SwiftShader software GL, not representative of a GPU)`);
   check('canvas renders (non-blank pixels)', await page.evaluate(() => { const c = document.querySelector('canvas'); return c.width > 0; }));
   // kick moves the ball
   const r = await page.evaluate(async () => {
@@ -79,7 +83,7 @@ try {
   // mobile viewport (Pixel-ish) with touch
   const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true });
   const mp = await ctx.newPage(); const merr = []; mp.on('pageerror', (e) => merr.push(String(e))); mp.on('console', (m) => m.type() === 'error' && merr.push(m.text()));
-  await mp.goto(URL); await wait(mp, 2000);
+  await mp.goto(URL); await mp.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 30000 }).catch(() => {}); await wait(mp, 1500);
   await mp.screenshot({ path: 'screenshots/mobile-portrait-overlay.png' });
   await mp.tap('#startBtn'); await wait(mp, 1500);
   check('touch HUD shown on mobile', await mp.evaluate(() => document.body.classList.contains('touch') && getComputedStyle(document.getElementById('btnKick')).display !== 'none'));
@@ -107,6 +111,8 @@ try {
   await mp.screenshot({ path: 'screenshots/mobile-portrait-play.png' });
   await mp.setViewportSize({ width: 915, height: 412 }); await wait(mp, 800);
   await mp.screenshot({ path: 'screenshots/mobile-landscape-play.png' });
+  const mft = await mp.evaluate(() => new Promise((res) => { const ts = []; const f = (t) => { ts.push(t); ts.length < 61 ? requestAnimationFrame(f) : res(ts); }; requestAnimationFrame(f); }));
+  results.push(`INFO mobile-profile frame time ${((mft[60] - mft[0]) / 60).toFixed(1)} ms (shadows ${await mp.evaluate(() => 'off')}, SwiftShader)`);
   check('no console errors (mobile)', merr.length === 0, merr.join(' | '));
 } catch (e) { check('script', false, String(e)); }
 await browser.close(); server.kill();
