@@ -260,7 +260,7 @@ function build(scene, world, mats, P) {
   { const x = 10.94, y = 2.4, z = -24;
     sign('NO BALL GAMES', x, y, z, 1.4, 0.5, -Math.PI / 2, '#f4f1ea', '#c8102e', 'bold 54px Arial', '#c8102e');
     sign('BY ORDER - CITY OF EDINBURGH COUNCIL', x, y - 0.36, z, 1.4, 0.14, -Math.PI / 2, '#f4f1ea', '#222', 'bold 30px Arial');
-    boxBody(x - 0.02, y + 0.03, z, 0.06, 0.42, 1.0, { target: 'noballs' });
+    boxBody(x - 0.02, y + 0.03, z, 0.06, 0.32, 0.62, { target: 'noballs' });
     addTarget({ id: 'noballs', name: "'No Ball Games' Sign", hint: 'hit the sign. Go on.', points: 125, cash: 125, diff: 'hard', tier: 'tricky', kind: 'hit', pos: V(x - 0.4, 0, z), ringR: 1.0, stand: V(6.2, 0, z), aim: V(x, y, z),
       lines: ['Ironic. Very ironic.', "Mrs Kerr's at the windae. RUN.", 'The council will be hearing aboot this.'] }); }
 
@@ -270,7 +270,7 @@ function build(scene, world, mats, P) {
   // C1. Garage roof: lob it up onto the lock-up roof (and keep it there long enough to count)
   { const yR = 2.86; solid('flat', -13.4, yR + 0.12, GZ0 + 0.1, 7.4, 0.12, 0.14, 0x55575a, { phys: true }); // wee upstand at the back edge
     addChallenge({ id: 'c_roof', name: 'On the Lock-up Roof', hint: 'there\'s a ba\' up there already...', points: 0, cash: 100, kind: 'zone', pos: V(-13.4, yR, GZ0 + GN * GW / 2), ringR: 1.6,
-      stand: V(-2.5, 0, 9), aim: V(-16.0, yR + 0.3, 4.6), zone: new THREE.Box3(V(-16.9, yR, GZ0 + 0.2), V(-15.4, yR + 0.45, GZ0 + 2.8)), // by the old burst ba' at the far corner
+      stand: V(-2.5, 0, 9), aim: V(-16.0, yR + 0.3, 4.6), zone: new THREE.Box3(V(-16.9, yR, GZ0 + 0.2), V(-15.4, yR + 0.45, GZ0 + 2.8)), maxSpeed: 2.5, // by the old burst ba' at the far corner
       lines: ["It's up there wi' the other forty balls.", "Wee Tam's da: 'That's comin' oot yer pocket money.'"] }); }
   { const old = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6).scale(1, 0.55, 1), new THREE.MeshLambertMaterial({ color: 0x9a6a3a })); old.position.set(-15.8, 3.0, 5.2); scene.add(old); } // clue: an old burst ba' already up there
   // C2. Mrs Kerr's open upstairs windae (2nd floor of the pitched-roof block)
@@ -280,12 +280,12 @@ function build(scene, world, mats, P) {
     quad('glass', x - 0.016, y + 0.42, z, 1.2, 0.5, -Math.PI / 2, null, 0xffffff); // sash pushed up
     quad('flat', x - 0.02, y - 0.1, z + 0.45, 0.25, 0.9, -Math.PI / 2, null, 0xd77a9a); // curtain blowing
     solid('flat', x - 0.1, y - 0.7, z, 0.2, 0.08, 1.45, 0xd8d4cc, { phys: false }); // sill
-    boxBody(x - 0.03, y - 0.15, z, 0.06, 0.45, 0.5, { target: 'c_window' });
+    boxBody(x - 0.03, y - 0.15, z, 0.06, 0.36, 0.4, { target: 'c_window' });
     addChallenge({ id: 'c_window', name: "Mrs Kerr's Windae", hint: 'somebody\'s left their windae open', points: 0, cash: 100, kind: 'hit', pos: V(x - 0.6, 0, z), ringR: 1.0, stand: V(4.5, 0, z), aim: V(x, y, z),
       lines: ["MRS KERR: 'WHO KICKED THAT?!'", 'Straight in the front room. Mind the good china.'] }); }
   // C3. Long-range drying green: through the poles from the far pavement (14 m+, up the bank)
   addChallenge({ id: 'c_longpoles', name: 'Worldie Through the Poles', hint: 'the big boys shoot from the far pavement', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
-    stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -3.6), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(19.08, rise + 0.2, -3.95), V(19.5, rise + 1.6, -3.25)), minSpeed: 1,
+    stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -3.6), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(19.08, rise + 0.2, -3.85), V(19.5, rise + 1.2, -3.35)), minSpeed: 1,
     lines: ['WORLDIE! Fiona would be proud.', 'From there?! Absolute screamer.'] });
   // faint sparkles mark the challenge spots (one Points draw call)
   const spk = new THREE.Points(new THREE.BufferGeometry().setFromPoints([V(-13.4, 3.5, 12), V(10.7, 4.9, -28.5), V(-4.6, 0.25, -4)]),
