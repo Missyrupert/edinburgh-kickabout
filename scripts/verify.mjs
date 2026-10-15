@@ -139,7 +139,7 @@ try {
   const cx = jb.x + jb.width / 2, cy = jb.y + jb.height / 2;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: cy }] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx, y: cy - 50 }] });
-  await wait(mp, 1200);
+  await mp.evaluate(() => window.__game.waitSim(1.0));
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   const z1 = await mp.evaluate(() => window.__game.player.position.z);
   check('touch joystick moves player', z1 - z0 > 1.5, `${z0.toFixed(2)} -> ${z1.toFixed(2)}`);
