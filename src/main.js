@@ -406,7 +406,6 @@ function checkZones(now) {
         if (t.minRange && (!b.kickFrom || Math.hypot(b.kickFrom.x - t.rangeFrom.x, b.kickFrom.z - t.rangeFrom.z) < t.minRange)) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
-        if (t.maxSpeed && sp > t.maxSpeed) continue; // must settle there (e.g. the roof corner)
         if (t.maxSpeed && sp > t.maxSpeed) continue;
         if (!t.done) scoreTarget(t, (b.bounces | 0) === 0 ? 'Clean in' : null);
       }

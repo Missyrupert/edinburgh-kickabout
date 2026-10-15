@@ -406,7 +406,7 @@ try {
     g.teleport(0, -30, 180, -10); g.placeBall(0, 0, 0.3, -27); g.simulate(0.3); g.kick(0.05); g.simulate(0.3); // lastTouched = ball 0
     g.placeBall(0, 0, 0.3, -18); g.simulate(0.5); g.teleport(0, -30, 180, -10); r.paid = g.requestBall(); r.w1 = g.wallet.pence;
     g.simulate(0.3); const p = g.balls[g.lastTouched].body.position.clone(); g.simulate(3); r.hold = +g.balls[g.lastTouched].body.position.distanceTo(p).toFixed(4);
-    g.placeBall(0, 0, 0.3, 0); g.simulate(0.3); g.teleport(0, -30, 180, -10); r.far = g.requestBall(); r.w2 = g.wallet.pence;
+    g.placeBall(0, 0, 0.3, 12); g.simulate(0.3); g.teleport(0, -30, 180, -10); r.far = g.requestBall(); r.w2 = g.wallet.pence;
     g.placeBall(0, 0, 0.3, -24); g.simulate(5); g.teleport(0, -30, 180, -10); r.stuck = g.requestBall(); r.w3 = g.wallet.pence; return r; });
   check('BALL rescue: refused when close, 10p when mid-range, free when far/stuck, skint refused, still held on recall', br.near === 'near' && br3.paid === 'paid' && br3.w1 === 40 && br3.far === 'free' && br3.stuck === 'free' && br3.w3 === 40 && br3.hold < 0.01, JSON.stringify({ br, br3 }));
   const feet = await pg.evaluate(() => { const g = window.__game; const r = { t0: g.bootTris, lockedBoots: g.applyBoots('boots') }; return r; });

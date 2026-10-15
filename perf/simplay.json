@@ -69,44 +69,44 @@
     "id": "noballs",
     "name": "'No Ball Games' Sign",
     "legend": false,
-    "windowShots": 33,
-    "median": 1,
-    "p90": 4,
+    "windowShots": 27,
+    "median": 2,
+    "p90": 6,
     "never": 0
    },
    {
     "id": "c_roof",
     "name": "On the Lock-up Roof",
     "legend": true,
-    "windowShots": 29,
-    "median": 2,
-    "p90": 5,
+    "windowShots": 10,
+    "median": 5,
+    "p90": 9,
     "never": 0
    },
    {
     "id": "c_window",
     "name": "Mrs Kerr's Windae",
     "legend": true,
-    "windowShots": 18,
-    "median": 4,
-    "p90": 9,
+    "windowShots": 16,
+    "median": 3,
+    "p90": 8,
     "never": 0
    },
    {
     "id": "c_longpoles",
     "name": "Worldie Through the Poles",
     "legend": true,
-    "windowShots": 54,
-    "median": 3,
-    "p90": 13,
-    "never": 0
+    "windowShots": 47,
+    "median": 13,
+    "p90": 21,
+    "never": 35
    }
   ],
-  "medianMinutesTo650": 7.6,
+  "medianMinutesTo650": 7.5,
   "reached650": "20/20",
-  "ballUsesMedian": 2,
-  "ballUsesMax": 10,
-  "spentMedianP": 10,
+  "ballUsesMedian": 5,
+  "ballUsesMax": 12,
+  "spentMedianP": 30,
   "refusedTotal": 0,
   "lostTotal": 0,
   "stuckHighTotal": 0,
@@ -152,26 +152,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 2,
+     "tries": 4,
      "ok": true
     },
     "c_window": {
-     "tries": 1,
+     "tries": 2,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 4,
+     "tries": 13,
      "ok": true
     }
    },
    "minutes650": 8.3,
-   "ballUses": 3,
-   "spent": 10,
+   "ballUses": 5,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 10.8
+   "minutes": 13.2
   },
   {
    "per": {
@@ -208,26 +208,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 2,
-     "ok": true
-    },
-    "c_window": {
      "tries": 1,
      "ok": true
     },
+    "c_window": {
+     "tries": 2,
+     "ok": true
+    },
     "c_longpoles": {
-     "tries": 9,
+     "tries": 10,
      "ok": true
     }
    },
    "minutes650": 6.2,
-   "ballUses": 6,
-   "spent": 50,
+   "ballUses": 5,
+   "spent": 40,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 9.7
+   "minutes": 9.6
   },
   {
    "per": {
@@ -264,26 +264,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 3,
+     "tries": 5,
      "ok": true
     },
     "c_window": {
-     "tries": 11,
+     "tries": 3,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 14,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 11.3,
-   "ballUses": 7,
-   "spent": 50,
+   "ballUses": 5,
+   "spent": 40,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 18
+   "minutes": 21.7
   },
   {
    "per": {
@@ -316,7 +316,7 @@
      "ok": true
     },
     "noballs": {
-     "tries": 2,
+     "tries": 5,
      "ok": true
     },
     "c_roof": {
@@ -328,18 +328,18 @@
      "ok": true
     },
     "c_longpoles": {
-     "tries": 2,
+     "tries": 27,
      "ok": true
     }
    },
-   "minutes650": 8.2,
-   "ballUses": 1,
-   "spent": 10,
+   "minutes650": 8.8,
+   "ballUses": 9,
+   "spent": 70,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 9.7
+   "minutes": 16.1
   },
   {
    "per": {
@@ -376,26 +376,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 1,
+     "tries": 7,
      "ok": true
     },
     "c_window": {
-     "tries": 1,
+     "tries": 4,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 4,
+     "tries": 8,
      "ok": true
     }
    },
-   "minutes650": 13.5,
-   "ballUses": 4,
-   "spent": 30,
+   "minutes650": 15.1,
+   "ballUses": 1,
+   "spent": 0,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 14.7
+   "minutes": 18.7
   },
   {
    "per": {
@@ -428,30 +428,30 @@
      "ok": true
     },
     "noballs": {
-     "tries": 1,
-     "ok": true
-    },
-    "c_roof": {
      "tries": 5,
      "ok": true
     },
+    "c_roof": {
+     "tries": 1,
+     "ok": true
+    },
     "c_window": {
-     "tries": 9,
+     "tries": 8,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 3,
+     "tries": 16,
      "ok": true
     }
    },
    "minutes650": 5.1,
-   "ballUses": 0,
-   "spent": 0,
+   "ballUses": 3,
+   "spent": 10,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 10.3
+   "minutes": 12.8
   },
   {
    "per": {
@@ -496,13 +496,69 @@
      "ok": true
     },
     "c_longpoles": {
-     "tries": 14,
+     "tries": 18,
      "ok": true
     }
    },
    "minutes650": 4,
-   "ballUses": 4,
-   "spent": 20,
+   "ballUses": 3,
+   "spent": 10,
+   "refused": 0,
+   "lost": 0,
+   "stuckHigh": 0,
+   "anomalies": [],
+   "minutes": 10.4
+  },
+  {
+   "per": {
+    "garage": {
+     "tries": 1,
+     "ok": true
+    },
+    "trolley": {
+     "tries": 2,
+     "ok": true
+    },
+    "busstop": {
+     "tries": 1,
+     "ok": true
+    },
+    "lamp": {
+     "tries": 3,
+     "ok": true
+    },
+    "bin": {
+     "tries": 2,
+     "ok": true
+    },
+    "gap": {
+     "tries": 3,
+     "ok": true
+    },
+    "wheelie": {
+     "tries": 3,
+     "ok": true
+    },
+    "noballs": {
+     "tries": 8,
+     "ok": true
+    },
+    "c_roof": {
+     "tries": 9,
+     "ok": true
+    },
+    "c_window": {
+     "tries": 1,
+     "ok": true
+    },
+    "c_longpoles": {
+     "tries": 4,
+     "ok": true
+    }
+   },
+   "minutes650": 5.9,
+   "ballUses": 1,
+   "spent": 0,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
@@ -516,62 +572,6 @@
      "ok": true
     },
     "trolley": {
-     "tries": 2,
-     "ok": true
-    },
-    "busstop": {
-     "tries": 1,
-     "ok": true
-    },
-    "lamp": {
-     "tries": 3,
-     "ok": true
-    },
-    "bin": {
-     "tries": 2,
-     "ok": true
-    },
-    "gap": {
-     "tries": 3,
-     "ok": true
-    },
-    "wheelie": {
-     "tries": 3,
-     "ok": true
-    },
-    "noballs": {
-     "tries": 4,
-     "ok": true
-    },
-    "c_roof": {
-     "tries": 2,
-     "ok": true
-    },
-    "c_window": {
-     "tries": 9,
-     "ok": true
-    },
-    "c_longpoles": {
-     "tries": 1,
-     "ok": true
-    }
-   },
-   "minutes650": 5.2,
-   "ballUses": 1,
-   "spent": 0,
-   "refused": 0,
-   "lost": 0,
-   "stuckHigh": 0,
-   "anomalies": [],
-   "minutes": 8.5
-  },
-  {
-   "per": {
-    "garage": {
-     "tries": 1,
-     "ok": true
-    },
-    "trolley": {
      "tries": 3,
      "ok": true
     },
@@ -604,22 +604,22 @@
      "ok": true
     },
     "c_window": {
-     "tries": 1,
+     "tries": 5,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 2,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
-   "minutes650": 7.6,
-   "ballUses": 1,
-   "spent": 0,
+   "minutes650": 7.5,
+   "ballUses": 8,
+   "spent": 70,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 9.2
+   "minutes": 16.6
   },
   {
    "per": {
@@ -656,26 +656,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 7,
+     "tries": 6,
      "ok": true
     },
     "c_window": {
-     "tries": 3,
+     "tries": 2,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 1,
+     "tries": 19,
      "ok": true
     }
    },
    "minutes650": 6.1,
-   "ballUses": 2,
-   "spent": 0,
+   "ballUses": 3,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 10.1
+   "minutes": 13.8
   },
   {
    "per": {
@@ -712,7 +712,7 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 1,
+     "tries": 14,
      "ok": true
     },
     "c_window": {
@@ -720,18 +720,18 @@
      "ok": true
     },
     "c_longpoles": {
-     "tries": 5,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 6.3,
-   "ballUses": 2,
-   "spent": 10,
+   "ballUses": 6,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 9.5
+   "minutes": 19.3
   },
   {
    "per": {
@@ -768,26 +768,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 2,
+     "tries": 3,
      "ok": true
     },
     "c_window": {
-     "tries": 9,
+     "tries": 21,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 3,
+     "tries": 8,
      "ok": true
     }
    },
    "minutes650": 6.6,
-   "ballUses": 0,
-   "spent": 0,
+   "ballUses": 3,
+   "spent": 20,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 10.9
+   "minutes": 14.5
   },
   {
    "per": {
@@ -824,26 +824,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 1,
+     "tries": 7,
      "ok": true
     },
     "c_window": {
-     "tries": 4,
+     "tries": 13,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 1,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 10.5,
-   "ballUses": 0,
-   "spent": 0,
+   "ballUses": 12,
+   "spent": 90,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 12.4
+   "minutes": 22.2
   },
   {
    "per": {
@@ -880,26 +880,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 2,
-     "ok": true
-    },
-    "c_window": {
      "tries": 8,
      "ok": true
     },
-    "c_longpoles": {
+    "c_window": {
      "tries": 2,
      "ok": true
+    },
+    "c_longpoles": {
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 11.5,
-   "ballUses": 0,
-   "spent": 0,
+   "ballUses": 4,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 14.9
+   "minutes": 22.8
   },
   {
    "per": {
@@ -936,26 +936,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 1,
+     "tries": 3,
      "ok": true
     },
     "c_window": {
-     "tries": 6,
+     "tries": 2,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 1,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 11.5,
-   "ballUses": 1,
-   "spent": 0,
+   "ballUses": 7,
+   "spent": 60,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 14.1
+   "minutes": 20.7
   },
   {
    "per": {
@@ -988,30 +988,30 @@
      "ok": true
     },
     "noballs": {
-     "tries": 3,
+     "tries": 6,
      "ok": true
     },
     "c_roof": {
-     "tries": 7,
+     "tries": 5,
      "ok": true
     },
     "c_window": {
-     "tries": 2,
+     "tries": 3,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 2,
-     "ok": true
+     "tries": 30,
+     "ok": false
     }
    },
    "minutes650": 6.4,
-   "ballUses": 4,
-   "spent": 0,
+   "ballUses": 7,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 9.9
+   "minutes": 17.4
   },
   {
    "per": {
@@ -1048,26 +1048,26 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 3,
+     "tries": 16,
      "ok": true
     },
     "c_window": {
-     "tries": 6,
+     "tries": 3,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 8,
+     "tries": 10,
      "ok": true
     }
    },
    "minutes650": 9.1,
    "ballUses": 5,
-   "spent": 20,
+   "spent": 40,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 14.4
+   "minutes": 17.5
   },
   {
    "per": {
@@ -1104,15 +1104,15 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 3,
+     "tries": 6,
      "ok": true
     },
     "c_window": {
-     "tries": 4,
+     "tries": 1,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 3,
+     "tries": 9,
      "ok": true
     }
    },
@@ -1123,7 +1123,7 @@
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 8.4
+   "minutes": 9.8
   },
   {
    "per": {
@@ -1160,21 +1160,21 @@
      "ok": true
     },
     "c_roof": {
-     "tries": 2,
+     "tries": 9,
      "ok": true
     },
     "c_window": {
-     "tries": 1,
+     "tries": 7,
      "ok": true
     },
     "c_longpoles": {
-     "tries": 8,
+     "tries": 21,
      "ok": true
     }
    },
    "minutes650": 3.7,
-   "ballUses": 0,
-   "spent": 0,
+   "ballUses": 3,
+   "spent": 10,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
@@ -1182,7 +1182,7 @@
     "lamp: scored without cash",
     "noballs: whiff from dribble spot"
    ],
-   "minutes": 9.7
+   "minutes": 15.9
   },
   {
    "per": {
@@ -1227,18 +1227,18 @@
      "ok": true
     },
     "c_longpoles": {
-     "tries": 13,
+     "tries": 17,
      "ok": true
     }
    },
    "minutes650": 11.9,
-   "ballUses": 10,
-   "spent": 60,
+   "ballUses": 5,
+   "spent": 30,
    "refused": 0,
    "lost": 0,
    "stuckHigh": 0,
    "anomalies": [],
-   "minutes": 16.8
+   "minutes": 18.7
   }
  ]
 }

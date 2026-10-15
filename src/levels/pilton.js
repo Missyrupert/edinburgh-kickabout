@@ -285,7 +285,7 @@ function build(scene, world, mats, P) {
       lines: ["MRS KERR: 'WHO KICKED THAT?!'", 'Straight in the front room. Mind the good china.'] }); }
   // C3. Long-range drying green: through the poles from the far pavement (14 m+, up the bank)
   addChallenge({ id: 'c_longpoles', name: 'Worldie Through the Poles', hint: 'the big boys shoot from the far pavement', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
-    stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -3.6), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(19.08, rise + 0.2, -3.85), V(19.5, rise + 1.2, -3.35)), minSpeed: 1,
+    stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -3.6), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(19.08, rise + 0.2, -3.95), V(19.5, rise + 1.6, -3.25)), minSpeed: 1,
     lines: ['WORLDIE! Fiona would be proud.', 'From there?! Absolute screamer.'] });
   // faint sparkles mark the challenge spots (one Points draw call)
   const spk = new THREE.Points(new THREE.BufferGeometry().setFromPoints([V(-13.4, 3.5, 12), V(10.7, 4.9, -28.5), V(-4.6, 0.25, -4)]),

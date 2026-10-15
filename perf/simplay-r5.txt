@@ -1,0 +1,52 @@
+player 1: 13.2 min, ball 5, £6.50 at 8.3
+player 2: 9.6 min, ball 5, £6.50 at 6.2
+player 3: 21.7 min, ball 5, £6.50 at 11.3
+player 4: 16.1 min, ball 9, £6.50 at 8.8
+player 5: 18.7 min, ball 1, £6.50 at 15.1
+player 6: 12.8 min, ball 3, £6.50 at 5.1
+player 7: 10.4 min, ball 3, £6.50 at 4
+player 8: 9.8 min, ball 1, £6.50 at 5.9
+player 9: 16.6 min, ball 8, £6.50 at 7.5
+player 10: 13.8 min, ball 3, £6.50 at 6.1
+player 11: 19.3 min, ball 6, £6.50 at 6.3
+player 12: 14.5 min, ball 3, £6.50 at 6.6
+player 13: 22.2 min, ball 12, £6.50 at 10.5
+player 14: 22.8 min, ball 4, £6.50 at 11.5
+player 15: 20.7 min, ball 7, £6.50 at 11.5
+player 16: 17.4 min, ball 7, £6.50 at 6.4
+player 17: 17.5 min, ball 5, £6.50 at 9.1
+player 18: 9.8 min, ball 2, £6.50 at 5.3
+player 19: 15.9 min, ball 3, £6.50 at 3.7
+player 20: 18.7 min, ball 5, £6.50 at 11.9
+┌─────────┬───────────────┬─────────────────────────────┬────────┬─────────────┬────────┬─────┬───────┐
+│ (index) │ id            │ name                        │ legend │ windowShots │ median │ p90 │ never │
+├─────────┼───────────────┼─────────────────────────────┼────────┼─────────────┼────────┼─────┼───────┤
+│ 0       │ 'garage'      │ 'Garage Door No.4'          │ false  │ 97          │ 1      │ 1   │ 0     │
+│ 1       │ 'trolley'     │ 'Abandoned Trolley'         │ false  │ 117         │ 1      │ 3   │ 0     │
+│ 2       │ 'busstop'     │ 'Bus Stop'                  │ false  │ 142         │ 1      │ 1   │ 0     │
+│ 3       │ 'lamp'        │ 'Lamppost (lost cat)'       │ false  │ 247         │ 3      │ 5   │ 0     │
+│ 4       │ 'bin'         │ 'Communal Bin'              │ false  │ 12          │ 4      │ 14  │ 5     │
+│ 5       │ 'gap'         │ 'Drying Green Poles'        │ false  │ 125         │ 3      │ 9   │ 0     │
+│ 6       │ 'wheelie'     │ 'Green Wheelie Bin'         │ false  │ 23          │ 8      │ 13  │ 5     │
+│ 7       │ 'noballs'     │ "'No Ball Games' Sign"      │ false  │ 27          │ 2      │ 6   │ 0     │
+│ 8       │ 'c_roof'      │ 'On the Lock-up Roof'       │ true   │ 10          │ 5      │ 9   │ 0     │
+│ 9       │ 'c_window'    │ "Mrs Kerr's Windae"         │ true   │ 16          │ 3      │ 8   │ 0     │
+│ 10      │ 'c_longpoles' │ 'Worldie Through the Poles' │ true   │ 47          │ 13     │ 21  │ 35    │
+└─────────┴───────────────┴─────────────────────────────┴────────┴─────────────┴────────┴─────┴───────┘
+{
+ "players": 20,
+ "medianMinutesTo650": 7.5,
+ "reached650": "20/20",
+ "ballUsesMedian": 5,
+ "ballUsesMax": 12,
+ "spentMedianP": 30,
+ "refusedTotal": 0,
+ "lostTotal": 0,
+ "stuckHighTotal": 0,
+ "anomalies": [
+  "lamp: scored without cash",
+  "noballs: whiff from dribble spot"
+ ],
+ "pageErrors": []
+}
+done
