@@ -81,3 +81,4 @@ body.touch #crosshair{width:8px;height:8px}
 .ballsel div{margin-bottom:8px}
 .ballsel button{min-height:44px}
 @media (max-height:460px){.card.menu{padding:10px 14px}.card.menu .sub{margin:2px 0}.card.menu .levels{margin:6px 0}.card.menu button.primary{min-height:44px;margin:4px 0}}
+#chal{font-size:12px;opacity:.9}
