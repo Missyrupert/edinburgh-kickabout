@@ -463,7 +463,7 @@ function fixedUpdate(h) {
 }
 function advance(dt) { // frame -> fixed steps
   const [lx, ly] = controls.consumeLook();
-  yaw -= lx * 0.0024; pitch = THREE.MathUtils.clamp(pitch - ly * 0.0024, -1.45, 1.35);
+  yaw -= lx * 0.0024; pitch = THREE.MathUtils.clamp(pitch - ly * 0.0024, -1.31, 1.31);
   moveInput = controls.getMove();
   acc += Math.min(dt, 0.25);
   let n = 0;

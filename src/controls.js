@@ -19,7 +19,7 @@ export class Controls {
       this.startCharge();
     });
     addEventListener('mouseup', (e) => { if (!this.touch && e.button === 0) this.endCharge(); });
-    addEventListener('mousemove', (e) => { if (this.locked) { this.lookDX += e.movementX; this.lookDY += e.movementY; } });
+    addEventListener('mousemove', (e) => { if (this.locked) { this.lookDX += e.movementX * 0.7; this.lookDY += e.movementY * 0.7; } });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
       if (!this.locked) { this.charging = false; cb.unlocked(); }

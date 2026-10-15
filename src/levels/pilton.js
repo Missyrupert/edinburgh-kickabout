@@ -307,7 +307,7 @@ function build(scene, world, mats, P) {
 export default {
   id: 'pilton', name: 'West Pilton', short: 'Pilton',
   blurb: 'Level 1: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
-  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Start wi' the painted garage door on the left.</small>",
+  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. The painted garage door's doon the street on your right.</small>",
   build, spawn: [0, 0.5, -38], spawnYaw: 180,
   ballHomes: () => [[0.3, 0.4, -35.6], [14.8, 1.6, -2], [-2, 0.4, 26]],
   bounds: { x: 30, zMin: -50, zMax: 46 },
