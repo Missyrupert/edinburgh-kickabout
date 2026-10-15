@@ -300,7 +300,7 @@ function requestBall() {
   if (paused) return 'paused';
   const b = lastTouched || nearestBall(), p = b.body.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
   const stuck = d > 4 && simTime - (b.stillT ?? simTime) > 4, high = p.y - player.position.y > 2.2, out = Math.abs(p.x) > BOUNDS.x - 1 || p.z < BOUNDS.zMin + 1 || p.z > BOUNDS.zMax - 1 || p.y < -2;
-  const free = d > 25 || stuck || high || out;
+  const free = d > 40 || stuck || high || out;
   if (!free && d < 8) { ballMsg = 'near'; toast("<b>Go get it yersel!</b><br>It's right there, ya lazy article.", 1800); return ballMsg; }
   if (!free && wallet.pence < BALL_FEE) { ballMsg = 'skint'; toast("<b>Ye're skint.</b><br>The wee boy wants 10p. Go an' fetch it yersel.", 2000); return ballMsg; }
   if (!free) { wallet.pence -= BALL_FEE; saveWallet(); updateWallet(true); }
