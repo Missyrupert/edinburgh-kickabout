@@ -248,7 +248,7 @@ function build(scene, world, mats, P) {
   solid('flat', 19, rise + 1.4, -5.0, 0.04, 1.44, 1.8, 0xf2efe6, { phys: true }); // Mrs Kerr's sheets on the line: only a gap in the middle
   solid('flat', 19, rise + 1.4, -2.6, 0.04, 1.44, 1.0, 0x7fa3c9, { phys: true });
   // 6. Drying green: through the poles (hard), up the bank
-  addTarget({ id: 'gap', name: 'Drying Green Poles', hint: 'kick it between the poles (up the bank)', points: 125, cash: 125, diff: 'hard', tier: 'tricky', kind: 'zone', pos: V(19, rise, -4), ringR: 1.0, stand: V(14.5, rise, -4), aim: V(22, rise + 0.3, -4),
+  addTarget({ id: 'gap', name: 'Drying Green Poles', hint: 'kick it between the poles (up the bank)', points: 125, cash: 125, diff: 'hard', tier: 'tricky', kind: 'zone', pos: V(19, rise, -4), ringR: 1.0, stand: V(14.5, rise, -4), aim: V(22, rise + 0.3, -3.6),
     zone: new THREE.Box3(V(18.7, rise, -5.9), V(19.3, rise + 2.1, -2.1)), minSpeed: 1,
     lines: ["Through the posts! Mind Mrs Kerr's sheets.", 'GOAL! The washing applauds.', 'Wembley? Naw. Pilton drying green.'] });
   // 7. Wheelie bin chip (hard): open green wheelie by the gate
