@@ -237,13 +237,20 @@ const controls = new Controls(renderer.domElement, {
   chargeStart: () => { if (!paused) { chargeT0 = performance.now(); $('power').classList.add('on'); } },
   chargeEnd: () => { $('power').classList.remove('on'); if (!paused && chargeT0) kick(Math.min(1, (performance.now() - chargeT0) / 1000)); chargeT0 = 0; },
 });
-function pause() { paused = true; $('overlay').classList.remove('hidden'); $('startBtn').textContent = 'Resume'; if (document.pointerLockElement) document.exitPointerLock(); }
+function pause() { paused = true; showPanel('mainPanel'); $('overlay').classList.add('paused'); $('overlay').classList.remove('hidden'); $('startBtn').textContent = 'Resume'; if (document.pointerLockElement) document.exitPointerLock(); }
 function resume() {
   sfx.init(); started = true; paused = false; $('overlay').classList.add('hidden');
   if (!controls.touch) renderer.domElement.requestPointerLock?.();
-  if (!resume.once) { resume.once = 1; toast(LEVEL.intro, 4500); }
+  if (!resume.once) { resume.once = 1; toast(LEVEL.intro, 4500);
+    let seen = false; try { seen = localStorage.getItem('ek-tip'); localStorage.setItem('ek-tip', '1'); } catch {}
+    if (!seen) setTimeout(() => toast(controls.touch ? '<b>Tip:</b> hold KICK and release. Look up to chip it.' : '<b>Tip:</b> hold the mouse button and release to kick. Look up to chip it.', 4000), 4800); }
 }
 $('startBtn').addEventListener('click', resume);
+function showPanel(id) { for (const p of ['mainPanel', 'lockerPanel', 'settingsPanel', 'helpPanel']) $(p).classList.toggle('hidden', p !== id); }
+$('lockerBtn').addEventListener('click', () => showPanel('lockerPanel'));
+$('settingsBtn').addEventListener('click', () => showPanel('settingsPanel'));
+$('helpBtn').addEventListener('click', () => showPanel('helpPanel'));
+document.querySelectorAll('#overlay .back').forEach((b) => b.addEventListener('click', () => showPanel('mainPanel')));
 $('restartBtn').addEventListener('click', () => { restart(); resume(); });
 
 // ---------- gameplay ----------
@@ -557,6 +564,7 @@ window.__game = {
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
   get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return boot.geometry.attributes.position.count / 3; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
+  pause, showPanel,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },

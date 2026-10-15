@@ -61,3 +61,23 @@ body.touch #crosshair{width:8px;height:8px}
 .ballsel{margin-top:10px;font-size:14px}
 .ballsel button{margin:3px;padding:6px 10px;font-size:13px}
 .ballsel button.on{outline:2px solid #ffd75e}
+
+/* v1.6 compact menus */
+.card.menu{width:min(440px,100%);padding:14px 16px;max-height:calc(100dvh - 24px);overflow:auto}
+.card.menu h1{font-size:clamp(22px,6vw,30px)}
+.card.menu h2{margin:0 0 8px;color:#ffd75e;font-size:20px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.card.menu .levels{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.card.menu .levels button{flex:1;margin:0;padding:8px 6px;border-radius:12px;min-height:48px;display:flex;flex-direction:column;align-items:center;font-size:14px}
+.card.menu .levels button small{opacity:.75;font-weight:400;font-size:11px}
+.card.menu button.primary{display:block;width:100%;margin:8px 0;font-size:22px;min-height:52px}
+.card.menu .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.card.menu .row button{margin:3px 0;min-height:44px;min-width:44px;font-size:14px;padding:6px 14px}
+.card.menu .back{margin-top:10px;min-height:44px}
+.card.menu ul{text-align:left;font-size:14px;line-height:1.5;padding-left:18px;margin:4px 0}
+.card.menu ul.mob{display:none} body.touch .card.menu ul.mob{display:block} body.touch .card.menu ul.desk{display:none}
+.sheet.hidden,.card.menu.hidden{display:none}
+#overlay.paused .welcomeOnly{display:none} #overlay:not(.paused) .pauseOnly{display:none}
+.ballsel div{margin-bottom:8px}
+.ballsel button{min-height:44px}
+@media (max-height:460px){.card.menu{padding:10px 14px}.card.menu .sub{margin:2px 0}.card.menu .levels{margin:6px 0}.card.menu button.primary{min-height:44px;margin:4px 0}}

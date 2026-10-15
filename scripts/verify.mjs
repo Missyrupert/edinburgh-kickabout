@@ -233,10 +233,23 @@ try {
   await go(BASE); // brand-new player: no ?level, empty storage
   check('new players start in West Pilton', await pg.evaluate(() => window.__game.level === 'pilton' && window.__game.targets.length >= 5 && window.__game.targets.length <= 8), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
   await pg.screenshot({ path: 'screenshots/pilton-menu.png' });
+  // welcome screen fits a phone with no scroll (portrait + landscape)
+  const fit = {};
+  for (const [w, h] of [[412, 915], [915, 412]]) {
+    const fc = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.6 }); const fp = await fc.newPage();
+    await fp.goto(BASE + '?level=pilton', { waitUntil: 'domcontentloaded', timeout: 60000 }); await fp.waitForSelector('#mainPanel'); await wait(fp, 1500);
+    fit[`${w}x${h}`] = await fp.evaluate(() => { const c = document.getElementById('mainPanel'), r = c.getBoundingClientRect(), o = document.getElementById('overlay');
+      return { ok: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth && c.scrollHeight <= c.clientHeight + 1 && o.scrollHeight <= o.clientHeight + 1, h: Math.round(r.height) }; });
+    await fp.screenshot({ path: `screenshots/menu-phone-${w > h ? 'landscape' : 'portrait'}.png` });
+    await fp.evaluate(() => { window.__game.start(); window.__game.pause(); }); await wait(fp, 400); await fp.screenshot({ path: `screenshots/pause-phone-${w > h ? 'landscape' : 'portrait'}.png` });
+    await fp.click('#lockerBtn'); await wait(fp, 300); await fp.screenshot({ path: `screenshots/locker-phone-${w > h ? 'landscape' : 'portrait'}.png` });
+    await fc.close();
+  }
+  check('welcome screen fits 412x915 and 915x412 with no scroll', Object.values(fit).every((f) => f.ok), JSON.stringify(fit));
   // level select: menu button -> Grassmarket, travel button -> back to Pilton, ?level= param
   await Promise.all([pg.waitForURL(/level=grassmarket/, { timeout: 60000 }), pg.click('[data-level="grassmarket"]')]); await ready();
   const lv1 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
-  await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000 }), pg.click('#travelBtn')]); await ready();
+  await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000 }), pg.evaluate(() => { window.__game.start(); window.__game.pause(); }).then(() => pg.click('#travelBtn'))]); await ready();
   const lv2 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
   await go(BASE); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
   check('level transition both ways (menu + travel button + saved)', lv1[0] === 'grassmarket' && lv1[1] === 11 && lv2[0] === 'pilton' && lv3 === 'pilton', JSON.stringify({ lv1, lv2, lv3 }));
