@@ -169,7 +169,7 @@ try {
   const sTap = await charge(60), sHold = await charge(900);
   check('touch kick charge (hold > tap)', sHold > sTap + 5, `tap ${sTap.toFixed(1)} m/s, hold ${sHold.toFixed(1)} m/s`);
   // BALL button fetches the ball back to the player
-  await mp.evaluate(() => { const g = window.__game; g.teleport(0, -20, 180, -15); g.placeBall(0, 0, 0.3, 10); });
+  await mp.evaluate(() => { const g = window.__game; g.teleport(0, -20, 180, -15); g.placeBall(0, 0, 0.3, 25); });
   await mp.tap('#btnBall'); await wait(mp, 300);
   const bd = await mp.evaluate(() => { const g = window.__game, b = g.balls[0].body.position, p = g.player.position; return Math.min(...g.balls.map((bb) => Math.hypot(bb.body.position.x - p.x, bb.body.position.z - p.z))); });
   check('BALL button resets ball near player', bd < 2.5, `dist ${bd.toFixed(2)} m`);
@@ -363,8 +363,8 @@ try {
     for (const id of ['bin', 'gap']) g.scoreTarget(T(id)); r.winter2 = g.unlocks.balls.includes('winter');
     g.scoreTarget(T('noballs')); r.winter3 = g.unlocks.balls.includes('winter'); r.news = g.lastUnlock?.map((n) => n.id);
     // legendary via real physics (drop on the roof), fires once
-    g.placeBall(0, -13.4, 3.6, 12); g.balls[0].lastKick = performance.now(); g.simulate(1.5); r.roof = g.unlocks.levels.pilton.c_roof; r.munch = g.unlocks.items.includes('munchie'); r.wRoof = g.wallet.pence;
-    g.restart(); g.start(); g.placeBall(0, -13.4, 3.6, 12); g.balls[0].lastKick = performance.now(); g.simulate(1.5); r.wRoof2 = g.wallet.pence;
+    g.placeBall(0, -16.2, 3.25, 4.6); g.balls[0].lastKick = performance.now(); g.simulate(1.5); r.roof = g.unlocks.levels.pilton.c_roof; r.munch = g.unlocks.items.includes('munchie'); r.wRoof = g.wallet.pence;
+    g.restart(); g.start(); g.placeBall(0, -16.2, 3.25, 4.6); g.balls[0].lastKick = performance.now(); g.simulate(1.5); r.wRoof2 = g.wallet.pence;
     r.special1 = g.unlocks.balls.includes('special');
     for (const id of ['c_window', 'c_longpoles']) g.scoreTarget(T(id));
     r.special = g.unlocks.balls.includes('special'); r.boots = g.unlocks.bootsOwned.includes('boots');
