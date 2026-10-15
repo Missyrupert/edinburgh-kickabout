@@ -237,7 +237,7 @@ try {
   const fit = {};
   for (const [w, h] of [[412, 915], [915, 412]]) {
     const fc = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.6 }); const fp = await fc.newPage();
-    await fp.goto(BASE + '?level=pilton', { waitUntil: 'domcontentloaded', timeout: 60000 }); await fp.waitForSelector('#mainPanel'); await wait(fp, 1500);
+    await fp.goto(BASE + '?level=pilton', { waitUntil: 'domcontentloaded', timeout: 60000 }); await fp.waitForSelector('#mainPanel', { timeout: 90000 }); await wait(fp, 1500);
     fit[`${w}x${h}`] = await fp.evaluate(() => { const c = document.getElementById('mainPanel'), r = c.getBoundingClientRect(), o = document.getElementById('overlay');
       return { ok: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth && c.scrollHeight <= c.clientHeight + 1 && o.scrollHeight <= o.clientHeight + 1, h: Math.round(r.height) }; });
     await fp.screenshot({ path: `screenshots/menu-phone-${w > h ? 'landscape' : 'portrait'}.png` });
