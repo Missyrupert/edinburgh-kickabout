@@ -13,7 +13,7 @@
   <div id="score">Score <b id="scoreVal">0</b></div>
   <div id="targets">Targets <b id="targetVal">0/0</b></div>
   <div id="chal" class="hidden"><b id="chalVal"></b></div>
-  <div id="wallet"><span class="coin">£</span> <b id="walletVal">£0.00</b>
+  <div id="wallet"><span class="coin"></span> <b id="walletVal">£0.00</b>
     <div id="goalBar"><div id="goalFill"></div></div><div id="goalTxt"></div></div>
   <div id="nearby"></div>
 </div>
@@ -39,7 +39,7 @@
       <button data-level="pilton"><b>1 · West Pilton</b><small>The scheme</small></button><button data-level="grassmarket"><b>2 · Grassmarket</b><small>Old Town</small></button></div>
     <button id="startBtn" class="primary">Play</button>
     <div class="row pauseOnly"><button id="restartBtn" class="ghost">Restart level</button><button id="travelBtn" class="ghost">Travel</button></div>
-    <div class="row"><button id="lockerBtn" class="ghost">🎒 Locker</button><button id="settingsBtn" class="ghost">⚙ Settings</button><button id="helpBtn" class="ghost" aria-label="Help" title="Help">?</button></div>
+    <div class="row"><button id="lockerBtn" class="ghost">🎒 Locker</button><button id="settingsBtn" class="ghost">⚙ Settings</button><button id="helpBtn" class="ghost" aria-label="Help" title="Help">❓ Help</button></div>
   </div>
   <div class="card menu sheet hidden" id="lockerPanel"><h2>Locker</h2><div id="ballSel" class="ballsel"></div><button class="ghost back">Back</button></div>
   <div class="card menu sheet hidden" id="settingsPanel"><h2>Settings</h2>
@@ -49,9 +49,11 @@
     <div class="row"><button id="walletReset" class="ghost">Reset pocket money</button><button id="progressReset" class="ghost">Reset progress</button></div>
     <button class="ghost back">Back</button></div>
   <div class="card menu sheet hidden" id="helpPanel"><h2>How to play</h2>
-    <ul class="desk"><li><b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>Mouse</b> look</li><li><b>Hold &amp; release click</b> to kick (look up to chip)</li><li><b>R</b> rescue a stuck ball (10p) · <b>Esc</b> pause</li></ul>
-    <ul class="mob"><li><b>Left thumb</b> walk · <b>drag right</b> to look</li><li><b>Hold KICK</b>, release to shoot (look up to chip)</li><li><b>BALL</b> rescues a stuck ball (10p) · <b>JUMP</b></li></ul>
+    <ul class="desk"><li><b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>Mouse</b> look</li><li><b>Hold &amp; release click</b> to kick (look up to chip)</li><li><b>R</b> fetch the ball (10p; free if it's stuck, lost or in a bin) · <b>Esc</b> pause</li></ul>
+    <ul class="mob"><li><b>Left thumb</b> walk · <b>drag right</b> to look</li><li><b>Hold KICK</b>, release to shoot (look up to chip)</li><li><b>BALL</b> fetches the ball (10p; free if stuck or in a bin) · <b>JUMP</b> jumps</li></ul>
     <p class="sub"><span id="levelBlurb"></span> Rings glow near targets.</p>
+    <p class="sub"><b>Warm-Up</b> = easy targets · <b>Cocky</b> = harder ones (3 unlock a new ball) · <b>Away Ye Go!</b> = hidden trick shots, look for sparkles.</p>
+    <p class="sub" style="opacity:.6">v1.7</p>
     <button class="ghost back">Back</button></div>
 </div>
 <script type="module" src="/src/main.js"></script>

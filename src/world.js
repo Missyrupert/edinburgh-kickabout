@@ -370,11 +370,11 @@ export function buildWorld(scene, world, mats, P) {
   {
     const x = -1.8, z = 22, cm = 0x222222;
     solid('flat', x, 0.03, z, 1.3, 0.04, 0.6, 0x7a1030, { phys: false });
-    solid('flat', x, 0.06, z - 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x, 0.06, z + 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x - 0.65, 0.06, z, 0.04, 0.12, 0.6, cm);
+    solid('flat', x, 0.06, z - 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x, 0.06, z + 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x - 0.65, 0.15, z, 0.04, 0.3, 0.6, cm); // taller back lip so it stays in
     solid('flat', x, 0.25, z + 0.55, 1.3, 0.5, 0.04, cm, { phys: false, rx: 0.4 });
     quad('atlas', x, 0.06, z, 0.8, 0.14, 0, atlas.sign('TIPS WELCOME', '#7a1030', '#f1d98a', 0.8 / 0.14), 0xffffff, { rx: -Math.PI / 2 });
-    addTarget({ id: 'case', name: "Busker's Case", hint: 'roll it into the case (open end faces east)', points: 100, kind: 'zone', pos: V(x, 0, z), ringR: 1.0, stand: V(2.2, 0, z), aim: V(x, 0.1, z),
-      zone: new THREE.Box3(V(x - 0.62, 0, z - 0.3), V(x + 0.65, 0.4, z + 0.3)), maxSpeed: 4,
+    addTarget({ id: 'case', name: "Busker's Case", hint: 'roll it into the case (open end faces the bakery side)', points: 100, kind: 'zone', pos: V(x, 0, z), ringR: 1.0, stand: V(2.2, 0, z), aim: V(x, 0.1, z),
+      zone: new THREE.Box3(V(x - 0.62, 0, z - 0.3), V(x + 0.65, 0.4, z + 0.3)), maxSpeed: 6,
       lines: ["Busker: 'Cheers pal, but I wanted a fiver.'", 'Into the case! Encore!', "That's mair than he made all day."] });
   }
   // 10 + 11 on the terrace (north section)

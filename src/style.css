@@ -4,10 +4,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#222;font-family:syste
 #hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;display:flex;flex-direction:column;gap:4px;pointer-events:none;text-shadow:0 1px 3px #000;font-size:16px}
 #hud b{font-size:20px;color:#ffd75e}
 #nearby{font-size:13px;opacity:.9;max-width:60vw}
-#toast{position:fixed;top:22%;left:50%;transform:translate(-50%,0);padding:10px 18px;border-radius:12px;background:rgba(20,30,60,.78);font-size:18px;font-weight:600;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none;max-width:86vw;border:2px solid #ffd75e}
+#toast{position:fixed;top:36%;left:50%;transform:translate(-50%,0);padding:10px 18px;border-radius:12px;background:rgba(20,30,60,.78);font-size:18px;font-weight:600;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none;max-width:86vw;border:2px solid #ffd75e}
 #toast.show{opacity:1}
 #crosshair{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;box-shadow:0 0 3px #000;pointer-events:none}
-#power{position:fixed;left:50%;bottom:16%;width:220px;height:12px;margin-left:-110px;border:2px solid #fff;border-radius:8px;overflow:hidden;opacity:0;transition:opacity .15s;pointer-events:none;background:rgba(0,0,0,.4)}
+#power{position:fixed;left:50%;bottom:16%;z-index:6;width:220px;height:12px;margin-left:-110px;border:2px solid #fff;border-radius:8px;overflow:hidden;opacity:0;transition:opacity .15s;pointer-events:none;background:rgba(0,0,0,.4)}
 #power.on{opacity:1}
 #powerFill{height:100%;width:0;background:linear-gradient(90deg,#5fd35f,#ffd75e,#ff5040)}
 #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,18,28,.72);z-index:20;padding:12px;overflow:auto}
@@ -82,3 +82,7 @@ body.touch #crosshair{width:8px;height:8px}
 .ballsel button{min-height:44px}
 @media (max-height:460px){.card.menu{padding:10px 14px}.card.menu .sub{margin:2px 0}.card.menu .levels{margin:6px 0}.card.menu button.primary{min-height:44px;margin:4px 0}}
 #chal{font-size:12px;opacity:.9}
+#hud #chalVal{font-size:12px;white-space:nowrap;color:#ffd75e}
+#chal{max-width:calc(100vw - 80px)}
+
+body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}

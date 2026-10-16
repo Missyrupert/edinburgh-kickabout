@@ -1,8 +1,8 @@
 // PHASE 5 "One More Shot": tiers, cosmetic unlocks and chippy menu. Saved on the device (localStorage 'ek-unlocks').
 // Tiers: easy = 'The Wee Warm-Up', tricky = 'Getting Cocky', legend = 'Away Ye Go!' (hidden optional challenges).
 const KEY = 'ek-unlocks';
-export const TIERS = { easy: 'The Wee Warm-Up', tricky: 'Getting Cocky', legend: 'Away Ye Go!' };
-export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legend', how: 'Hit 3 Getting Cocky targets' }, special: { name: 'The Pilton Special', how: 'All 3 Away Ye Go! shots' } };
+export const TIERS = { easy: 'The Wee Warm-Up', tricky: 'Cocky', legend: 'Away Ye Go!' };
+export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legend', how: 'Hit 3 Cocky targets' }, special: { name: 'The Pilton Special', how: 'All 3 Away Ye Go! shots' } };
 export const BOOTS = { trainers: { name: 'Scuffed trainers' }, boots: { name: 'Classic black boots', how: 'All 3 Away Ye Go! shots' } };
 export const ITEMS = {
   wee: { name: 'The Wee Supper', pence: 200, line: '"Wee bag o\' chips an\' a can. Dinnae fill yersel up."' },

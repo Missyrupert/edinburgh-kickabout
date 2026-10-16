@@ -284,7 +284,7 @@ function build(scene, world, mats, P) {
     addChallenge({ id: 'c_window', name: "Mrs Kerr's Windae", hint: 'somebody\'s left their windae open', points: 0, cash: 100, kind: 'hit', pos: V(x - 0.6, 0, z), ringR: 1.0, stand: V(4.5, 0, z), aim: V(x, y, z),
       lines: ["MRS KERR: 'WHO KICKED THAT?!'", 'Straight in the front room. Mind the good china.'] }); }
   // C3. Long-range drying green: through the poles from the far pavement (14 m+, up the bank)
-  addChallenge({ id: 'c_longpoles', name: 'Worldie Through the Poles', hint: 'the big boys shoot from the far pavement', points: 0, cash: 0, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
+  addChallenge({ id: 'c_longpoles', name: 'Worldie Through the Poles', hint: 'the big boys shoot from the far pavement', points: 0, cash: 100, kind: 'zone', pos: V(-4.6, 0, -4), ringR: 0.8,
     stand: V(-4.6, 0, -4), aim: V(22, rise + 0.3, -3.6), minRange: 14, rangeFrom: V(19, rise, -4), zone: new THREE.Box3(V(19.08, rise + 0.2, -3.95), V(19.5, rise + 1.6, -3.25)), minSpeed: 1,
     lines: ['WORLDIE! Fiona would be proud.', 'From there?! Absolute screamer.'] });
   // faint sparkles mark the challenge spots (one Points draw call)
@@ -309,7 +309,7 @@ function build(scene, world, mats, P) {
 export default {
   id: 'pilton', name: 'West Pilton', short: 'Pilton',
   blurb: 'Level 1: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
-  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. The painted garage door's doon the street on your right.</small>",
+  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Easy first one: the bus stop up the street on your left.</small>",
   build, spawn: [0, 0.5, -38], spawnYaw: 180,
   ballHomes: () => [[0.3, 0.4, -35.6], [14.8, 1.6, -2], [-2, 0.4, 26]],
   bounds: { x: 30, zMin: -50, zMax: 46 },

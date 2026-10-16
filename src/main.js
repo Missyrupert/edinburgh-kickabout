@@ -86,12 +86,21 @@ const { targets, dynamics, pigeons, materials, views } = built;
 const SPAWN_YAW = LEVEL.spawnYaw * Math.PI / 180, BOUNDS = LEVEL.bounds;
 const challenges = built.challenges || [];
 const allTargets = targets.concat(challenges); // challenges share the scoring code but have their own counter
+for (const t of targets) t.tier ||= LEVEL.tiers?.[t.id];
 for (const t of targets) t.tier ||= t.diff === 'hard' ? 'tricky' : 'easy';
 { const d = levelDone(LEVEL.id); for (const t of allTargets) if (d[t.id]) { t.done = true; t.ring.material.color.set(0x5fd35f); } } // saved progress
 const targetById = Object.fromEntries(allTargets.map((t) => [t.id, t]));
 // Static bodies were positioned after construction: refresh their AABBs once, or AABB broadphase misses them.
 // (This stale-AABB effect is also what made SAPBroadphase look "broken" in v1.)
 for (const b of world.bodies) b.updateAABB();
+// v1.7: container floors are dead (low bounce) so a ball that drops in stays in
+mats.binFloor = new CANNON.Material('binFloor');
+world.addContactMaterial(new CANNON.ContactMaterial(mats.ball, mats.binFloor, { friction: 0.5, restitution: 0.08 }));
+const containers = allTargets.filter((t) => t.kind === 'zone' && t.openTop);
+const inContainer = (p) => containers.some((t) => { const q = new THREE.Vector3(p.x, p.y, p.z).applyMatrix4(t.zoneInv), z = t.zone;
+  return q.x > z.min.x && q.x < z.max.x && q.z > z.min.z && q.z < z.max.z && q.y > z.min.y - 0.3 && q.y < z.max.y + 0.1; });
+for (const b of world.bodies) if (b.type === CANNON.Body.STATIC && b.aabb.upperBound.y - b.aabb.lowerBound.y < 0.25) {
+  const c = b.aabb.lowerBound.vadd(b.aabb.upperBound).scale(0.5); if (inContainer(c)) b.material = mats.binFloor; }
 
 // player: a sphere that slides along walls
 const PLAYER_SPAWN = new CANNON.Vec3(...LEVEL.spawn);
@@ -155,7 +164,7 @@ function updateWallet(pop = false) {
   $('walletVal').textContent = fmt(wallet.pence);
   const f = Math.min(1, wallet.pence / GOAL.pence);
   $('goalFill').style.width = `${f * 100}%`;
-  $('goalTxt').textContent = f >= 1 ? 'Chippy unlocked! Visit the counter' : `${GOAL.label}: ${fmt(GOAL.pence)}`;
+  $('goalTxt').textContent = f >= 1 ? (built.counter ? 'Chippy unlocked! Visit the counter' : 'Chippy unlocked! Back tae the Pilton Plaice') : `${GOAL.label}: ${fmt(GOAL.pence)}`;
   $('wallet').classList.toggle('full', f >= 1);
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
@@ -283,15 +292,17 @@ function release(b) {
   b.body.type = CANNON.Body.DYNAMIC; b.body.updateMassProperties(); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.body.wakeUp();
   $('nearby').classList.remove('trap');
 }
-function fetchBall() {
-  if (paused) return;
-  const b = lastTouched || nearestBall(), f = forwardFlat();
-  const x = player.position.x + f.x * TRAP_DIST, z = player.position.z + f.z * TRAP_DIST;
-  // sit the ball snug on the ground under that spot (works on the ramp)
+function trapSpot() { // in front of your feet, sat snug on the ground (works on the ramp)
+  const f = forwardFlat(), x = player.position.x + f.x * TRAP_DIST, z = player.position.z + f.z * TRAP_DIST;
   rayRes.reset(); const from = new CANNON.Vec3(x, player.position.y + 1, z); rayTo.set(x, player.position.y - 2, z);
   world.raycastClosest(from, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
-  const y = rayRes.hasHit ? rayRes.hitPointWorld.y + BALL_R - 2e-6 :  player.position.y + 0.2;
-  release(b); trap(b, x, y, z); lastTouched = b;
+  return [x, rayRes.hasHit ? rayRes.hitPointWorld.y + BALL_R - 2e-6 : player.position.y + 0.2, z];
+}
+function fetchBall() {
+  if (paused) return;
+  const b = lastTouched || nearestBall();
+  const [x, y, z] = trapSpot();
+  release(b); trap(b, x, y, z); b.anchor = { x: player.position.x, z: player.position.z }; lastTouched = b;
   toast('Here\'s your ba\' - foot on it. Kick, or walk off to let it go.', 1600);
 }
 // BALL is a rescue, not a shortcut: free if stuck / out of reach / far; 10p for the wee boy otherwise; refused when it's right there
@@ -300,7 +311,7 @@ function requestBall() {
   if (paused) return 'paused';
   const b = lastTouched || nearestBall(), p = b.body.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
   const stuck = d > 4 && simTime - (b.stillT ?? simTime) > 4, high = p.y - player.position.y > 2.2, out = Math.abs(p.x) > BOUNDS.x - 1 || p.z < BOUNDS.zMin + 1 || p.z > BOUNDS.zMax - 1 || p.y < -2;
-  const free = d > 40 || stuck || high || out;
+  const free = d > 40 || stuck || high || out || inContainer(p);
   if (!free && d < 8) { ballMsg = 'near'; toast("<b>Go get it yersel!</b><br>It's right there, ya lazy article.", 1800); return ballMsg; }
   if (!free && wallet.pence < BALL_FEE) { ballMsg = 'skint'; toast("<b>Ye're skint.</b><br>The wee boy wants 10p. Go an' fetch it yersel.", 2000); return ballMsg; }
   if (!free) { wallet.pence -= BALL_FEE; saveWallet(); updateWallet(true); }
@@ -324,7 +335,7 @@ function kick(power) {
   }
   if (target) { release(target); lastTouched = target; } // a trapped ball kicks exactly like a resting one
   if (!target) { sfx.whiff(); lastKickInfo = { power, hit: false }; return false; }
-  const elev = THREE.MathUtils.clamp(pitch + 0.38, 0.03, 1.05);
+  const elev = THREE.MathUtils.clamp(pitch + 0.18, 0.03, 1.05);
   const speed = 4 + power * 19;
   const v = target.body.velocity;
   v.set(f.x * Math.cos(elev) * speed, Math.sin(elev) * speed, f.z * Math.cos(elev) * speed);
@@ -356,6 +367,9 @@ function scoreTarget(t, bonus = null) {
   if (t.done) { if (now - lastRepeat > 2500) { lastRepeat = now; toast(`Already bagged the ${t.name}.`, 1200); } return; }
   const rec = recordDone(LEVEL.id, t, allTargets); announce(rec.news);
   if (t.challenge) return scoreChallenge(t, rec.first);
+  if (!rec.first) { // already paid for this one (e.g. after Restart level): no double pay
+    t.done = true; t.ring.material.color.set(0x5fd35f); lastEarn = { id: t.id, pence: 0, bonus: null };
+    toast(`<b>${t.name}</b> - already bagged.<br><small>Ye got paid for that one already.</small>`, 1800); sfx.success(false); updateHud(); return; }
   t.done = true; score += t.points;
   const pence = cashFor(t) + (bonus ? BONUS : 0);
   lastEarn = { id: t.id, pence, bonus };
@@ -395,19 +409,20 @@ function restart() {
 
 function checkZones(now) {
   for (const t of allTargets) {
-    if (t.done && t.kind !== 'zone') continue;
+    if (t.done && (t.kind !== 'zone' || t.challenge)) continue;
     if (t.kind === 'zone') {
       for (const b of balls) {
         const p = b.body.position; tmpV.set(p.x, p.y, p.z).applyMatrix4(t.zoneInv);
         // open-topped bins/skips: also count a ball whose centre is over the opening and just below the rim
         // (plus a small lip allowance) and not rising - it has dropped in, even if it then bounces on the floor.
-        const z = t.zone, inside = z.containsPoint(tmpV) || (t.openTop && tmpV.x > z.min.x && tmpV.x < z.max.x && tmpV.z > z.min.z && tmpV.z < z.max.z && tmpV.y > z.min.y && tmpV.y < z.max.y + 0.08 && b.body.velocity.y < 0.5);
+        const z = t.zone, inside = z.containsPoint(tmpV) || (t.openTop && tmpV.x > z.min.x && tmpV.x < z.max.x && tmpV.z > z.min.z && tmpV.z < z.max.z && tmpV.y > z.min.y && tmpV.y < z.max.y + 0.12 && b.body.velocity.y < 1.5);
         if (!inside || now - b.lastKick > 8000) continue;
         if (t.minRange && (!b.kickFrom || Math.hypot(b.kickFrom.x - t.rangeFrom.x, b.kickFrom.z - t.rangeFrom.z) < t.minRange)) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
         if (t.maxSpeed && sp > t.maxSpeed) continue;
-        if (!t.done) scoreTarget(t, (b.bounces | 0) === 0 ? 'Clean in' : null);
+        if (t.done) { if (b.bagged === b.lastKick) continue; b.bagged = b.lastKick; }
+        scoreTarget(t, (b.bounces | 0) === 0 ? 'Clean in' : null);
       }
     } else if (t.kind === 'topple') {
       const up = t.body.quaternion.vmult(new CANNON.Vec3(0, 1, 0));
@@ -448,7 +463,9 @@ function fixedUpdate(h) {
   if (onGround && wish.lengthSq() === 0 && player.velocity.y < 0.5) { player.velocity.set(0, 0, 0); player.force.y += player.mass * -world.gravity.y; }
   for (const b of balls) if (b.trapped) {
     b.body.velocity.setZero(); b.body.angularVelocity.setZero();
-    if (Math.hypot(b.body.position.x - player.position.x, b.body.position.z - player.position.z) > TRAP_RELEASE) release(b);
+    // foot on it: the ball stays in front of you as you turn; walk off (from where you trapped it) to let it go
+    if (!b.anchor || Math.hypot(b.anchor.x - player.position.x, b.anchor.z - player.position.z) > TRAP_RELEASE - TRAP_DIST) release(b);
+    else { const [x, y, z] = trapSpot(); b.body.position.set(x, y, z); }
   }
   world.step(h);
   for (const b of balls) { // rolling resistance on the ground
@@ -486,6 +503,8 @@ function render(dt, t) {
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
   boot.position.set(0.18, -1.05 + s * 0.35, -0.35 - s * 0.5); boot.rotation.x = -s * 1.1;
+  const rest = kickAnim >= 1 && pitch < -0.6; // resting foot: tucked into view when you look down
+  if (rest) { boot.position.set(0.2, -0.5, -0.72); boot.rotation.x = 0.35; }
   boot.visible = kickAnim < 1 || pitch < -0.6;
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
