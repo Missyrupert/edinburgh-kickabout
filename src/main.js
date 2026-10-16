@@ -353,7 +353,7 @@ function updateBallAids(t) {
   ringV.copy(p).project(camera);
   const behind = ringV.z > 1, onScreen = !behind && Math.abs(ringV.x) < 0.95 && Math.abs(ringV.y) < 0.95;
   const arr = $('ballArrow');
-  if (onScreen || !started || paused) { arr.style.display = 'none'; return; }
+  if (onScreen || reach || d < 1.5 || !started || paused) { arr.style.display = 'none'; return; }
   let x = ringV.x, y = ringV.y; if (behind) { x = -x; y = -Math.abs(y) - 0.5; }
   const m = Math.max(Math.abs(x), Math.abs(y)) || 1; x /= m; y /= m;
   const ang = Math.atan2(-y, x), W = innerWidth, H = innerHeight;

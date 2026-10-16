@@ -9,10 +9,10 @@ for (const lv of ['pilton','grassmarket']) {
   await pg.click('#startBtn'); await pg.waitForTimeout(2500);
   const r = await pg.evaluate(() => { const g = __game; g.fetchBall(); const i = g.trapped.indexOf(true); g.aim(g.yaw + 2, -0.3); g.simulate(0.1); return { chal: document.getElementById('chalVal').textContent, wallet: document.getElementById('wallet').innerText.split('\n')[0], trapped: g.trapped, kickedAfterTurn: g.kick(0.5) }; });
   console.log(lv, JSON.stringify(r));
-  const q = await pg.evaluate(async () => { const g = __game; g.fetchBall(); await new Promise(r => setTimeout(r, 400)); return { inReach: g.inReach, kickCls: document.getElementById('btnKick').className, free: g.freeFetchesLeft, msg: g.requestBall(), free2: g.freeFetchesLeft }; });
+  const q = await pg.evaluate(async () => { const g = __game; g.fetchBall(); g.aim(g.yaw, -0.85); await new Promise(r => setTimeout(r, 400)); return { inReach: g.inReach, kickCls: document.getElementById('btnKick').className, free: g.freeFetchesLeft, msg: g.requestBall(), free2: g.freeFetchesLeft, far: (g.placeBall(g.lastTouched, g.player.position.x + 6, 0.5, g.player.position.z), g.requestBall()), free3: g.freeFetchesLeft }; });
   console.log(lv, 'ring', JSON.stringify(q)); await pg.waitForTimeout(300);
   await pg.screenshot({ path: `screenshots/v18-${lv}-ring.png` });
-  const a = await pg.evaluate(async () => { const g = __game; g.aim(g.yaw + Math.PI, -0.3); await new Promise(r => setTimeout(r, 400)); const e = document.getElementById('ballArrow'); return { arrow: e.style.display, txt: e.innerText }; });
+  const a = await pg.evaluate(async () => { const g = __game; const P = g.player.position, f = [-Math.sin(g.yaw), -Math.cos(g.yaw)]; g.placeBall(g.lastTouched, P.x + f[0] * 7, P.y, P.z + f[1] * 7); g.aim(g.yaw + Math.PI * 0.75, -0.3); await new Promise(r => setTimeout(r, 400)); const e = document.getElementById('ballArrow'); return { arrow: e.style.display, txt: e.innerText }; });
   console.log(lv, 'arrow', JSON.stringify(a)); await pg.screenshot({ path: `screenshots/v18-${lv}-arrow.png` });
   await pg.screenshot({ path: `screenshots/v18-${lv}-phone.png` }); await ctx.close();
 }
