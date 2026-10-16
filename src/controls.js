@@ -3,7 +3,7 @@ export class Controls {
   constructor(canvas, cb) {
     this.cb = cb; this.canvas = canvas;
     this.keys = {}; this.move = { x: 0, y: 0 }; this.run = false;
-    this.lookDX = 0; this.lookDY = 0; this.charging = false; this.locked = false;
+    this.lookDX = 0; this.lookDY = 0; this.tDX = 0; this.tDY = 0; this.sDX = 0; this.sDY = 0; this.charging = false; this.locked = false;
     this.touch = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && !matchMedia('(pointer: fine)').matches);
     if (this.touch) document.body.classList.add('touch');
     addEventListener('keydown', (e) => {
@@ -58,7 +58,7 @@ export class Controls {
     addEventListener('blur', resetAll); document.addEventListener('visibilitychange', () => { if (document.hidden) resetAll(); });
     addEventListener('touchend', (e) => { if (e.touches.length === 0) { joyId = null; this.move.x = this.move.y = 0; this.run = false; knob.style.transform = ''; } });
     look.addEventListener('pointerdown', (e) => { lookId = e.pointerId; look.setPointerCapture(e.pointerId); lx = e.clientX; ly = e.clientY; e.preventDefault(); });
-    look.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; this.lookDX += (e.clientX - lx) * 1.6; this.lookDY += (e.clientY - ly) * 1.6; lx = e.clientX; ly = e.clientY; });
+    look.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; this.tDX += (e.clientX - lx) * 1.3; this.tDY += (e.clientY - ly) * 1.3; lx = e.clientX; ly = e.clientY; });
     const lookEnd = (e) => { if (e.pointerId === lookId) lookId = null; };
     look.addEventListener('pointerup', lookEnd); look.addEventListener('pointercancel', lookEnd);
     const btn = (id, down, up) => {
@@ -72,7 +72,11 @@ export class Controls {
     btn('btnBall', () => this.cb.fetchBall());
     btn('btnPause', () => this.cb.pause());
   }
-  consumeLook() { const d = [this.lookDX, this.lookDY]; this.lookDX = this.lookDY = 0; return d; }
+  // touch look is low-passed (k = 0.55 per frame) so finger jitter doesn't jerk the camera; mouse stays raw
+  consumeLook() {
+    const k = 0.55, ox = this.tDX * k, oy = this.tDY * k; this.tDX -= ox; this.tDY -= oy;
+    const d = [this.lookDX + ox, this.lookDY + oy]; this.lookDX = this.lookDY = 0; return d;
+  }
   getMove() {
     if (this.touch && (this.move.x || this.move.y)) return { x: this.move.x, y: this.move.y, run: this.run };
     const k = this.keys;

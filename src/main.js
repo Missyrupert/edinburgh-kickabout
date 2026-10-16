@@ -306,33 +306,67 @@ function fetchBall() {
   toast('Here\'s your ba\' - foot on it. Kick, or walk off to let it go.', 1600);
 }
 // BALL is a rescue, not a shortcut: free if stuck / out of reach / far; 10p for the wee boy otherwise; refused when it's right there
-const BALL_FEE = 10; let ballMsg = '';
+const BALL_FEE = 10, FREE_FETCHES = 3, NEAR_REFUSE = 4; let ballMsg = '', freeFetchesLeft = FREE_FETCHES;
 function requestBall() {
   if (paused) return 'paused';
   const b = lastTouched || nearestBall(), p = b.body.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
   const stuck = d > 4 && simTime - (b.stillT ?? simTime) > 4, high = p.y - player.position.y > 2.2, out = Math.abs(p.x) > BOUNDS.x - 1 || p.z < BOUNDS.zMin + 1 || p.z > BOUNDS.zMax - 1 || p.y < -2;
-  const free = d > 40 || stuck || high || out || inContainer(p);
-  if (!free && d < 8) { ballMsg = 'near'; toast("<b>Go get it yersel!</b><br>It's right there, ya lazy article.", 1800); return ballMsg; }
+  const rescue = d > 40 || stuck || high || out || inContainer(p);
+  if (!rescue && d < NEAR_REFUSE) { ballMsg = 'near'; toast("<b>Go get it yersel!</b><br>It's right there, ya lazy article.", 1800); return ballMsg; }
+  const freebie = !rescue && freeFetchesLeft > 0; if (freebie) freeFetchesLeft--;
+  const free = rescue || freebie;
   if (!free && wallet.pence < BALL_FEE) { ballMsg = 'skint'; toast("<b>Ye're skint.</b><br>The wee boy wants 10p. Go an' fetch it yersel.", 2000); return ballMsg; }
   if (!free) { wallet.pence -= BALL_FEE; saveWallet(); updateWallet(true); }
   fetchBall();
   ballMsg = free ? 'free' : 'paid';
-  toast(free ? "<b>Rescued!</b><br>A wee boy got it back for nothin'. Lucky." : `<b>-${fmt(BALL_FEE)}</b><br>Paid a wee boy tae fetch it. "Pleasure doin' business."`, 1800);
+  toast(freebie ? `<b>Freebie!</b><br>The wee boy's feelin' generous. ${freeFetchesLeft ? freeFetchesLeft + ' mair free yins.' : "That's yer last free yin - 10p after this."}` : free ? "<b>Rescued!</b><br>A wee boy got it back for nothin'. Lucky." : `<b>-${fmt(BALL_FEE)}</b><br>Paid a wee boy tae fetch it. "Pleasure doin' business."`, 1800);
   return ballMsg;
+}
+// v1.8: a touch more reach and facing tolerance, plus side assist (a ball just off to the side still connects)
+const KICK_REACH = 2.2, KICK_DOT = 0.12;
+function kickTarget(f = forwardFlat()) {
+  let target = null, bestScore = -1;
+  for (const b of balls) {
+    const p = b.body.position, dx = p.x - player.position.x, dz = p.z - player.position.z, dy = p.y - player.position.y;
+    const dist = Math.hypot(dx, dz);
+    if (dist > KICK_REACH || dy > 1.2 || dy < -1) continue;
+    const dot = dist > 0.01 ? (dx * f.x + dz * f.z) / dist : 1;
+    if (dot < KICK_DOT && dist > 0.9) continue;
+    const s = dot - dist * 0.3; if (s > bestScore) { bestScore = s; target = b; }
+  }
+  return target;
+}
+// kick-range ring + off-screen arrow
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xc8ff3a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const kickRing = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.44, 40), ringMat); kickRing.rotation.x = -Math.PI / 2; kickRing.renderOrder = 2; scene.add(kickRing);
+const ringV = new THREE.Vector3(); let inReach = false;
+function updateBallAids(t) {
+  const b = lastTouched || nearestBall(); if (!b) return;
+  const p = b.mesh.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
+  const reach = kickTarget() === b;
+  kickRing.position.set(p.x, p.y - BALL_R + 0.03, p.z);
+  const pulse = 0.5 + 0.5 * Math.sin(t * 0.008);
+  ringMat.color.setHex(reach ? 0xc8ff3a : 0xffffff);
+  ringMat.opacity = reach ? 0.75 + 0.25 * pulse : (d < 12 ? 0.25 * (1 - d / 12) : 0);
+  kickRing.scale.setScalar(reach ? 1 + 0.12 * pulse : 1);
+  if (reach !== inReach) { inReach = reach; $('btnKick').classList.toggle('inreach', reach); }
+  ringV.copy(p).project(camera);
+  const behind = ringV.z > 1, onScreen = !behind && Math.abs(ringV.x) < 0.95 && Math.abs(ringV.y) < 0.95;
+  const arr = $('ballArrow');
+  if (onScreen || !started || paused) { arr.style.display = 'none'; return; }
+  let x = ringV.x, y = ringV.y; if (behind) { x = -x; y = -Math.abs(y) - 0.5; }
+  const m = Math.max(Math.abs(x), Math.abs(y)) || 1; x /= m; y /= m;
+  const ang = Math.atan2(-y, x), W = innerWidth, H = innerHeight;
+  arr.style.display = 'block';
+  arr.style.left = `${(0.5 + x * 0.44) * W}px`; arr.style.top = `${(0.5 - y * 0.40) * H}px`;
+  arr.firstElementChild.style.transform = `rotate(${ang}rad)`;
+  arr.lastElementChild.textContent = `${Math.round(d)} m`;
 }
 let lastKickInfo = null;
 function kick(power) {
   kickAnim = 0;
   const f = forwardFlat();
-  let target = null, bestScore = -1;
-  for (const b of balls) {
-    const p = b.body.position, dx = p.x - player.position.x, dz = p.z - player.position.z, dy = p.y - player.position.y;
-    const dist = Math.hypot(dx, dz);
-    if (dist > 1.9 || dy > 1.2 || dy < -1) continue;
-    const dot = dist > 0.01 ? (dx * f.x + dz * f.z) / dist : 1;
-    if (dot < 0.3 && dist > 0.8) continue;
-    const s = dot - dist * 0.3; if (s > bestScore) { bestScore = s; target = b; }
-  }
+  const target = kickTarget(f);
   if (target) { release(target); lastTouched = target; } // a trapped ball kicks exactly like a resting one
   if (!target) { sfx.whiff(); lastKickInfo = { power, hit: false }; return false; }
   const elev = THREE.MathUtils.clamp(pitch + 0.18, 0.03, 1.05);
@@ -543,6 +577,7 @@ function render(dt, t) {
     const snap = 64 / 2048, sx = Math.round(iP.x / snap) * snap, sz = Math.round(iP.z / snap) * snap;
     sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z); sun.target.position.set(sx, 0, sz);
   } else sun.position.copy(SUN_OFF);
+  updateBallAids(t);
   renderer.render(scene, camera);
 }
 
@@ -588,7 +623,7 @@ window.__game = {
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
   placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  kick, restart, fetchBall, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
+  kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests
