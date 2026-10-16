@@ -322,33 +322,34 @@ function requestBall() {
   toast(freebie ? `<b>Freebie!</b><br>The wee boy's feelin' generous. ${freeFetchesLeft ? freeFetchesLeft + ' mair free yins.' : "That's yer last free yin - 10p after this."}` : free ? "<b>Rescued!</b><br>A wee boy got it back for nothin'. Lucky." : `<b>-${fmt(BALL_FEE)}</b><br>Paid a wee boy tae fetch it. "Pleasure doin' business."`, 1800);
   return ballMsg;
 }
-// v1.8: a touch more reach and facing tolerance, plus side assist (a ball just off to the side still connects)
-const KICK_REACH = 2.2, KICK_DOT = 0.12;
+// v1.8.1: forgiving reach measured from the feet. <=1.2 m: any angle (even behind); <=2.2 m: anywhere in the front 180 deg.
+// The kick always goes along the camera's flat forward, so a ball off to the side still goes where you look.
+const KICK_REACH = 2.2, KICK_ANY = 1.2;
 function kickTarget(f = forwardFlat()) {
-  let target = null, bestScore = -1;
+  let target = null, bestScore = -Infinity;
   for (const b of balls) {
     const p = b.body.position, dx = p.x - player.position.x, dz = p.z - player.position.z, dy = p.y - player.position.y;
     const dist = Math.hypot(dx, dz);
     if (dist > KICK_REACH || dy > 1.2 || dy < -1) continue;
     const dot = dist > 0.01 ? (dx * f.x + dz * f.z) / dist : 1;
-    if (dot < KICK_DOT && dist > 0.9) continue;
-    const s = dot - dist * 0.3; if (s > bestScore) { bestScore = s; target = b; }
+    if (dot < 0 && dist > KICK_ANY) continue;
+    const s = dot * 0.5 - dist; if (s > bestScore) { bestScore = s; target = b; }
   }
   return target;
 }
 // kick-range ring + off-screen arrow
-const ringMat = new THREE.MeshBasicMaterial({ color: 0xc8ff3a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xc8ff3a, transparent: true, opacity: 0, depthWrite: false, depthTest: false, side: THREE.DoubleSide });
 const kickRing = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.44, 40), ringMat); kickRing.rotation.x = -Math.PI / 2; kickRing.renderOrder = 2; scene.add(kickRing);
 const ringV = new THREE.Vector3(); let inReach = false;
 function updateBallAids(t) {
-  const b = lastTouched || nearestBall(); if (!b) return;
+  const kt = kickTarget(), b = kt || lastTouched || nearestBall(); if (!b) return; // ring follows the kickable ball first
   const p = b.mesh.position, d = Math.hypot(p.x - player.position.x, p.z - player.position.z);
-  const reach = kickTarget() === b;
+  const reach = !!kt;
   kickRing.position.set(p.x, p.y - BALL_R + 0.03, p.z);
   const pulse = 0.5 + 0.5 * Math.sin(t * 0.008);
   ringMat.color.setHex(reach ? 0xc8ff3a : 0xffffff);
-  ringMat.opacity = reach ? 0.75 + 0.25 * pulse : (d < 12 ? 0.25 * (1 - d / 12) : 0);
-  kickRing.scale.setScalar(reach ? 1 + 0.12 * pulse : 1);
+  ringMat.opacity = reach ? 0.85 + 0.15 * pulse : (d < 12 ? 0.3 * (1 - d / 12) : 0);
+  kickRing.scale.setScalar(reach ? 1.1 + 0.15 * pulse : 0.8);
   if (reach !== inReach) { inReach = reach; $('btnKick').classList.toggle('inreach', reach); }
   ringV.copy(p).project(camera);
   const behind = ringV.z > 1, onScreen = !behind && Math.abs(ringV.x) < 0.95 && Math.abs(ringV.y) < 0.95;
@@ -369,7 +370,7 @@ function kick(power) {
   const target = kickTarget(f);
   if (target) { release(target); lastTouched = target; } // a trapped ball kicks exactly like a resting one
   if (!target) { sfx.whiff(); lastKickInfo = { power, hit: false }; return false; }
-  const elev = THREE.MathUtils.clamp(pitch + 0.18, 0.03, 1.05);
+  const elev = THREE.MathUtils.clamp(pitch + 0.3, 0.03, 1.05);
   const speed = 4 + power * 19;
   const v = target.body.velocity;
   v.set(f.x * Math.cos(elev) * speed, Math.sin(elev) * speed, f.z * Math.cos(elev) * speed);

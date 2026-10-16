@@ -72,9 +72,9 @@ export class Controls {
     btn('btnBall', () => this.cb.fetchBall());
     btn('btnPause', () => this.cb.pause());
   }
-  // touch look is low-passed (k = 0.55 per frame) so finger jitter doesn't jerk the camera; mouse stays raw
+  // touch look is low-passed (k = 0.85 per frame: near-direct, just takes the edge off jitter) so finger jitter doesn't jerk the camera; mouse stays raw
   consumeLook() {
-    const k = 0.55, ox = this.tDX * k, oy = this.tDY * k; this.tDX -= ox; this.tDY -= oy;
+    const k = 0.85, ox = this.tDX * k, oy = this.tDY * k; this.tDX -= ox; this.tDY -= oy;
     const d = [this.lookDX + ox, this.lookDY + oy]; this.lookDX = this.lookDY = 0; return d;
   }
   getMove() {

@@ -87,7 +87,7 @@ body.touch #crosshair{width:8px;height:8px}
 
 body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}
 /* v1.8: kick-in-reach cue + off-screen ball arrow */
-#btnKick.inreach { background: rgba(200,255,58,.55); box-shadow: 0 0 18px 4px rgba(200,255,58,.7); animation: kickPulse .9s ease-in-out infinite; }
+#btnKick.inreach { background: rgba(170,255,40,.9); color: #102000; border-color: #eaff9a; box-shadow: 0 0 0 4px rgba(220,255,120,.9), 0 0 34px 12px rgba(200,255,58,.85); animation: kickPulse .7s ease-in-out infinite; }
 @keyframes kickPulse { 50% { transform: scale(1.07); box-shadow: 0 0 26px 8px rgba(200,255,58,.85); } }
 #ballArrow { position: fixed; display: none; transform: translate(-50%,-50%); pointer-events: none; z-index: 6; text-align: center; color: #c8ff3a; text-shadow: 0 0 4px #000, 0 0 2px #000; font-weight: 700; }
 #ballArrow span { display: block; font-size: 30px; line-height: 1; }
