@@ -37,6 +37,10 @@ if (P.env) new HDRLoader(texManager).load(import.meta.env.BASE_URL + 'hdri/sky_1
   scene.environmentIntensity = 0.55;
 });
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 600);
+// v1.8.2: Hor+ FOV. In portrait a fixed 72 deg vertical FOV left only ~36 deg across and hid the first ~2.4 m of ground,
+// so a ball that looked 'at your feet' was really 2.5-3 m away (outside reach). Keep >=56 deg horizontal, cap at 88 deg vertical.
+function fitFov() { const a = innerWidth / innerHeight, minH = 56 * Math.PI / 180; const v = 2 * Math.atan(Math.tan(minH / 2) / a) * 180 / Math.PI; camera.fov = Math.min(88, Math.max(72, v)); camera.aspect = a; camera.updateProjectionMatrix(); }
+fitFov();
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x6b5640, P.pbr ? 0.9 : 1.25));
@@ -48,7 +52,7 @@ if (P.shadows) {
   sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
 }
 scene.add(sun, sun.target);
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+addEventListener('resize', () => { fitFov(); renderer.setSize(innerWidth, innerHeight); });
 
 // ---------- physics ----------
 // Broadphase that only pairs bodies that can move (ball, player, cone) with everything else.
@@ -324,13 +328,13 @@ function requestBall() {
 }
 // v1.8.1: forgiving reach measured from the feet. <=1.2 m: any angle (even behind); <=2.2 m: anywhere in the front 180 deg.
 // The kick always goes along the camera's flat forward, so a ball off to the side still goes where you look.
-const KICK_REACH = 2.2, KICK_ANY = 1.2;
+const KICK_REACH = 3.0, KICK_ANY = 1.4; // v1.8.2: front reach 3 m (what a portrait screen shows as 'at your feet')
 function kickTarget(f = forwardFlat()) {
   let target = null, bestScore = -Infinity;
   for (const b of balls) {
     const p = b.body.position, dx = p.x - player.position.x, dz = p.z - player.position.z, dy = p.y - player.position.y;
     const dist = Math.hypot(dx, dz);
-    if (dist > KICK_REACH || dy > 1.2 || dy < -1) continue;
+    if (dist > KICK_REACH || dy > 1.5 || dy < -1.5) continue;
     const dot = dist > 0.01 ? (dx * f.x + dz * f.z) / dist : 1;
     if (dot < 0 && dist > KICK_ANY) continue;
     const s = dot * 0.5 - dist; if (s > bestScore) { bestScore = s; target = b; }
@@ -348,7 +352,7 @@ function updateBallAids(t) {
   kickRing.position.set(p.x, p.y - BALL_R + 0.03, p.z);
   const pulse = 0.5 + 0.5 * Math.sin(t * 0.008);
   ringMat.color.setHex(reach ? 0xc8ff3a : 0xffffff);
-  ringMat.opacity = reach ? 0.85 + 0.15 * pulse : (d < 12 ? 0.3 * (1 - d / 12) : 0);
+  ringMat.opacity = reach ? 0.85 + 0.15 * pulse : 0; kickRing.visible = reach; // unlit = hidden (the old faint white read as a dark shadow)
   kickRing.scale.setScalar(reach ? 1.1 + 0.15 * pulse : 0.8);
   if (reach !== inReach) { inReach = reach; $('btnKick').classList.toggle('inreach', reach); }
   ringV.copy(p).project(camera);
@@ -631,3 +635,8 @@ window.__game = {
   walk(points) { autopilot = { points: points.map(([x, z]) => ({ x, z })), done: false }; return autopilot; },
   get autopilotActive() { return !!autopilot; },
 };
+// v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
+const BUILD = 'v1.8.2';
+fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
+  if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
+}).catch(() => {});
