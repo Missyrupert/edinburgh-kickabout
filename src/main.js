@@ -168,7 +168,9 @@ let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
 function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
   const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
-  $('chal').classList.remove('hidden'); $('chalVal').textContent = `Warm-Up ${tc('easy')} · Cocky ${tc('tricky')}` + (challenges.length ? ` · Away Ye Go! ${tc('legend')}` : ''); }
+  // v2.3: compact challenge line for phones (full names live in Help)
+  $('chal').classList.remove('hidden'); $('chalVal').textContent = `⭐ ${tc('easy')}  🔥 ${tc('tricky')}` + (challenges.length ? `  ✨ ${tc('legend')}` : '');
+  $('chal').title = 'Warm-Up · Cocky · Away Ye Go!'; }
 updateHud();
 // ---------- wallet (pocket money) ----------
 let lastEarn = null, stepDist = 0;
@@ -178,7 +180,7 @@ function updateWallet(pop = false) {
   $('walletVal').textContent = fmt(wallet.pence);
   const n = Math.min(piltonBagged(), CHIPPY_TARGETS), f = Math.min(1, wallet.pence / GOAL.pence, n / CHIPPY_TARGETS);
   $('goalFill').style.width = `${f * 100}%`;
-  $('goalTxt').textContent = f >= 1 ? (built.counter ? 'Chippy unlocked! Visit the counter' : 'Chippy unlocked! Back tae the Pilton Plaice') : `${GOAL.label}: ${fmt(GOAL.pence)} + ${CHIPPY_TARGETS} Pilton targets (${n}/${CHIPPY_TARGETS})`;
+  $('goalTxt').innerHTML = f >= 1 ? (built.counter ? '🍟 <b>Chippy unlocked!</b> Visit the counter' : '🍟 <b>Chippy unlocked!</b> Back tae Pilton') : `🍟 Supper: <b>${n}/${CHIPPY_TARGETS}</b> Pilton targets · <b>${fmt(Math.min(wallet.pence, GOAL.pence))}/${fmt(GOAL.pence)}</b>`;
   $('wallet').classList.toggle('full', f >= 1);
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
@@ -400,7 +402,7 @@ function onBallCollide(b, e) {
   const iv = Math.abs(e.contact.getImpactVelocityAlongNormal());
   const now = performance.now();
   if (iv > 1.2 && now - b.lastSound > 70) { b.lastSound = now; const ob = e.body, tg = ob.userData?.target;
-    const surf = ob.shapes[0]?.type === CANNON.Shape.types.PLANE ? (LEVEL.id === 'pilton' && Math.abs(b.body.position.x) > 6.2 && b.body.position.z < 29 ? 'grass' : 'tarmac') : (tg === 'lamp' || tg === 'trolley' || tg === 'busstop' || tg === 'gap') ? 'metal' : 'wall';
+    const surf = ob.userData?.surface || (ob.shapes[0]?.type === CANNON.Shape.types.PLANE ? (LEVEL.id === 'pilton' && Math.abs(b.body.position.x) > 6.2 && b.body.position.z < 29 ? 'grass' : 'tarmac') : (tg === 'lamp' || tg === 'trolley' || tg === 'busstop' || tg === 'gap') ? 'metal' : 'wall');
     sfx.bounce(iv, iv > 6, surf); }
   const id = e.body.userData?.target;
   const clean = (b.bounces | 0) === 0;
@@ -544,6 +546,8 @@ function advance(dt) { // frame -> fixed steps
 // ---------- render ----------
 const pigM = new THREE.Matrix4(), pigQ = new THREE.Quaternion(), pigS = new THREE.Vector3(1, 0.8, 1.4), pigH = new THREE.Vector3(), ZERO = new THREE.Vector3(0, 0, 0), UPY = new THREE.Vector3(0, 1, 0);
 const iP = new THREE.Vector3(), iQ = new THREE.Quaternion();
+const wings = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.012, 0.11), pigeons.body.material, pigeons.list.length * 2); wings.frustumCulled = false; scene.add(wings);
+const wingE = new THREE.Euler(), wingQ = new THREE.Quaternion(), wingP = new THREE.Vector3(), wingOff = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1);
 function render(dt, t) {
   const alpha = paused ? 1 : acc / FIXED;
   iP.lerpVectors(prevPlayer, player.position, alpha);
@@ -578,11 +582,12 @@ function render(dt, t) {
       pg.t -= dt; if (pg.t < 0) { pg.t = 1 + Math.random() * 3; pg.rot += (Math.random() - 0.5) * 2; }
       const scare = (x, z) => Math.hypot(x - pg.pos.x, z - pg.pos.z) < 2.4;
       if (scare(iP.x, iP.z) || balls.some((b) => scare(b.body.position.x, b.body.position.z))) {
-        pg.state = 'fly'; pg.t = 4; pg.vel.set((Math.random() - 0.5) * 6, 4 + Math.random() * 2, (Math.random() - 0.5) * 6);
+        pg.state = 'fly'; pg.t = 4; { let ax = pg.pos.x - iP.x, az = pg.pos.z - iP.z; const l = Math.hypot(ax, az) || 1; const sp = 4.5 + Math.random() * 2, tw = (Math.random() - 0.5) * 0.8; // v2.3: fly away at a climb, not straight up
+          ax /= l; az /= l; const cx = ax * Math.cos(tw) - az * Math.sin(tw), cz = ax * Math.sin(tw) + az * Math.cos(tw); pg.vel.set(cx * sp, 2.2 + Math.random(), cz * sp); pg.rot = Math.atan2(-cx, -cz); }
         if (Math.random() < 0.3) sfx.coo();
       }
     } else if (pg.state === 'fly') {
-      pg.pos.addScaledVector(pg.vel, dt); pg.vel.y += dt; pg.t -= dt;
+      pg.pos.addScaledVector(pg.vel, dt); pg.vel.y += dt * 0.5; pg.t -= dt;
       if (pg.t < 0) { pg.state = 'gone'; pg.t = 15; }
     } else { pg.t -= dt; if (pg.t < 0 && Math.hypot(iP.x - pg.home.x, iP.z - pg.home.z) > 10) { pg.state = 'idle'; pg.pos.copy(pg.home); } }
     const vis = pg.state !== 'gone';
@@ -590,8 +595,13 @@ function render(dt, t) {
     pigM.compose(pg.pos, pigQ, vis ? pigS : ZERO); pigeons.body.setMatrixAt(i, pigM);
     pigH.set(-Math.sin(pg.rot) * 0.1, 0.08, -Math.cos(pg.rot) * 0.1).add(pg.pos);
     pigM.compose(pigH, pigQ, vis ? pigS.set(1, 1, 1) : ZERO); pigeons.head.setMatrixAt(i, pigM); pigS.set(1, 0.8, 1.4);
+    // v2.3 wings: folded at rest, flapping in flight
+    const flap = pg.state === 'fly' ? Math.sin(t * 0.045 + i) * 0.9 : 0.05;
+    for (const sd of [-1, 1]) { wingE.set(0, pg.rot, sd * (pg.state === 'fly' ? flap : 1.35), 'YXZ'); wingQ.setFromEuler(wingE);
+      wingP.set(Math.cos(pg.rot) * sd * 0.08, 0.04, -Math.sin(pg.rot) * sd * 0.08).add(pg.pos); wingOff.set(sd * 0.09, 0, 0).applyQuaternion(wingQ); wingP.add(wingOff);
+      pigM.compose(wingP, wingQ, vis ? ONE : ZERO); wings.setMatrixAt(i * 2 + (sd > 0 ? 1 : 0), pigM); }
   });
-  pigeons.body.instanceMatrix.needsUpdate = pigeons.head.instanceMatrix.needsUpdate = true;
+  pigeons.body.instanceMatrix.needsUpdate = pigeons.head.instanceMatrix.needsUpdate = wings.instanceMatrix.needsUpdate = true;
   if (P.shadows) { // follow the player, snapped to shadow texels to avoid shimmer
     const snap = 64 / 2048, sx = Math.round(iP.x / snap) * snap, sz = Math.round(iP.z / snap) * snap;
     sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z); sun.target.position.set(sx, 0, sz);
@@ -650,7 +660,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.1.1';
+const BUILD = 'v2.3';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});

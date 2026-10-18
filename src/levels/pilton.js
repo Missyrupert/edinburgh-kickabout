@@ -23,19 +23,19 @@ function build(scene, world, mats, P) {
   const CYL = (rt, rb, seg) => (cylCache[rt + ':' + rb + ':' + seg] ||= new THREE.CylinderGeometry(rt, rb, 1, seg, 1));
   const eul = new THREE.Euler(), q = new THREE.Quaternion();
   const M4 = (x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => { eul.set(rx, ry, rz, 'YXZ'); q.setFromEuler(eul); return new THREE.Matrix4().compose(V(x, y, z), q, V(sx, sy, sz)); };
-  function body(shape, x, y, z, { rx = 0, ry = 0, rz = 0, material = mats.ground, target = null } = {}) {
+  function body(shape, x, y, z, { rx = 0, ry = 0, rz = 0, material = mats.ground, target = null, surface = null } = {}) {
     const b = new CANNON.Body({ mass: 0, material, shape }); b.position.set(x, y, z);
     eul.set(rx, ry, rz, 'YXZ'); q.setFromEuler(eul); b.quaternion.set(q.x, q.y, q.z, q.w);
-    if (target) b.userData = { target }; world.addBody(b); return b;
+    if (target || surface) b.userData = { target, surface }; world.addBody(b); return b;
   }
   const boxBody = (x, y, z, w, h, d, o = {}) => body(new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)), x, y, z, o);
-  function solid(key, x, y, z, w, h, d, color, { phys = true, rx = 0, ry = 0, rz = 0, tile = 0, grime = 0, target = null } = {}) {
+  function solid(key, x, y, z, w, h, d, color, { phys = true, rx = 0, ry = 0, rz = 0, tile = 0, grime = 0, target = null, surface = null } = {}) {
     B.add(key, BOX, M4(x, y, z, w, h, d, rx, ry, rz), color, { tile, grime });
-    return phys ? boxBody(x, y, z, w, h, d, { rx, ry, rz, target }) : null;
+    return phys ? boxBody(x, y, z, w, h, d, { rx, ry, rz, target, surface }) : null;
   }
-  function cyl(key, x, y, z, rt, rb, h, color, { phys = true, seg = 8, target = null } = {}) {
+  function cyl(key, x, y, z, rt, rb, h, color, { phys = true, seg = 8, target = null, surface = key === 'metal' ? 'metal' : null } = {}) {
     B.add(key, CYL(rt, rb, seg), M4(x, y, z, 1, h, 1), color, {});
-    return phys ? body(new CANNON.Cylinder(rt, rb, h, seg), x, y, z, { target }) : null;
+    return phys ? body(new CANNON.Cylinder(rt, rb, h, seg), x, y, z, { target, surface }) : null;
   }
   const quad = (key, x, y, z, w, h, ry, uvRect = null, color = 0xffffff, { rx = 0, grime = 0, tile = 0 } = {}) => B.add(key, QUAD, M4(x, y, z, w, h, 1, rx, ry), color, { uvRect, grime, tile });
   const sign = (text, x, y, z, w, h, ry, bg, fg, font, border) => quad('atlas', x, y, z, w, h, ry, atlas.sign(text, bg, fg, w / h, font, border));
@@ -50,6 +50,15 @@ function build(scene, world, mats, P) {
   quad('flat', 0, 0.006, -8, 0.12, 74, 0, null, 0xd8d0a0, { rx: -Math.PI / 2 }); // centre line... faded
   for (const s of [-1, 1]) quad('paving', s * 5, 0.008, -8, 2, 76, 0, null, 0xc9c4ba, { rx: -Math.PI / 2, tile: 1.2 });
   quad('paving', 0, 0.008, 32, 40, 4, 0, null, 0xc9c4ba, { rx: -Math.PI / 2, tile: 1.2 }); // in front of the parade
+  { // v2.3 ground variety (decals, no physics): cracked/sunken flags, puddles, kerb weeds, desire paths, patchy grass
+    const gr = mulberry32(77), R = (a, b) => a + gr() * (b - a);
+    for (let i = 0; i < 26; i++) { const sd = gr() < 0.5 ? -1 : 1, x = sd * R(4.2, 5.8), z = R(-44, 28); quad('flat', x, 0.0095, z, R(0.5, 0.9), 0.025, 0, null, 0x77736a, { rx: -Math.PI / 2 }); if (gr() < 0.5) quad('flat', x, 0.0096, z + 0.2, 0.025, R(0.3, 0.6), 0, null, 0x77736a, { rx: -Math.PI / 2 }); } // cracks
+    for (let i = 0; i < 10; i++) { const sd = gr() < 0.5 ? -1 : 1; quad('flat', sd * R(4.3, 5.7), 0.0094, R(-44, 28), 0.6, 0.6, 0, null, 0xa9a397, { rx: -Math.PI / 2 }); } // odd-coloured replacement flags
+    for (const [x, z, w, d] of [[-3.2, -18, 1.6, 0.9], [2.6, 6, 1.1, 0.7], [3.4, 27.2, 1.4, 0.8], [-4.4, -36, 0.9, 0.6]]) quad('glass', x, 0.012, z, w, d, 0, null, 0x9fb0bf, { rx: -Math.PI / 2 }); // puddles at the road edge
+    for (let i = 0; i < 40; i++) { const sd = gr() < 0.5 ? -1 : 1; solid('flat', sd * R(3.98, 4.06), 0.05, R(-44, 28), 0.08, R(0.06, 0.14), R(0.1, 0.3), gr() < 0.5 ? 0x4f6f2f : 0x6a7a3a, { phys: false }); } // kerb weeds
+    for (const [x, z, l, a] of [[-6.5, -20, 6, 0.4], [6.8, -30, 5, -0.3], [-6.4, 18, 5, 0.6], [6.6, 4, 4, -0.5]]) quad('flat', x, 0.007, z, 0.7, l, a, null, 0x7a6f4f, { rx: -Math.PI / 2 }); // worn desire paths across the verges
+    for (let i = 0; i < 18; i++) { const sd = gr() < 0.5 ? -1 : 1; quad('flat', sd * R(6.5, 7.6), 0.005, R(-44, 26), R(0.8, 2), R(0.8, 2.5), gr() * 3, null, pick([0x56743a, 0x6d8648, 0x7a8a4a]), { rx: -Math.PI / 2 }); } // patchy grass
+  }
   quad('tarmac', 0, 0.005, 28, 40, 4, 0, null, 0x8a8c88, { rx: -Math.PI / 2, tile: 4 });
   // yellow lines + a wee bit of humour on the road
   quad('atlas', 0, 0.01, -20, 3.2, 0.8, 0, atlas.sign('SLOW', '#6a6c68', '#EFE3C8', 4, 'bold 60px "Barlow Condensed", Arial'), 0xffffff, { rx: -Math.PI / 2 });
@@ -70,7 +79,15 @@ function build(scene, world, mats, P) {
       const w = rand() < 0.3 ? 0.9 : 1.3;
       quad('flat', x + nx * 0.015, y, z + nz * 0.015, w + 0.16, 1.36, ry, null, 0xf2f2f0);
       quad('glass', x + nx * 0.025, y, z + nz * 0.025, w, 1.2, ry, null, 0xffffff);
-      if (rand() < 0.25) quad('flat', x + nx * 0.03, y + 0.25, z + nz * 0.03, w * 0.95, 0.5, ry, null, pick([0xe8d8a8, 0xc8d8e8, 0xf0f0f0])); // net curtains / blinds
+      // v2.3 window variety: lit / net curtains / drawn curtains / blind, sill stain, the odd window box or satellite dish
+      const r = rand(), o = (d) => [x + nx * d, z + nz * d];
+      if (r < 0.14) { const [qx, qz] = o(0.028); quad('lamp', qx, y, qz, w * 0.92, 1.1, ry, null, 0xffffff); }
+      else if (r < 0.36) { const [qx, qz] = o(0.03); quad('flat', qx, y - 0.12, qz, w * 0.95, 0.78, ry, null, pick([0xf0eee6, 0xe8e4d8])); } // net curtains
+      else if (r < 0.56) { const c = pick([0x8a3a3a, 0x3a5a8a, 0xb89a4a, 0x5a7a4a, 0x7a5a7a]); for (const sd of [-1, 1]) { const qx = x + nx * 0.03 + ax * sd * w * 0.36, qz = z + nz * 0.03 + az * sd * w * 0.36; quad('flat', qx, y, qz, w * 0.28, 1.15, ry, null, c); } }
+      else if (r < 0.68) { const [qx, qz] = o(0.03); quad('flat', qx, y + 0.3, qz, w * 0.95, 0.55, ry, null, pick([0xd9cfa8, 0xbfc8cc])); } // half-down blind
+      { const qx = x + nx * 0.012, qz = z + nz * 0.012; quad('flat', qx, y - 0.86, qz, w * 0.7, 0.3, ry, null, 0xa59c8a); } // rain stain under the sill
+      if (j > 0 && rand() < 0.08) { solid('flat', x + nx * 0.16, y - 0.68, z + nz * 0.16, nx ? 0.25 : w, 0.18, nz ? 0.25 : w, 0x6a4a2a, { phys: false }); for (let k = 0; k < 4; k++) solid('flat', x + nx * 0.16 + ax * (k - 1.5) * w * 0.22, y - 0.54, z + nz * 0.16 + az * (k - 1.5) * w * 0.22, 0.12, 0.12, 0.12, pick([0xc62d4a, 0xf2c94c, 0xe86fb0, 0x4a8a3a]), { phys: false }); }
+      if (j === floors - 1 && rand() < 0.07) { const qx = x + nx * 0.25 + ax * (w * 0.5 + 0.35), qz = z + nz * 0.25 + az * (w * 0.5 + 0.35); B.add('metal', CYL(0.32, 0.32, 10), M4(qx, y + 0.4, qz, 1, 0.05, 1, Math.PI / 2, ry), 0xd8d8d4, {}); solid('metal', qx - nx * 0.15, y + 0.4, qz - nz * 0.15, 0.05, 0.05, 0.05, 0x555555, { phys: false }); }
     }
   }
   function block(x0, x1, z0, z1, h, floors, { col = pick(HARL), roof = 'pitched', front = '-x', doors = [1], back = true, chimneys = 2 } = {}) {
@@ -124,19 +141,18 @@ function build(scene, world, mats, P) {
   const { x0: bx0, x1: bx1, rise, z0: bz0, z1: bz1 } = BANK;
   const L = Math.hypot(bx1 - bx0, rise), a = Math.atan2(rise, bx1 - bx0), T = 1.5;
   const bcx = (bx0 + bx1) / 2 + Math.sin(a) * T / 2, bcy = rise / 2 - Math.cos(a) * T / 2;
-  boxBody(bcx, bcy, (bz0 + bz1) / 2, L, T, bz1 - bz0, { rz: a });
+  boxBody(bcx, bcy, (bz0 + bz1) / 2, L, T, bz1 - bz0, { rz: a, surface: 'grass' });
   B.add('flat', QUAD, M4((bx0 + bx1) / 2, rise / 2 + 0.01, (bz0 + bz1) / 2, L, bz1 - bz0, 1, -Math.PI / 2, 0, a), 0x6a8a44, {}); // sloped lawn
-  solid('flat', (bx1 + 25) / 2, rise / 2, (bz0 + bz1) / 2, 25 - bx1, rise, bz1 - bz0, 0x6a8a44); // the green itself
+  solid('flat', (bx1 + 25) / 2, rise / 2, (bz0 + bz1) / 2, 25 - bx1, rise, bz1 - bz0, 0x6a8a44, { surface: 'grass' }); // the green itself
   solid('harl', (bx1 + 25) / 2, rise / 2 - 0.05, bz0 - 0.15, 25 - bx1, rise + 0.3, 0.3, HARL[3], { tile: 1.5 }); // retaining wall edges
   solid('harl', (bx1 + 25) / 2, rise / 2 - 0.05, bz1 + 0.15, 25 - bx1, rise + 0.3, 0.3, HARL[3], { tile: 1.5 });
   const POLES = [[19, -6.2], [19, -1.8]];
   for (const [px, pz] of POLES) { cyl('metal', px, rise + 1.1, pz, 0.05, 0.06, 2.2, 0x6c7378, { seg: 6, target: null }); solid('metal', px, rise + 2.2, pz, 0.06, 0.06, 0.8, 0x6c7378, { phys: false }); }
   for (const dz of [-0.3, 0, 0.3]) solid('flat', 19 + dz, rise + 2.18, -4, 0.01, 0.01, 4.4, 0xdddddd, { phys: false }); // lines
-  [0xe8e8e8, 0xc23b3b, 0x3b6fc2, 0xf2d45c].forEach((c, i) => solid('flat', 19, rise + 1.75, -5.4 + i * 0.95, 0.02, 0.8, 0.6, c, { phys: false })); // a washing
   sign('DRYING GREEN · RESIDENTS ONLY', 24.9, rise + 0.9, -4, 1.8, 0.24, -Math.PI / 2, '#f4f1ea', '#111', 'bold 46px Arial', '#111');
 
   // ---------- v2.1 The Pilton Parade (see pilton-parade.js) ----------
-  const { counter: COUNTER } = buildParade({ solid, quad, atlas, cyl, windows, V });
+  const { counter: COUNTER } = buildParade({ solid, quad, atlas, cyl, windows, V, boxBody });
 
   // ---------- street furniture ----------
   function lamp(x, z, side, target = null) { // concrete column, swan-neck head
@@ -144,7 +160,8 @@ function build(scene, world, mats, P) {
     solid('flat', x - side * 0.55, 6.05, z, 1.1, 0.1, 0.14, 0xb9b7ae, { phys: false });
     solid('lamp', x - side * 1.0, 5.92, z, 0.45, 0.12, 0.22, 0xffffff, { phys: false });
   }
-  for (let z = -40; z <= 24; z += 16) { lamp(5.6, z, 1); if (z !== -8) lamp(-5.6, z + 8, -1); }
+  for (let z = -40; z <= 24; z += 16) { if (z !== 24) lamp(5.6, z, 1); if (z !== -8 && z !== 24) lamp(-5.6, z + 8, -1); }
+  lamp(4.3, 24, 1); lamp(-4.6, 30.3, -1); // v2.3: moved to the kerb so they don't stand in front of the shopfronts
   // bins: green wheelies by the cottage-flat gates; big communal bins by the garages
   function wheelie(x, z, col, ry = 0) { solid('flat', x, 0.5, z, 0.6, 1.0, 0.72, col, { ry }); solid('flat', x, 1.02, z, 0.66, 0.06, 0.78, new THREE.Color(col).multiplyScalar(0.8), { phys: false, ry }); }
   wheelie(-6.6, -31.5, 0x2e5a34); wheelie(-6.6, -14.2, 0x1d1f1f); wheelie(-6.6, -10.8, 0x2e5a34);
@@ -157,6 +174,26 @@ function build(scene, world, mats, P) {
   solid('flat', -21, 0.6, 33, 14, 1.2, 1, 0x3e5a2c); solid('flat', 21, 0.6, 33, 14, 1.2, 1, 0x3e5a2c);
 
   // ---------- distant views: Forth, Fife, gasholder frame, the tower blocks ----------
+  { // v2.3: stylised Edinburgh skyline to the south / south-east (Castle on its rock ~SSE, Arthur's Seat ~SE). East is -x here.
+    const card = (draw, w, h, bearingDeg, dist, size, col) => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = '#fff'; draw(g, w, h);
+      const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size * h / w), new THREE.MeshBasicMaterial({ map: tx, color: col, transparent: true, alphaTest: 0.3, fog: false, depthWrite: false }));
+      const b = bearingDeg * Math.PI / 180; m.position.set(-Math.sin(b) * dist, size * h / w / 2 - 6, Math.cos(b) * dist); m.lookAt(0, m.position.y, 0); m.renderOrder = -1; m.name = 'skyline'; scene.add(m); return m;
+    };
+    card((g, w, h) => { // castle rock + castle
+      g.beginPath(); g.moveTo(0, h); g.bezierCurveTo(w * 0.15, h * 0.75, w * 0.25, h * 0.55, w * 0.35, h * 0.5); g.lineTo(w * 0.7, h * 0.48); g.bezierCurveTo(w * 0.8, h * 0.5, w * 0.85, h * 0.7, w, h); g.fill();
+      const blk = (x, y, bw, bh) => g.fillRect(w * x, h * y, w * bw, h * bh);
+      blk(0.36, 0.34, 0.12, 0.17); blk(0.47, 0.28, 0.1, 0.23); blk(0.56, 0.36, 0.14, 0.15); blk(0.5, 0.2, 0.025, 0.1); // halls, palace, tower
+      for (let i = 0; i < 12; i++) blk(0.36 + i * 0.03, 0.31, 0.015, 0.03); // crenellations
+      blk(0.512, 0.12, 0.003, 0.08); g.fillRect(w * 0.515, h * 0.12, w * 0.03, h * 0.025); // flagpole + flag
+    }, 512, 256, 154, 430, 120, 0x7f8a97);
+    card((g, w, h) => { // Arthur's Seat: the lion's head and haunch, Salisbury Crags below
+      g.beginPath(); g.moveTo(0, h); g.bezierCurveTo(w * 0.1, h * 0.8, w * 0.2, h * 0.7, w * 0.3, h * 0.62); g.lineTo(w * 0.36, h * 0.6); g.bezierCurveTo(w * 0.42, h * 0.5, w * 0.5, h * 0.25, w * 0.56, h * 0.22);
+      g.bezierCurveTo(w * 0.6, h * 0.24, w * 0.62, h * 0.38, w * 0.66, h * 0.45); g.bezierCurveTo(w * 0.78, h * 0.52, w * 0.9, h * 0.75, w, h); g.fill();
+      g.fillRect(w * 0.08, h * 0.78, w * 0.3, h * 0.22);
+    }, 512, 200, 132, 470, 200, 0x8d98a4);
+  }
   B.add('flat', QUAD, M4(0, -0.6, 330, 1400, 400, 1, -Math.PI / 2), 0x6f8796, {}); // the Forth
   for (let i = 0; i < 9; i++) { const x = -600 + i * 150 + rand() * 60, h = 25 + rand() * 30; B.add('flat', new THREE.SphereGeometry(1, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), M4(x, -1, 560 + rand() * 40, 120 + rand() * 80, h, 40), 0x6d7d6a, {}); } // Fife hills
   { const gx = 60, gz = 150, R = 22, N = 12; // Granton gasholder guide frame (the survivor), dark green-grey lattice

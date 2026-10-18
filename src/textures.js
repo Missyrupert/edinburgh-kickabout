@@ -103,7 +103,7 @@ function cell(g, i) {
 // ---------- sign atlas: all signs, plaques and the target door share one texture ----------
 export class SignAtlas {
   constructor() {
-    this.W = PRESET.texSize <= 512 ? 1024 : 2048; this.H = this.W; this.k = this.W / 2048;
+    this.W = PRESET.texSize <= 512 ? 1536 : 2048; this.H = this.W; this.k = this.W / 2048; // v2.3: signs stay sharp on low (k=0.75); wall/road textures unchanged
     [this.c, this.g] = canvas(this.W, this.H); this.x = 0; this.y = 0; this.rowH = 0;
     this.tex = canvasTex(this.c, false);
   }

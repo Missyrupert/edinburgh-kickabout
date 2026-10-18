@@ -87,7 +87,8 @@ const D = {
   riser(col) { return (g, w, h) => tiles(g, 0, 0, w, h, 16, col, '#2E2F2C'); },
 };
 
-export function buildParade({ solid, quad, atlas, cyl, windows, V }) {
+export function buildParade({ solid, quad, atlas, cyl, windows, V, boxBody }) {
+  const block = (x0, x1, col) => quad('flat', (x0 + x1) / 2, 2.05, FRONT + 0.03, x1 - x0 - 0.1, 4.0, Math.PI, null, col); // v2.3 shop colour block, readable from distance
   // the block: shops (single storey, z 34-42) + two storeys of flats above, set back to z 36
   solid('harl', 0, 2.1, 38, 30, 4.2, 8, 0xd8d0bf, { tile: 2.5, grime: 0.25 });
   solid('flat', 0, 4.35, 37.9, 30.6, 0.3, 8.4, 0x6f6b64, { phys: false }); // flat roof / canopy over the shops
@@ -99,12 +100,13 @@ export function buildParade({ solid, quad, atlas, cyl, windows, V }) {
   for (let x = -14.8; x <= 14.8; x += 0.6) solid('metal', x, 5.0, 34.3, 0.04, 0.9, 0.04, 0x2E2F2C, { phys: false });
   solid('metal', 0, 5.45, 34.3, 29.8, 0.06, 0.06, 0x2E2F2C, { phys: false }); solid('metal', 0, 4.6, 34.3, 29.8, 0.04, 0.04, 0x2E2F2C, { phys: false });
   // drainpipes (cast-iron, black) from the canopy gutter
-  for (const x of [-15.1, -6.15, 5.1, 15.1]) { cyl('metal', x, 2.1, 33.85, 0.05, 0.05, 4.2, 0x2a2b29, { phys: false, seg: 6 }); solid('metal', x, 0.08, 33.75, 0.2, 0.06, 0.25, 0x2a2b29, { phys: false }); }
+  for (const x of [-15.1, -6.15, 5.1, 15.1]) { quad('flat', x, 0.7, FRONT + 0.01, 0.4, 1.4, Math.PI, null, 0x8a8272); cyl('metal', x, 2.1, 33.85, 0.05, 0.05, 4.2, 0x2a2b29, { phys: false, seg: 6 }); solid('metal', x, 0.08, 33.75, 0.2, 0.06, 0.25, 0x2a2b29, { phys: false }); }
   // brick pilasters between shop units
   for (const x of [-6, 0, 5, 10]) solid('brick', x, 2.0, 33.9, 0.45, 4.0, 0.2, 0xffffff, { phys: false, tile: 1.5 });
   for (const x of [-15.15, 15.15]) solid('brick', x, 2.0, 33.95, 0.3, 4.0, 0.3, 0xffffff, { phys: false, tile: 1.5 });
 
-  const shopUnit = ({ x0, x1, name, sub, bg, fg, riser, window: win, door = 'r', winTex, shutterDown = false }) => {
+  const shopUnit = ({ x0, x1, name, sub, bg, fg, riser, window: win, door = 'r', winTex, shutterDown = false, block: bc }) => {
+    if (bc) block(x0, x1, bc);
     const w = x1 - x0, xc = (x0 + x1) / 2, dw = 1.0, dx = door === 'r' ? x1 - 0.4 - dw / 2 : x0 + 0.4 + dw / 2;
     quad('atlas', xc, 3.45, FRONT - 0.02, w - 0.5, 0.95, Math.PI, atlas.fascia(name, sub, bg, fg, (w - 0.5) / 0.95));
     if (shutterDown) { quad('atlas', xc, 1.45, FRONT, w - 0.6, 2.9, Math.PI, winTex); solid('metal', xc, 3.0, FRONT - 0.1, w - 0.5, 0.26, 0.22, 0x8a8d8f, { phys: false }); return; }
@@ -128,24 +130,25 @@ export function buildParade({ solid, quad, atlas, cyl, windows, V }) {
   quad('atlas', -13.95, 0.3, FRONT - 0.012, 1.8, 0.6, Math.PI, R(128, 40, D.riser('#2a8e82')));
   quad('flat', -12.05, 1.15, FRONT - 0.012, 1.0, 2.3, Math.PI, null, 0x1f5a52); quad('glass', -12.05, 1.5, FRONT - 0.02, 0.7, 1.3, Math.PI, null, 0xffe8b0); // teal door, lit
   quad('atlas', -12.05, 2.55, FRONT - 0.025, 0.7, 0.24, Math.PI, atlas.sign('OPEN', '#c8102e', '#fff', 0.7 / 0.24, '700 60px "Barlow Condensed", Arial'));
-  const blade = R(256, 160, D.blade); for (const s of [1, -1]) quad('atlas', -15.2, 3.0, FRONT - 0.65 + s * 0.012, 1.0, 0.62, s > 0 ? Math.PI / 2 : -Math.PI / 2, blade);
+  block(-15, -6, 0x1f6f66);
+  const blade = R(256, 160, D.blade); for (const s of [1, -1]) quad('atlas', -15.2 + s * 0.015, 3.0, FRONT - 0.65, 1.0, 0.62, s > 0 ? Math.PI / 2 : -Math.PI / 2, blade); // v2.3: faces split on x (no z-fight)
   solid('metal', -15.2, 3.35, FRONT - 0.25, 0.04, 0.04, 0.85, 0x2E2F2C, { phys: false });
-  solid('metal', -7.2, 6.5, 33.95, 0.35, 4.6, 0.35, 0xa7aaab, { phys: false }); solid('metal', -7.2, 8.9, 33.95, 0.5, 0.2, 0.5, 0x7d8082, { phys: false }); // stainless extractor flue
-  solid('flat', -9.2, 3.0, FRONT - 0.5, 5.6, 0.06, 1.0, 0x2e9c8f, { phys: false, rx: -0.25 }); // canvas awning (teal)
+  solid('metal', -7.2, 6.5, 35.8, 0.35, 4.6, 0.3, 0xa7aaab, { phys: false }); solid('metal', -7.2, 8.9, 35.8, 0.5, 0.2, 0.5, 0x7d8082, { phys: false }); // stainless extractor flue
+  solid('flat', -8.95, 2.62, FRONT - 0.5, 5.2, 0.05, 0.95, 0x2e9c8f, { phys: false, rx: -0.25 }); // canvas awning (teal), v2.3: below the fascia
   // 2. The Wee Shop (newsagent / grocer)
-  shopUnit({ x0: -6, x1: 0, name: 'THE WEE SHOP', sub: 'NEWSAGENT · GROCERIES', bg: PAL.brick, fg: PAL.cream, riser: R(256, 48, D.riser('#7a3e30')), winTex: R(384, 220, D.weeShop) });
-  quad('atlas', -0.75, 2.5, FRONT - 0.012, 0.55, 0.42, Math.PI, R(96, 74, D.notice(['FLAT TO LET', 'ask inside']))); // card in the door
+  shopUnit({ x0: -6, x1: 0, name: 'THE WEE SHOP', sub: 'NEWSAGENT · GROCERIES', bg: PAL.brick, fg: PAL.cream, riser: R(256, 48, D.riser('#7a3e30')), winTex: R(384, 220, D.weeShop), block: 0x7a3a2c });
+  quad('atlas', -0.9, 1.75, FRONT - 0.02, 0.5, 0.38, Math.PI, R(96, 74, D.notice(['FLAT TO LET', 'ask inside']))); // card in the door
   // 3. Lucky Tattie (bookmaker)
-  shopUnit({ x0: 0, x1: 5, name: 'LUCKY TATTIE', sub: 'BOOKMAKER', bg: '#1f5a3a', fg: PAL.cream, riser: R(256, 48, D.riser('#1a4a30')), winTex: R(320, 220, D.bookies) });
+  shopUnit({ x0: 0, x1: 5, name: 'LUCKY TATTIE', sub: 'BOOKMAKER', bg: '#1f5a3a', fg: PAL.cream, riser: R(256, 48, D.riser('#1a4a30')), winTex: R(320, 220, D.bookies), block: 0x1a4a30 });
   // 4. Curl Up & Dye (hairdresser)
-  shopUnit({ x0: 5, x1: 10, name: 'CURL UP & DYE', sub: 'LADIES & GENTS HAIRDRESSER', bg: '#b44a76', fg: PAL.cream, riser: R(256, 48, D.riser('#8a3a5a')), winTex: R(320, 220, D.salon), door: 'l' });
+  shopUnit({ x0: 5, x1: 10, name: 'CURL UP & DYE', sub: 'LADIES & GENTS HAIRDRESSER', bg: '#b44a76', fg: PAL.cream, riser: R(256, 48, D.riser('#8a3a5a')), winTex: R(320, 220, D.salon), door: 'l', block: 0x9a3a64 });
   // 5. Video Nasty (shut down, shutter down, to-let board)
-  shopUnit({ x0: 10, x1: 15, name: 'VIDEO NASTY', sub: 'VIDEO HIRE · NEW RELEASES', bg: '#3b2350', fg: PAL.yellow, winTex: R(384, 224, D.shutter), shutterDown: true });
+  shopUnit({ x0: 10, x1: 15, name: 'VIDEO NASTY', sub: 'VIDEO HIRE · NEW RELEASES', bg: '#3b2350', fg: PAL.yellow, winTex: R(384, 224, D.shutter), shutterDown: true, block: 0x3b2350 });
   quad('atlas', 12.5, 4.9, 33.6, 1.3, 0.7, Math.PI, R(160, 86, D.notice(['TO LET', 'retail unit · 0131 000 0000'], PAL.yellow)));
   solid('metal', 12.5, 4.6, 33.62, 0.05, 0.6, 0.05, 0x2E2F2C, { phys: false });
   // community notices on the pilaster/wall (cheap quads)
-  quad('atlas', 5.0, 1.9, FRONT - 0.13, 0.42, 0.52, Math.PI, R(84, 104, D.notice(["RESIDENTS'", 'ASSOCIATION', 'tues 7pm', 'church hall'])));
-  quad('atlas', 0.0, 1.6, FRONT - 0.13, 0.4, 0.5, Math.PI, R(80, 100, D.notice(['LOST CAT', 'grey, called', 'Smokey', 'ask at Wee Shop'], '#fff')));
+  quad('atlas', 5.0, 1.9, 33.78, 0.42, 0.52, Math.PI, R(84, 104, D.notice(["RESIDENTS'", 'ASSOCIATION', 'tues 7pm', 'church hall'])));
+  quad('atlas', 0.0, 1.6, 33.78, 0.4, 0.5, Math.PI, R(80, 100, D.notice(['LOST CAT', 'grey, called', 'Smokey', 'ask at Wee Shop'], '#fff')));
 
   // ---------- everyday clutter ----------
   // wall-hugging bins/crates: simple boxes, all within 0.8 m of the wall (outside the walking line in front of the doors)
@@ -153,12 +156,13 @@ export function buildParade({ solid, quad, atlas, cyl, windows, V }) {
   wheelie(-4.2, 34.45 - 0.42, 0x2e5a34); wheelie(-3.5, 34.45 - 0.42, 0x3a3d3c); // Wee Shop bins (front against wall)
   for (const [x, y, c] of [[-1.75, 0.18, 0x4b6a8a], [-1.75, 0.5, 0x8a4b3a], [-1.35, 0.18, 0x4b6a8a]]) solid('flat', x, y, 33.65, 0.38, 0.32, 0.42, c, { phys: y < 0.3 }); // milk/bread crates
   // newspaper A-board (no collider: you walk/kick through it - it's tiny and sits by the wall)
-  solid('flat', -5.2, 0.45, 33.55, 0.55, 0.9, 0.04, 0x2E2F2C, { phys: false, rx: 0.15 });
+  solid('flat', -5.2, 0.45, 33.55, 0.55, 0.9, 0.04, 0x2E2F2C, { phys: false, rx: 0.15 }); boxBody(-5.2, 0.45, 33.6, 0.55, 0.9, 0.22, { surface: 'board' }); // v2.3 A-board collider (simple box)
   quad('atlas', -5.2, 0.5, 33.505, 0.48, 0.6, Math.PI, R(80, 100, D.notice(['EVENING NEWS', 'in today'], '#f4f1ea')), 0xffffff, { rx: 0 });
   // grey council litter bin on a post at the parade end, behind the line of the hedge
   cyl('metal', -15.6, 0.55, 31.6, 0.05, 0.05, 1.1, 0x2a2b29, { seg: 6 }); cyl('flat', -15.6, 0.85, 31.6, 0.22, 0.2, 0.5, 0x4a4d4c, { seg: 10, phys: false });
   // railings in front of the salon/bookies (pedestrian guard by the kerb gap), thin bars, no colliders
   for (let x = 2.2; x <= 7.8; x += 0.28) solid('metal', x, 0.5, 30.15, 0.03, 1.0, 0.03, 0x2e5a3a, { phys: false });
+  boxBody(5, 0.5, 30.15, 5.7, 1.0, 0.08, { surface: 'metal' }); // v2.3 one simple collider for the whole railing
   solid('metal', 5, 0.98, 30.15, 5.7, 0.05, 0.05, 0x2e5a3a, { phys: false }); solid('metal', 5, 0.2, 30.15, 5.7, 0.04, 0.04, 0x2e5a3a, { phys: false });
   // gum spots / staining on the pavement + a grubby step at the bookies (no physics)
   for (let i = 0; i < 18; i++) quad('flat', -14 + (i * 7.31) % 28, 0.011, 30.5 + (i * 3.7) % 3.3, 0.08, 0.08, 0, null, 0x8a8880, { rx: -Math.PI / 2 });

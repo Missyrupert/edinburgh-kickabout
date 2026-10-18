@@ -45,9 +45,10 @@ export class Sfx {
   bounce(v, hard, surf = hard ? 'wall' : 'tarmac') {
     if (!this.ok) return; const t = this.ctx.currentTime; const a = Math.min(1, v / 12), j = 0.92 + Math.random() * 0.16;
     if (surf === 'grass') { this.tone(t, 110 * j, 55, 0.12, 0.04 + a * 0.3); this.noiseBurst(t, 0.05, 500, 0.8, a * 0.12, 'lowpass'); return; }
+    if (surf === 'board') { this.tone(t, 130 * j, 70, 0.07, 0.05 + a * 0.35); this.noiseBurst(t, 0.04, 700, 1.2, a * 0.3); return; } // hollow knock
     this.tone(t, (surf === 'tarmac' ? 210 : 170) * j, 80, 0.08, 0.05 + a * 0.38);
     this.noiseBurst(t, 0.035 + a * 0.03, surf === 'tarmac' ? 1600 : 1100, 1.4, a * (surf === 'tarmac' ? 0.22 : 0.3));
-    if (surf === 'metal' && a > 0.3) [690, 1470].forEach((f) => this.tone(t, f, f * 0.99, 0.35, 0.05 * a, 'triangle'));
+    if (surf === 'metal') { [690 * j, 1470 * j, 2380 * j].forEach((f, i) => this.tone(t + i * 0.012, f, f * 0.99, 0.35 - i * 0.08, 0.05 * a + 0.01, 'triangle')); this.noiseBurst(t + 0.02, 0.08, 4200, 3, a * 0.12); } // clatter
   }
   step(run) { // soft trainer footstep on pavement
     if (!this.ok) return; const t = this.ctx.currentTime;
