@@ -10,7 +10,7 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
 import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
 import { unlocks, recordDone, levelDone, tierCount, TIERS, selectBall, selectBoots, BOOTS, resetProgress, BALLS, ITEMS, saveUnlocks } from './unlocks.js';
-import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor } from './wallet.js';
+import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor, CHIPPY_TARGETS } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
 import { Sfx } from './audio.js';
 import { Controls } from './controls.js';
@@ -172,11 +172,13 @@ function updateHud() { $('scoreVal').textContent = score; $('targetVal').textCon
 updateHud();
 // ---------- wallet (pocket money) ----------
 let lastEarn = null;
+const piltonBagged = () => Object.keys(levelDone('pilton') || {}).filter((k) => !k.startsWith('c_')).length;
+const chippyEarned = () => piltonBagged() >= CHIPPY_TARGETS;
 function updateWallet(pop = false) {
   $('walletVal').textContent = fmt(wallet.pence);
-  const f = Math.min(1, wallet.pence / GOAL.pence);
+  const n = Math.min(piltonBagged(), CHIPPY_TARGETS), f = Math.min(1, wallet.pence / GOAL.pence, n / CHIPPY_TARGETS);
   $('goalFill').style.width = `${f * 100}%`;
-  $('goalTxt').textContent = f >= 1 ? (built.counter ? 'Chippy unlocked! Visit the counter' : 'Chippy unlocked! Back tae the Pilton Plaice') : `${GOAL.label}: ${fmt(GOAL.pence)}`;
+  $('goalTxt').textContent = f >= 1 ? (built.counter ? 'Chippy unlocked! Visit the counter' : 'Chippy unlocked! Back tae the Pilton Plaice') : `${GOAL.label}: ${fmt(GOAL.pence)} + ${CHIPPY_TARGETS} Pilton targets (${n}/${CHIPPY_TARGETS})`;
   $('wallet').classList.toggle('full', f >= 1);
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
@@ -202,12 +204,12 @@ const MENU = ['wee', 'supper', 'munchie'];
 function openCounter() {
   $('cntWallet').textContent = fmt(wallet.pence);
   for (const id of MENU) { const b = $('cnt_' + id), m = ITEMS[id], on = unlocks.items.includes(id);
-    b.textContent = on ? `${m.name} ${fmt(m.pence)}` : `🔒 ${m.name} (${m.how})`; b.disabled = !on || wallet.pence < m.pence; }
+    b.textContent = on ? `${m.name} ${fmt(m.pence)}` : `🔒 ${m.name} (${m.how})`; b.disabled = !on || wallet.pence < m.pence || (id === 'supper' && !chippyEarned()); if (on && id === 'supper' && !chippyEarned()) b.textContent = `🔒 ${m.name} (bag ${CHIPPY_TARGETS} Pilton targets)`; }
   $('cntLine').innerHTML = '"What can I get ye, pal?"';
   $('counterCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
 }
 function buyItem(id) {
-  const m = ITEMS[id]; if (!m || !unlocks.items.includes(id) || wallet.pence < m.pence) return false;
+  const m = ITEMS[id]; if (!m || !unlocks.items.includes(id) || wallet.pence < m.pence || (id === 'supper' && !chippyEarned())) return false;
   if (id === 'supper') { if (!buySupper()) return false; } else { wallet.pence -= m.pence; saveWallet(); }
   unlocks.bought[id] = (unlocks.bought[id] || 0) + 1; saveUnlocks(); updateWallet(true); return true;
 }
@@ -233,7 +235,7 @@ function buildBallMenu() {
     btn.addEventListener('click', () => applyBall(id)); el.appendChild(btn); }
 }
 buildBallMenu();
-$('progressReset').addEventListener('click', () => { if (confirm('Reset progress: completed targets, unlocked balls/boots and chippy items? (Pocket money has its own reset.)')) { resetProgress(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; boot.geometry = footGeo('trainers'); buildBallMenu(); updateHud(); } });
+$('progressReset').addEventListener('click', () => { if (confirm('Reset progress: completed targets, unlocked balls/boots and chippy items and pocket money?')) { resetProgress(); resetWallet(); updateWallet(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; boot.geometry = footGeo('trainers'); buildBallMenu(); updateHud(); } });
 // ---------- levels ----------
 $('levelNow').textContent = LEVEL.name; $('levelBlurb').textContent = LEVEL.blurb;
 document.querySelectorAll('[data-level]').forEach((b) => { if (b.dataset.level === LEVEL.id) b.classList.add('on'); b.addEventListener('click', () => { if (b.dataset.level !== LEVEL.id) travelTo(b.dataset.level); }); });
@@ -420,7 +422,7 @@ function scoreTarget(t, bonus = null) {
   t.done = true; score += t.points;
   const pence = cashFor(t) + (bonus ? BONUS : 0);
   lastEarn = { id: t.id, pence, bonus };
-  const reached = earn(pence); updateWallet(true);
+  const reached = earn(pence, chippyEarned()); updateWallet(true);
   if (reached) setTimeout(showGoal, 1800);
   t.ring.material.color.set(DONE_RING);
   const all = targets.every((x) => x.done);
@@ -438,7 +440,7 @@ function scoreChallenge(t, first) {
   t.done = true; t.ring.material.color.set(DONE_RING);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
   if (!first) { toast(`<b>${t.name}</b> - again!<br>${line}`, 2400); sfx.success(false); return; }
-  const pence = t.cash || 0; if (pence) { const reached = earn(pence); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
+  const pence = t.cash || 0; if (pence) { const reached = earn(pence, chippyEarned()); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
   lastEarn = { id: t.id, pence, bonus: null };
   toast(`<b>AWAY YE GO! ${t.name}</b>${pence ? ' +' + fmt(pence) : ''}<br>${line}`, 3500); sfx.success(true);
   updateHud();
@@ -644,7 +646,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.0';
+const BUILD = 'v2.0.1';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});
