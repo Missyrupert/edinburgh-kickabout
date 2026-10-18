@@ -89,10 +89,11 @@ const built = LEVEL.build(scene, world, mats, P);
 const { targets, dynamics, pigeons, materials, views } = built;
 const SPAWN_YAW = LEVEL.spawnYaw * Math.PI / 180, BOUNDS = LEVEL.bounds;
 const challenges = built.challenges || [];
+const DONE_RING = 0x2bff88; // v1.9: bagged targets keep a solid bright-green ring
 const allTargets = targets.concat(challenges); // challenges share the scoring code but have their own counter
 for (const t of targets) t.tier ||= LEVEL.tiers?.[t.id];
 for (const t of targets) t.tier ||= t.diff === 'hard' ? 'tricky' : 'easy';
-{ const d = levelDone(LEVEL.id); for (const t of allTargets) if (d[t.id]) { t.done = true; t.ring.material.color.set(0x5fd35f); } } // saved progress
+{ const d = levelDone(LEVEL.id); for (const t of allTargets) if (d[t.id]) { t.done = true; t.ring.material.color.set(DONE_RING); } } // saved progress
 const targetById = Object.fromEntries(allTargets.map((t) => [t.id, t]));
 // Static bodies were positioned after construction: refresh their AABBs once, or AABB broadphase misses them.
 // (This stale-AABB effect is also what made SAPBroadphase look "broken" in v1.)
@@ -407,14 +408,14 @@ function scoreTarget(t, bonus = null) {
   const rec = recordDone(LEVEL.id, t, allTargets); announce(rec.news);
   if (t.challenge) return scoreChallenge(t, rec.first);
   if (!rec.first) { // already paid for this one (e.g. after Restart level): no double pay
-    t.done = true; t.ring.material.color.set(0x5fd35f); lastEarn = { id: t.id, pence: 0, bonus: null };
+    t.done = true; t.ring.material.color.set(DONE_RING); lastEarn = { id: t.id, pence: 0, bonus: null };
     toast(`<b>${t.name}</b> - already bagged.<br><small>Ye got paid for that one already.</small>`, 1800); sfx.success(false); updateHud(); return; }
   t.done = true; score += t.points;
   const pence = cashFor(t) + (bonus ? BONUS : 0);
   lastEarn = { id: t.id, pence, bonus };
   const reached = earn(pence); updateWallet(true);
   if (reached) setTimeout(showGoal, 1800);
-  t.ring.material.color.set(0x5fd35f);
+  t.ring.material.color.set(DONE_RING);
   const all = targets.every((x) => x.done);
   sfx.success(all);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
@@ -427,7 +428,7 @@ function announce(news) { // each unlock fires once ever: short sound + toast
   setTimeout(() => { sfx.success(true); toast(`<b>Unlocked!</b><br>${news.map((n) => n.text).join('<br>')}`, 4000); buildBallMenu(); }, 2300);
 }
 function scoreChallenge(t, first) {
-  t.done = true; t.ring.material.color.set(0x5fd35f);
+  t.done = true; t.ring.material.color.set(DONE_RING);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
   if (!first) { toast(`<b>${t.name}</b> - again!<br>${line}`, 2400); sfx.success(false); return; }
   const pence = t.cash || 0; if (pence) { const reached = earn(pence); updateWallet(true); if (reached) setTimeout(showGoal, 4500); }
@@ -553,7 +554,7 @@ function render(dt, t) {
       const o = tg.done ? 0 : THREE.MathUtils.clamp((6 - d) / 3, 0, 0.6) * (0.6 + 0.4 * Math.sin(t * 0.008));
       tg.ring.material.opacity = o; tg.ring.visible = o > 0.01; if (!tg.done && d < 6 && d < nd) { nd = d; near = tg; } continue;
     }
-    const o = tg.done ? (d < 20 ? 0.25 : 0) : THREE.MathUtils.clamp((16 - d) / 8, 0, 0.85) * (0.75 + 0.25 * Math.sin(t * 0.005));
+    const o = tg.done ? THREE.MathUtils.clamp((40 - d) / 10, 0, 0.9) : THREE.MathUtils.clamp((16 - d) / 8, 0, 0.85) * (0.75 + 0.25 * Math.sin(t * 0.005));
     tg.ring.material.opacity = o; tg.ring.visible = o > 0.01;
     if (!tg.done && d < 14 && d < nd) { nd = d; near = tg; }
   }
@@ -636,7 +637,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v1.8.2';
+const BUILD = 'v1.9';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});

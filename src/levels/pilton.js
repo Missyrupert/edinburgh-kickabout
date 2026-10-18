@@ -217,12 +217,12 @@ function build(scene, world, mats, P) {
     quad('atlas', -9.99, 1.05, z, 2.4, 2.1, Math.PI / 2, atlas.draw(256, 224, (g) => { g.fillStyle = '#c9c4ba'; g.fillRect(0, 0, 256, 224); g.strokeStyle = '#fff'; g.lineWidth = 10; g.strokeRect(28, 30, 200, 194); g.beginPath(); g.moveTo(28, 110); g.lineTo(228, 110); g.stroke(); for (let y = 0; y < 224; y += 22) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(0, y, 256, 3); } g.fillStyle = '#c8102e'; g.font = 'bold 26px Arial'; g.fillText('No 4  - SHOOT HERE', 40, 80); }));
     addTarget({ id: 'garage', name: 'Garage Door No.4', hint: 'skelp the painted goal', points: 40, cash: 40, diff: 'easy', tier: 'easy', kind: 'hit', pos: V(-9.6, 0, z), ringR: 1.3, stand: V(-3, 0, z), aim: V(-10, 0.6, z),
       lines: ["BOOM! Wee Tam's da is coming oot.", 'Top bins! Well... middle bins.', 'That door has taken a few.'] }); }
-  // 2. Shopping trolley on the verge (easy)
-  { const x = 7.6, z = 12;
+  // 2. Shopping trolley on the verge (easy) - v1.9: moved next to spawn so the first target you meet is easy
+  { const x = -6.6, z = -25;
     for (const [w, h, d, y] of [[0.6, 0.04, 0.9, 0.3], [0.6, 0.5, 0.03, 0.6], [0.03, 0.5, 0.9, 0.6]]) for (const o of (d < 0.1 ? [-0.45, 0.45] : w < 0.1 ? [-0.3, 0.3] : [0])) solid('metal', x + (w < 0.1 ? o : 0), y, z + (d < 0.1 ? o : 0), w, h, d, 0xa7adb2, { phys: false, rz: 0.12 });
     solid('flat', x, 0.86, z - 0.5, 0.6, 0.06, 0.06, 0xd0302a, { phys: false });
     boxBody(x, 0.55, z, 0.62, 0.9, 0.92, { target: 'trolley' });
-    addTarget({ id: 'trolley', name: 'Abandoned Trolley', hint: 'hit the trolley', points: 50, cash: 50, diff: 'easy', tier: 'easy', kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(3.2, 0, z), aim: V(x, 0.5, z),
+    addTarget({ id: 'trolley', name: 'Abandoned Trolley', hint: 'hit the trolley', points: 50, cash: 50, diff: 'easy', tier: 'easy', kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(-3.2, 0, z), aim: V(x, 0.5, z),
       lines: ['Clang! Take it back for the pound.', "It's been there since 1997. Respect.", 'Supermarket sweep!'] }); }
   // 3. Bus stop shelter (medium)
   { const x = 5.6, z = -2;
@@ -252,9 +252,9 @@ function build(scene, world, mats, P) {
     zone: new THREE.Box3(V(19.08, rise, -5.9), V(19.5, rise + 2.1, -2.1)), minSpeed: 1, // just past the line, so the sheets count
     lines: ["Through the posts! Mind Mrs Kerr's sheets.", 'GOAL! The washing applauds.', 'Wembley? Naw. Pilton drying green.'] });
   // 7. Wheelie bin chip (hard): open green wheelie by the gate
-  { const x = -6.6, z = -19.5; const zone = bin(x, z, 0.8, 0.9, 1.0, 0x2e5a34); zone.max.y += 0.4;
-    solid('flat', x - 0.47, 1.25, z, 0.06, 0.55, 0.84, 0x244a2a, { rz: 0.5 }); // lid flipped open at the back
-    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', tier: 'tricky', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 0.8, stand: V(-3.6, 0, z), aim: V(x, 0.6, z), zone,
+  { const x = 7.6, z = 12; const zone = bin(x, z, 0.8, 0.9, 1.0, 0x2e5a34); zone.max.y += 0.4; // v1.9: swapped with the trolley (was right by spawn)
+    solid('flat', x + 0.47, 1.25, z, 0.06, 0.55, 0.84, 0x244a2a, { rz: -0.5 }); // lid flipped open at the back
+    addTarget({ id: 'wheelie', name: 'Green Wheelie Bin', hint: 'chip it in the wee bin (hard!)', points: 150, cash: 150, diff: 'hard', tier: 'tricky', kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 0.8, stand: V(4.0, 0, z), aim: V(x, 0.6, z), zone,
       lines: ['Garden waste: ONE football. Lovely.', 'Chipped in! Messi who?', 'Brown bin? Naw, green. Still counts.'] }); }
   // 8. "NO BALL GAMES" sign on the block (cheeky, hard)
   { const x = 10.94, y = 2.4, z = -24;
@@ -309,7 +309,7 @@ function build(scene, world, mats, P) {
 export default {
   id: 'pilton', name: 'West Pilton', short: 'Pilton',
   blurb: 'Level 1: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
-  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Easy first one: the bus stop up the street on your left.</small>",
+  intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Easy first one: the auld trolley just up the street on your right.</small>",
   build, spawn: [0, 0.5, -38], spawnYaw: 180,
   ballHomes: () => [[0.3, 0.4, -35.6], [14.8, 1.6, -2], [-2, 0.4, 26]],
   bounds: { x: 30, zMin: -50, zMax: 46 },
