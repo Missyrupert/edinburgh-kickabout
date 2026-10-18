@@ -1,3 +1,8 @@
+import '@fontsource/alfa-slab-one/400.css';
+import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/barlow-condensed/800.css';
+import '@fontsource/patrick-hand/400.css';
 import './style.css';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -24,8 +29,8 @@ renderer.toneMappingExposure = P.pbr ? 1.05 : 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-const HAZE = 0xc4ccd2;
-scene.fog = new THREE.Fog(HAZE, 55, P.fogFar);
+const HAZE = 0xd8d0c0; // v2.0: warmer, softer haze
+scene.fog = new THREE.Fog(HAZE, 50, P.fogFar);
 // Sky: CC0 Poly Haven kloofendal_48d_partly_cloudy_puresky (tonemapped WebP backdrop; the 1K HDR is only loaded on "high" for reflections).
 scene.background = skyTexture(); scene.backgroundIntensity = 0.95;
 let assetsLoaded = false;
@@ -43,8 +48,8 @@ function fitFov() { const a = innerWidth / innerHeight, minH = 56 * Math.PI / 18
 fitFov();
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x6b5640, P.pbr ? 0.9 : 1.25));
-const sun = new THREE.DirectionalLight(0xffc98f, P.pbr ? 3.0 : 2.6); // warm, lowish sun from the south-west
+scene.add(new THREE.HemisphereLight(0xf2e6cf, 0x75604a, P.pbr ? 1.0 : 1.4));
+const sun = new THREE.DirectionalLight(0xffd3a1, P.pbr ? 2.6 : 2.2); // warm, lowish sun from the south-west
 const SUN_OFF = new THREE.Vector3(18, 38, -55);
 if (P.shadows) {
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
@@ -85,11 +90,13 @@ world.addContactMaterial(new CANNON.ContactMaterial(mats.ball, mats.player, { fr
 world.addContactMaterial(new CANNON.ContactMaterial(mats.ball, mats.ball, { friction: 0.1, restitution: 0.7 }));
 const G_STATIC = 1, G_PLAYER = 2, G_BALL = 4;
 
+// v2.0: shop fascias are painted on a canvas, so wait (briefly) for the bundled fonts before building.
+await Promise.race([Promise.all(['40px "Alfa Slab One"', '700 40px "Barlow Condensed"'].map((f) => document.fonts.load(f))).catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
 const built = LEVEL.build(scene, world, mats, P);
 const { targets, dynamics, pigeons, materials, views } = built;
 const SPAWN_YAW = LEVEL.spawnYaw * Math.PI / 180, BOUNDS = LEVEL.bounds;
 const challenges = built.challenges || [];
-const DONE_RING = 0x2bff88; // v1.9: bagged targets keep a solid bright-green ring
+const DONE_RING = 0x47d16c; // v1.9: bagged targets keep a solid bright-green ring
 const allTargets = targets.concat(challenges); // challenges share the scoring code but have their own counter
 for (const t of targets) t.tier ||= LEVEL.tiers?.[t.id];
 for (const t of targets) t.tier ||= t.diff === 'hard' ? 'tricky' : 'easy';
@@ -439,7 +446,7 @@ function scoreChallenge(t, first) {
 let lastUnlock = null;
 function restart() {
   score = 0;
-  for (const t of allTargets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd75e); }
+  for (const t of allTargets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd93d); }
   lastTouched = null;
   for (const b of balls) { release(b); b.body.position.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.lastKick = -1e9; b.prevP.copy(b.home); }
   for (const d of dynamics) { d.body.position.copy(d.home); d.body.quaternion.set(0, 0, 0, 1); d.body.velocity.setZero(); d.body.angularVelocity.setZero(); }
@@ -637,7 +644,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v1.9';
+const BUILD = 'v2.0';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});

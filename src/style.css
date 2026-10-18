@@ -92,3 +92,56 @@ body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}
 #ballArrow { position: fixed; display: none; transform: translate(-50%,-50%); pointer-events: none; z-index: 6; text-align: center; color: #c8ff3a; text-shadow: 0 0 4px #000, 0 0 2px #000; font-weight: 700; }
 #ballArrow span { display: block; font-size: 30px; line-height: 1; }
 #ballArrow small { display: block; font-size: 12px; }
+
+/* ================= v2.0 design pass: "Nostalgic Street Realism" (style sheet signed off 18 Oct 2026) ================= */
+:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--target:#FFD93D;--bagged:#47D16C}
+html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sans-serif}
+#hud{font-size:17px;font-weight:700;gap:5px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+#hud>#score,#hud>#targets,#hud>#chal{background:rgba(46,47,44,.72);border-left:5px solid var(--yellow);padding:1px 10px 1px 8px;border-radius:4px;align-self:flex-start;letter-spacing:.5px;text-transform:uppercase;font-size:14px}
+#hud b{font-family:'Alfa Slab One',serif;font-weight:400;font-size:18px;color:var(--yellow);letter-spacing:.5px;text-transform:none}
+#wallet{display:inline-block;background:var(--charcoal);border-radius:14px;padding:3px 12px 5px 6px;align-self:flex-start;text-shadow:none}
+#wallet b{color:var(--yellow);font-family:'Alfa Slab One',serif;font-weight:400}
+#wallet .coin{background:var(--yellow);border:2px solid #b8860b;color:var(--charcoal);vertical-align:middle;width:20px;height:20px;line-height:16px}
+#goalBar{background:rgba(239,227,200,.18);border-color:rgba(239,227,200,.4)}
+#goalFill{background:linear-gradient(90deg,var(--brick),var(--yellow))}
+#wallet.full #goalFill{background:var(--bagged)}
+#goalTxt{font-weight:500;color:var(--cream)}
+#nearby{font-weight:500;color:var(--cream)}
+#toast{background:var(--cream);color:var(--charcoal);border:0;border-left:8px solid var(--brick);border-radius:6px;box-shadow:0 4px 0 rgba(46,47,44,.55),0 6px 14px rgba(0,0,0,.35);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;text-shadow:none;padding:9px 18px}
+#toast b{font-family:'Alfa Slab One',serif;font-weight:400;color:var(--brick);letter-spacing:.3px}
+#toast small{font-weight:500}
+#powerFill{background:linear-gradient(90deg,var(--bagged),var(--yellow),var(--brick))}
+#power{border-color:var(--cream);background:rgba(46,47,44,.6)}
+#overlay{background:linear-gradient(90deg,rgba(46,47,44,.25),rgba(46,47,44,.78))}
+.card{background:var(--cream);color:var(--charcoal);border:3px solid var(--charcoal);border-radius:14px;box-shadow:0 7px 0 var(--charcoal);padding:14px 20px}
+.card h1,.card h2{font-family:'Alfa Slab One',serif;font-weight:400;color:var(--charcoal);letter-spacing:.5px}
+.card .sub,.card p,.card li{color:var(--charcoal)}
+.card button{font-family:'Alfa Slab One',serif;font-weight:400;background:var(--yellow);color:var(--charcoal);border:3px solid var(--charcoal);border-radius:10px;box-shadow:0 4px 0 var(--charcoal);padding:8px 30px;letter-spacing:.5px}
+.card button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--charcoal)}
+.card button.ghost{background:#fff8e8;color:var(--charcoal);border:3px solid var(--charcoal);font-size:15px;padding:4px 14px;box-shadow:0 3px 0 var(--charcoal)}
+#startBtn{width:100%;font-size:26px;margin:6px 0}
+.logo{line-height:.9;margin-bottom:4px}
+.logo .e{font-family:'Alfa Slab One',serif;font-size:22px;letter-spacing:4px;color:var(--charcoal)}
+.card .logo h1.k{font-family:'Alfa Slab One',serif;font-size:46px;margin:0;color:var(--yellow);-webkit-text-stroke:3px var(--charcoal);paint-order:stroke fill;text-shadow:4px 4px 0 var(--brick);letter-spacing:1px}
+.logo .t{font-family:'Patrick Hand',cursive;font-size:20px;color:var(--brick);margin-top:6px}
+#overlay.paused .logo .t{display:none}
+.levels{display:flex;gap:8px}
+.card .levels button{flex:1;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;padding:5px 8px;margin:4px 0;background:#fff8e8;color:var(--charcoal);border:3px solid var(--charcoal);border-radius:8px;box-shadow:none}
+.card .levels button small{display:block;font-weight:500;font-size:13px}
+.card .levels button.on[data-level=pilton]{background:var(--pilton);color:#fff}
+.card .levels button.on[data-level=grassmarket]{background:var(--oldtown);color:#fff}
+.card .gfx button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;background:#fff8e8;color:var(--charcoal);border:2px solid var(--charcoal);box-shadow:none}
+.card .gfx button.on{background:var(--yellow)}
+.card.goal{border-color:var(--charcoal)}
+.card.goal h1{color:var(--brick)}
+.note{position:absolute;left:28px;bottom:28px;background:#fff;color:var(--charcoal);font-family:'Patrick Hand',cursive;font-size:21px;line-height:1.15;padding:8px 14px;transform:rotate(-4deg);box-shadow:0 4px 10px rgba(0,0,0,.4);pointer-events:none;max-width:260px}
+#overlay:has(.sheet:not(.hidden)) .note{display:none}
+@media (max-width:760px),(max-height:300px){.note{display:none}}
+@media (min-width:761px) and (orientation:landscape){#overlay{justify-content:flex-end;padding-right:max(36px,env(safe-area-inset-right))}#mainPanel,.sheet{width:400px}}
+@media (max-height:430px){.card{padding:10px 16px}.card .logo h1.k{font-size:38px}.logo .e{font-size:18px}.logo .t{font-size:17px}#startBtn{font-size:22px;padding:5px}}
+#touch button{font-family:'Alfa Slab One',serif;font-weight:400;border:3px solid var(--charcoal);background:rgba(239,227,200,.78);color:var(--charcoal)}
+#btnKick{background:rgba(247,195,37,.88)!important}
+#btnPause{background:rgba(46,47,44,.7)!important;color:var(--cream)!important;border-color:var(--cream)!important}
+#joyBase{background:rgba(239,227,200,.14);border:3px solid rgba(239,227,200,.55)}
+#joyKnob{background:rgba(239,227,200,.75);border:2px solid var(--charcoal)}
+#ballArrow{color:var(--yellow)}

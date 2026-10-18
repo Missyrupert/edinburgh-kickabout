@@ -211,7 +211,7 @@ export function buildWorld(scene, world, mats, P) {
     solid('glass', x - s * 0.04, yb + 1.55, zc - len * 0.12, 0.08, 1.7, len * 0.55, 0xffffff, { phys: false });
     solid('wood', x - s * 0.08, yb + 0.35, zc, 0.06, 0.12, len - 0.2, c.clone().multiplyScalar(0.7), { phys: false });
     solid('wood', x - s * 0.1, yb + 2.85, zc, 0.12, 0.7, len + 0.1, c.clone().multiplyScalar(0.8), { phys: false });
-    sign(name, x - s * 0.17, yb + 2.85, zc, Math.min(len - 0.3, 5.5), 0.52, -s * Math.PI / 2, col, '#f1d98a');
+    { const sw = Math.min(len - 0.3, 5.5); quad('atlas', x - s * 0.17, yb + 2.85, zc, sw, 0.6, -s * Math.PI / 2, atlas.fascia(name, null, col, '#f1d98a', sw / 0.6)); } // v2.0 painted fascia
   }
   for (const sp of shops) shopfront(...sp);
   inNorth(() => { for (const [sd, z0, z1, n, c] of northShops) shopfront(sd, z0, z1, n, c, rampHeight((z0 + z1) / 2) - 0.4); });
@@ -286,7 +286,7 @@ export function buildWorld(scene, world, mats, P) {
   // ---------- targets ----------
   const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
   function addTarget(t) {
-    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd75e, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.rotation.x = -Math.PI / 2; const r = t.ringR || 1; m.scale.set(r, r, r);
     m.position.copy(t.pos).add(V(0, 0.03, 0)); m.visible = false; scene.add(m); t.ring = m;
     if (t.zone) { t.zoneInv = FR.clone().invert(); }

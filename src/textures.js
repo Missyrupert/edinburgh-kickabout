@@ -124,8 +124,26 @@ export class SignAtlas {
     while (g.measureText(text).width > w - 36 && size > 10) { size -= 2; g.font = font.replace(/\d+px/, size + 'px'); }
     g.fillText(text, w / 2, h / 2 + 2); g.restore(); this.tex.needsUpdate = true; return this.uv(r);
   }
+  // v2.0: painted shop fascia - slab-serif name with a drop shadow, condensed strapline, worn edges.
+  fascia(name, sub, bg, fg, aspect = 5.3) {
+    const w = 512, h = Math.max(40, Math.round(512 / aspect));
+    return this.draw(w, h, (g) => {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, bg); gr.addColorStop(1, shade(bg, -0.25)); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#2E2F2C'; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8);
+      g.strokeStyle = fg; g.globalAlpha = 0.7; g.lineWidth = 3; g.strokeRect(14, 14, w - 28, h - 28); g.globalAlpha = 1;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      const nameH = sub ? h * 0.56 : h * 0.8, fit = (font, txt, max, px) => { let sz = px; g.font = font.replace('#', sz); while (g.measureText(txt).width > max && sz > 10) { sz -= 2; g.font = font.replace('#', sz); } };
+      fit('#px "Alfa Slab One", Georgia, serif', name, w - 60, Math.round(nameH * 0.62));
+      const ny = sub ? h * 0.4 : h / 2 + 2;
+      g.fillStyle = '#2E2F2C'; g.fillText(name, w / 2 + 3, ny + 3); g.fillStyle = fg; g.fillText(name, w / 2, ny);
+      if (sub) { fit('700 #px "Barlow Condensed", Arial Narrow, sans-serif', sub, w - 80, Math.round(h * 0.2)); g.fillStyle = '#EFE3C8'; g.fillText(sub, w / 2, h * 0.76); }
+      let sd = 77; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,248,230,${0.05 + r() * 0.12})`; g.fillRect(r() * w, r() * h, 2 + r() * 10, 1 + r() * 3); } // weathered paint
+    });
+  }
   draw(w, h, fn) { const r = this.alloc(w, h), g = this.g; g.save(); g.translate(r.x, r.y); g.scale(this.k, this.k); fn(g, w, h); g.restore(); this.tex.needsUpdate = true; return this.uv(r); }
 }
+function shade(hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * (1 + k)))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
 export function drawTargetDoor(g) {
   g.fillStyle = '#8e1c1c'; g.fillRect(0, 0, 128, 256);
   g.strokeStyle = '#5a0f0f'; g.lineWidth = 6; g.strokeRect(14, 14, 100, 100); g.strokeRect(14, 134, 100, 108);
@@ -202,4 +220,54 @@ export function harlTexture() {
   // faint rain streaks
   g.globalAlpha = 0.06; g.fillStyle = '#3a3a3a'; for (let i = 0; i < 40; i++) g.fillRect(r() * S, r() * S * 0.3, 1 + r() * 2, 40 + r() * 120);
   harlCache = canvasTex(c, true); return harlCache;
+}
+
+// ---------- v2.0 "Nostalgic Street Realism" procedural textures (stylised, cheap: 256 px each, cached) ----------
+const v2Cache = {};
+function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) / 2147483647); }
+// Warm pebbledash: chunky light/dark pebbles over a cream base. Tinted per building with vertex colours.
+export function harlTextureV2() {
+  if (v2Cache.harl) return v2Cache.harl;
+  const S = 256, [c, g] = canvas(S, S), r = rng(11);
+  g.fillStyle = '#efe6d4'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 2600; i++) { const x = r() * S, y = r() * S, s = 0.8 + r() * 2.2, v = r();
+    g.fillStyle = v < 0.45 ? `rgba(120,108,90,${0.25 + r() * 0.3})` : v < 0.8 ? `rgba(255,250,238,${0.5 + r() * 0.4})` : `rgba(170,150,120,${0.3 + r() * 0.3})`;
+    g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
+  g.globalAlpha = 0.07; g.fillStyle = '#4a4238'; for (let i = 0; i < 30; i++) g.fillRect(r() * S, r() * S * 0.4, 1 + r() * 2, 50 + r() * 140); // rain streaks
+  g.globalAlpha = 1; return (v2Cache.harl = canvasTex(c, true));
+}
+// Brick: muted brick courses with lime mortar, a few darker/lighter bricks.
+export function brickTexture() {
+  if (v2Cache.brick) return v2Cache.brick;
+  const S = 256, [c, g] = canvas(S, S), r = rng(23), bw = 64, bh = 21.33;
+  g.fillStyle = '#cfc4ae'; g.fillRect(0, 0, S, S);
+  for (let row = 0; row < 12; row++) for (let k = -1; k < 5; k++) {
+    const x = k * bw + (row % 2 ? bw / 2 : 0), y = row * bh, t = r();
+    const base = t < 0.15 ? [120, 58, 44] : t < 0.3 ? [176, 98, 74] : [154, 78, 60];
+    g.fillStyle = `rgb(${base.map((v) => v + (r() - 0.5) * 18 | 0).join(',')})`; g.fillRect(x + 2, y + 2, bw - 4, bh - 4);
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x + 2, y + bh - 5, bw - 4, 3);
+  }
+  return (v2Cache.brick = canvasTex(c, true));
+}
+// Up-and-over garage door: horizontal ribs, handle, scuffs. White-ish so vertex colour paints it.
+export function garageDoorTexture() {
+  if (v2Cache.garage) return v2Cache.garage;
+  const W = 256, H = 224, [c, g] = canvas(W, H), r = rng(37);
+  g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, W, H);
+  for (let y = 10; y < H; y += 14) { g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(0, y, W, 3); g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(0, y + 3, W, 2); }
+  g.strokeStyle = 'rgba(30,30,28,.55)'; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, H - 8);
+  g.fillStyle = '#5a5a56'; g.fillRect(W / 2 - 18, H * 0.62, 36, 8); g.beginPath(); g.arc(W / 2, H * 0.62 + 18, 6, 0, 7); g.fill();
+  for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '90,70,50' : '255,255,255'},${0.08 + r() * 0.15})`; g.fillRect(r() * W, H * 0.55 + r() * H * 0.45, 4 + r() * 20, 2 + r() * 6); } // scuffs from years of fitba
+  for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(90,50,20,.18)'; g.fillRect(r() * W, 0, 2 + r() * 3, H * (0.2 + r() * 0.5)); } // rust drips
+  return (v2Cache.garage = canvasTex(c, false));
+}
+// Tarmac: warm grey aggregate with patch repairs and a few cracks.
+export function tarmacTexture() {
+  if (v2Cache.tarmac) return v2Cache.tarmac;
+  const S = 256, [c, g] = canvas(S, S), r = rng(51);
+  g.fillStyle = '#8e908b'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 5000; i++) { const v = 90 + r() * 110 | 0; g.fillStyle = `rgba(${v},${v},${v - 4},.5)`; g.fillRect(r() * S, r() * S, 1 + r() * 1.5, 1 + r() * 1.5); }
+  g.fillStyle = 'rgba(40,40,38,.18)'; g.fillRect(40, 150, 90, 60); g.fillRect(170, 30, 50, 44); // patch repairs
+  g.strokeStyle = 'rgba(30,30,28,.4)'; g.lineWidth = 1.2; for (let i = 0; i < 4; i++) { let x = r() * S, y = r() * S; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 30; y += r() * 18; g.lineTo(x, y); } g.stroke(); }
+  return (v2Cache.tarmac = canvasTex(c, true));
 }

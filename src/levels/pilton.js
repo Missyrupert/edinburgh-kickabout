@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from '../batch.js';
-import { SignAtlas, drawTargetDoor, harlTexture } from '../textures.js';
+import { SignAtlas, drawTargetDoor, harlTextureV2, brickTexture, garageDoorTexture, tarmacTexture } from '../textures.js';
 import { makeMaterials, mulberry32, mergeSimple } from '../world.js';
 
 export const BANK = { x0: 8, x1: 13, rise: 1.2, z0: -10, z1: 2 }; // grassy bank up to the drying green
@@ -45,16 +45,16 @@ function build(scene, world, mats, P) {
   const ground = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() });
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(ground);
   B.add('flat', QUAD, M4(0, 0, 20, 220, 180, 1, -Math.PI / 2), 0x5f7d3f, { shade: (x, y, z) => 0.92 + 0.08 * Math.sin(x * 0.3) * Math.sin(z * 0.27) });
-  quad('paving', 0, 0.004, -8, 8, 76, 0, null, 0x55575b, { rx: -Math.PI / 2, tile: 3 }); // tarmac (paving photo, darkened)
+  quad('tarmac', 0, 0.004, -8, 8, 76, 0, null, 0x8a8c88, { rx: -Math.PI / 2, tile: 4 }); // v2.0 procedural tarmac
   quad('flat', 0, 0.006, -8, 0.12, 74, 0, null, 0xd8d0a0, { rx: -Math.PI / 2 }); // centre line... faded
   for (const s of [-1, 1]) quad('paving', s * 5, 0.008, -8, 2, 76, 0, null, 0xc9c4ba, { rx: -Math.PI / 2, tile: 1.2 });
   quad('paving', 0, 0.008, 32, 40, 4, 0, null, 0xc9c4ba, { rx: -Math.PI / 2, tile: 1.2 }); // in front of the parade
-  quad('paving', 0, 0.005, 28, 40, 4, 0, null, 0x55575b, { rx: -Math.PI / 2, tile: 3 });
+  quad('tarmac', 0, 0.005, 28, 40, 4, 0, null, 0x8a8c88, { rx: -Math.PI / 2, tile: 4 });
   // yellow lines + a wee bit of humour on the road
-  quad('atlas', 0, 0.01, -20, 3.2, 0.8, 0, atlas.sign('SLOW', '#55575b', '#e8e2c8', 4, 'bold 60px Arial'), 0xffffff, { rx: -Math.PI / 2 });
+  quad('atlas', 0, 0.01, -20, 3.2, 0.8, 0, atlas.sign('SLOW', '#6a6c68', '#EFE3C8', 4, 'bold 60px "Barlow Condensed", Arial'), 0xffffff, { rx: -Math.PI / 2 });
 
   // ---------- buildings ----------
-  const HARL = [0xece6da, 0xe4dccb, 0xd9cfbd, 0xe9e2d6], PINK = 0xdcc6b6, GREY = 0xc9c7c1;
+  const HARL = [0xefe3c8, 0xe8dcc2, 0xd6cdbd, 0xeee5d2], PINK = 0xdcc6b6, GREY = 0xc9c7c1;
   // windows + frames on one face. face: '+x' etc. Positions are along the face.
   function windows(face, fx, fz, len, floors, fh, base, { door = null, doorCol = 0x2f5a3a } = {}) {
     const ry = ROT[face], n = Math.max(1, Math.round(len / 3)), bw = len / n;
@@ -108,13 +108,13 @@ function build(scene, world, mats, P) {
   }
   // lock-up garages: a row of 6 with up-and-over doors, flat roof, facing the road
   const GZ0 = 3, GN = 6, GW = 3;
-  solid('harl', -13.5, 1.35, GZ0 + GN * GW / 2, 7, 2.7, GN * GW, GREY, { tile: 2, grime: 0.25 });
+  solid('brick', -13.5, 1.35, GZ0 + GN * GW / 2, 7, 2.7, GN * GW, 0xffffff, { tile: 2, grime: 0.2 }); // v2.0 brick lock-ups
   solid('flat', -13.4, 2.78, GZ0 + GN * GW / 2, 7.4, 0.16, GN * GW + 0.3, 0x55575a, { phys: false });
-  const doorCols = [0x6f7d6a, 0x8a8f94, 0x9b6b3e, 0x5f6f8a, 0x7a7a72];
+  const doorCols = [0x2e9c8f, 0xf7c325, 0x3f6fa8, 0x6f8f4a, 0xd9d2c0]; // v2.0: Garage Teal, Chip-Shop Yellow, faded blue, green, cream
   for (let i = 0; i < GN; i++) {
     const z = GZ0 + (i + 0.5) * GW;
     if (i === 3) continue; // the target door is built below
-    quad('flat', -9.98, 1.05, z, 2.4, 2.1, Math.PI / 2, null, pick(doorCols), { grime: 0.3 });
+    quad('garage', -9.98, 1.05, z, 2.4, 2.1, Math.PI / 2, null, doorCols[i % doorCols.length], { grime: 0.25 });
     quad('flat', -9.97, 2.05, z, 2.4, 0.08, Math.PI / 2, null, 0x3a3a3a);
   }
   sign('LOCK-UPS 1-6  NO PARKING', -9.97, 2.45, GZ0 + 1.5, 2.6, 0.32, Math.PI / 2, '#f4f1ea', '#a01818', 'bold 52px Arial', '#a01818');
@@ -138,14 +138,13 @@ function build(scene, world, mats, P) {
   solid('harl', 0, 2.1, 38, 30, 4.2, 8, 0xd8d2c4, { tile: 2.5, grime: 0.2 });
   solid('flat', 0, 4.35, 38, 30.4, 0.3, 8.4, 0x77736c, { phys: false });
   const SHOPS = [
-    { x: -9.5, name: 'THE PILTON PLAICE', sub: 'FISH & CHIPS', bg: '#1d4f8a', fg: '#ffe680', win: 0xfff1c8 },
-    { x: -2, name: "GREGOR'S", sub: 'GROCERIES & IRN-BRU', bg: '#8e1c1c', fg: '#ffffff', win: 0xeaf2ff },
-    { x: 5.5, name: 'LUCKY TATTIE', sub: 'BOOKMAKERS', bg: '#1f5a3a', fg: '#f4f1ea', win: 0xb8c4c8 },
-    { x: 12, name: 'TO LET', sub: 'ENQUIRIES WITHIN', bg: '#555', fg: '#eee', win: 0x6a6e72, shutter: true },
+    { x: -9.5, name: 'THE PILTON PLAICE', sub: 'FISH & CHIPS · SUPPERS · SALT & SAUCE', bg: '#2e9c8f', fg: '#F7C325', win: 0xfff1c8 },
+    { x: -2, name: "GREGOR'S", sub: 'GROCERIES & IRN-BRU', bg: '#9A4E3C', fg: '#EFE3C8', win: 0xeaf2ff },
+    { x: 5.5, name: 'LUCKY TATTIE', sub: 'BOOKMAKERS · NAE TICK', bg: '#1f5a3a', fg: '#f4f1ea', win: 0xb8c4c8 },
+    { x: 12, name: 'TO LET', sub: 'ENQUIRIES WITHIN (SINCE 1987)', bg: '#5C5E5B', fg: '#eee', win: 0x6a6e72, shutter: true },
   ];
   for (const s of SHOPS) {
-    sign(s.name, s.x, 3.55, 33.94, 6.4, 0.9, Math.PI, s.bg, s.fg, 'bold 60px Arial', s.fg);
-    sign(s.sub, s.x, 2.95, 33.95, 4.4, 0.32, Math.PI, '#f4f1ea', '#222', 'bold 44px Arial', '#222');
+    quad('atlas', s.x, 3.35, 33.94, 6.6, 1.25, Math.PI, atlas.fascia(s.name, s.sub, s.bg, s.fg, 6.6 / 1.25)); // v2.0 painted fascia
     if (s.shutter) quad('flat', s.x, 1.35, 33.94, 6, 2.7, Math.PI, null, 0x8b8f93, { grime: 0.4 });
     else { quad('glass', s.x + 0.9, 1.4, 33.95, 3.6, 2.2, Math.PI, null, s.win); quad('flat', s.x - 2.1, 1.1, 33.95, 1.1, 2.2, Math.PI, null, 0x2b2d30); }
   }
@@ -188,7 +187,7 @@ function build(scene, world, mats, P) {
   // ---------- targets ----------
   const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
   function addTarget(t) {
-    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd75e, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.rotation.x = -Math.PI / 2; const r = t.ringR || 1; m.scale.set(r, r, r);
     m.position.copy(t.pos).add(V(0, 0.03, 0)); m.visible = false; scene.add(m); t.ring = m;
     if (t.zone) t.zoneInv = new THREE.Matrix4();
@@ -299,7 +298,8 @@ function build(scene, world, mats, P) {
 
   // ---------- materials + build ----------
   const materials = makeMaterials(P, new THREE.Texture(), atlas.tex);
-  const hm = materials.flat.clone(); hm.map = harlTexture(); materials.harl = hm;
+  const tm = (t) => { const m = materials.flat.clone(); m.map = t; return m; };
+  materials.harl = tm(harlTextureV2()); materials.brick = tm(brickTexture()); materials.garage = tm(garageDoorTexture()); materials.tarmac = tm(tarmacTexture());
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   const batches = B.build(scene, materials, { shadows: P.shadows });
   const views = { spawn: [0, -36, 180, -8], midstreet: [0, 0, 180, -4], terrace: [15, -4, -90, 2, rise + 0.9] };
