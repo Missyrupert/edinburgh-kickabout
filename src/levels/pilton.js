@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from '../batch.js';
 import { SignAtlas, drawTargetDoor, harlTextureV2, brickTexture, garageDoorTexture, tarmacTexture } from '../textures.js';
+import { buildParade } from './pilton-parade.js';
 import { makeMaterials, mulberry32, mergeSimple } from '../world.js';
 
 export const BANK = { x0: 8, x1: 13, rise: 1.2, z0: -10, z1: 2 }; // grassy bank up to the drying green
@@ -132,25 +133,10 @@ function build(scene, world, mats, P) {
   for (const [px, pz] of POLES) { cyl('metal', px, rise + 1.1, pz, 0.05, 0.06, 2.2, 0x6c7378, { seg: 6, target: null }); solid('metal', px, rise + 2.2, pz, 0.06, 0.06, 0.8, 0x6c7378, { phys: false }); }
   for (const dz of [-0.3, 0, 0.3]) solid('flat', 19 + dz, rise + 2.18, -4, 0.01, 0.01, 4.4, 0xdddddd, { phys: false }); // lines
   [0xe8e8e8, 0xc23b3b, 0x3b6fc2, 0xf2d45c].forEach((c, i) => solid('flat', 19, rise + 1.75, -5.4 + i * 0.95, 0.02, 0.8, 0.6, c, { phys: false })); // a washing
-  sign('NAE WASHING ON A SUNDAY', 24.9, rise + 0.9, -4, 1.8, 0.24, -Math.PI / 2, '#f4f1ea', '#111', 'bold 46px Arial', '#111');
+  sign('DRYING GREEN · RESIDENTS ONLY', 24.9, rise + 0.9, -4, 1.8, 0.24, -Math.PI / 2, '#f4f1ea', '#111', 'bold 46px Arial', '#111');
 
-  // ---------- shop parade (single storey, flat roof) facing the street ----------
-  solid('harl', 0, 2.1, 38, 30, 4.2, 8, 0xd8d2c4, { tile: 2.5, grime: 0.2 });
-  solid('flat', 0, 4.35, 38, 30.4, 0.3, 8.4, 0x77736c, { phys: false });
-  const SHOPS = [
-    { x: -9.5, name: 'THE PILTON PLAICE', sub: 'FISH & CHIPS · SUPPERS · SALT & SAUCE', bg: '#2e9c8f', fg: '#F7C325', win: 0xfff1c8 },
-    { x: -2, name: "GREGOR'S", sub: 'GROCERIES & IRN-BRU', bg: '#9A4E3C', fg: '#EFE3C8', win: 0xeaf2ff },
-    { x: 5.5, name: 'LUCKY TATTIE', sub: 'BOOKMAKERS · NAE TICK', bg: '#1f5a3a', fg: '#f4f1ea', win: 0xb8c4c8 },
-    { x: 12, name: 'TO LET', sub: 'ENQUIRIES WITHIN (SINCE 1987)', bg: '#5C5E5B', fg: '#eee', win: 0x6a6e72, shutter: true },
-  ];
-  for (const s of SHOPS) {
-    quad('atlas', s.x, 3.35, 33.94, 6.6, 1.25, Math.PI, atlas.fascia(s.name, s.sub, s.bg, s.fg, 6.6 / 1.25)); // v2.0 painted fascia
-    if (s.shutter) quad('flat', s.x, 1.35, 33.94, 6, 2.7, Math.PI, null, 0x8b8f93, { grime: 0.4 });
-    else { quad('glass', s.x + 0.9, 1.4, 33.95, 3.6, 2.2, Math.PI, null, s.win); quad('flat', s.x - 2.1, 1.1, 33.95, 1.1, 2.2, Math.PI, null, 0x2b2d30); }
-  }
-  sign('OPEN', -11.6, 2.3, 33.93, 0.7, 0.28, Math.PI, '#c8102e', '#fff', 'bold 60px Arial');
-  // the chippy counter (visit when you can afford a supper): just inside the door
-  const COUNTER = V(-11.6, 0, 32.6);
+  // ---------- v2.1 The Pilton Parade (see pilton-parade.js) ----------
+  const { counter: COUNTER } = buildParade({ solid, quad, atlas, cyl, windows, V });
 
   // ---------- street furniture ----------
   function lamp(x, z, side, target = null) { // concrete column, swan-neck head
@@ -163,7 +149,7 @@ function build(scene, world, mats, P) {
   function wheelie(x, z, col, ry = 0) { solid('flat', x, 0.5, z, 0.6, 1.0, 0.72, col, { ry }); solid('flat', x, 1.02, z, 0.66, 0.06, 0.78, new THREE.Color(col).multiplyScalar(0.8), { phys: false, ry }); }
   wheelie(-6.6, -31.5, 0x2e5a34); wheelie(-6.6, -14.2, 0x1d1f1f); wheelie(-6.6, -10.8, 0x2e5a34);
   // grass verges with "keep off" humour, a bench, the bus stop and a trolley
-  sign('DOGS MUST BE KEPT ON A LEAD. AND SO MUST WEANS.', 7.3, 0.85, -40, 2.4, 0.3, -Math.PI / 2, '#1d3b6b', '#fff', 'bold 30px Arial', '#fff');
+  sign('DOGS MUST BE KEPT ON A LEAD', 7.3, 0.85, -40, 2.4, 0.3, -Math.PI / 2, '#1d3b6b', '#fff', 'bold 30px Arial', '#fff');
   cyl('metal', 7.3, 0.4, -40, 0.03, 0.03, 0.8, 0x333333, { phys: false, seg: 4 });
   // boundary: hedges + fences (and invisible walls so you can't wander off the map)
   solid('flat', 0, 0.6, -47, 60, 1.2, 1, 0x3e5a2c); solid('flat', 28, 0.6, -10, 1, 1.2, 74, 0x3e5a2c); solid('flat', -28, 0.6, -10, 1, 1.2, 74, 0x3e5a2c);

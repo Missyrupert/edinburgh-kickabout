@@ -171,7 +171,7 @@ function updateHud() { $('scoreVal').textContent = score; $('targetVal').textCon
   $('chal').classList.remove('hidden'); $('chalVal').textContent = `Warm-Up ${tc('easy')} · Cocky ${tc('tricky')}` + (challenges.length ? ` · Away Ye Go! ${tc('legend')}` : ''); }
 updateHud();
 // ---------- wallet (pocket money) ----------
-let lastEarn = null;
+let lastEarn = null, stepDist = 0;
 const piltonBagged = () => Object.keys(levelDone('pilton') || {}).filter((k) => !k.startsWith('c_')).length;
 const chippyEarned = () => piltonBagged() >= CHIPPY_TARGETS;
 function updateWallet(pop = false) {
@@ -191,6 +191,7 @@ function showGoal(bought = false) {
   if (document.pointerLockElement) document.exitPointerLock();
 }
 $('goalOk').addEventListener('click', () => { $('goalCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
+{ const sb = $('soundBtn'), lab = () => { sb.textContent = sfx.on ? '🔊 Sound: on' : '🔇 Sound: off'; }; lab(); sb.addEventListener('click', () => { sfx.setOn(!sfx.on); lab(); }); }
 $('walletReset').addEventListener('click', () => { if (confirm('Reset your pocket money to £0.00?')) { resetWallet(); updateWallet(); } });
 updateWallet();
 let counterCool = 0;
@@ -398,7 +399,9 @@ function kick(power) {
 function onBallCollide(b, e) {
   const iv = Math.abs(e.contact.getImpactVelocityAlongNormal());
   const now = performance.now();
-  if (iv > 1.2 && now - b.lastSound > 70) { b.lastSound = now; sfx.bounce(iv, iv > 6); }
+  if (iv > 1.2 && now - b.lastSound > 70) { b.lastSound = now; const ob = e.body, tg = ob.userData?.target;
+    const surf = ob.shapes[0]?.type === CANNON.Shape.types.PLANE ? (LEVEL.id === 'pilton' && Math.abs(b.body.position.x) > 6.2 && b.body.position.z < 29 ? 'grass' : 'tarmac') : (tg === 'lamp' || tg === 'trolley' || tg === 'busstop' || tg === 'gap') ? 'metal' : 'wall';
+    sfx.bounce(iv, iv > 6, surf); }
   const id = e.body.userData?.target;
   const clean = (b.bounces | 0) === 0;
   if (iv > 0.8 && simTime - (b.kickSim ?? -1) > 0.05) b.bounces = (b.bounces | 0) + 1; // for the "clean in" bonus
@@ -504,6 +507,7 @@ function fixedUpdate(h) {
   const wish = f.multiplyScalar(m.y).add(r.multiplyScalar(m.x));
   if (wish.lengthSq() > 1) wish.normalize();
   const speed = m.run ? 7.2 : 4.2, onGround = grounded(), k = Math.min(1, h * (onGround ? 12 : 2.5));
+  if (onGround && wish.lengthSq() > 0) { stepDist += Math.hypot(player.velocity.x, player.velocity.z) * h; if (stepDist > (m.run ? 1.7 : 1.3)) { stepDist = 0; sfx.step(m.run); } } // v2.1 footsteps
   player.velocity.x += (wish.x * speed - player.velocity.x) * k;
   player.velocity.z += (wish.z * speed - player.velocity.z) * k;
   if (onGround && player.velocity.y > 0 && player.velocity.y < 2 && wish.lengthSq() > 0) player.velocity.y = Math.min(player.velocity.y, 1.5);
@@ -646,7 +650,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.0.1';
+const BUILD = 'v2.1';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});
