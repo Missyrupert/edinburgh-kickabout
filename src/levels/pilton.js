@@ -329,8 +329,20 @@ function build(scene, world, mats, P) {
   return { targets, challenges, sparkles: spk, dynamics, pigeons: pig, materials, batches, views, counter: COUNTER };
 }
 
+// v2.4: what's under foot / under the ball (cheap zone lookup, matches the ground layout above)
+const PUDDLES = [[-3.2, -18, 1.6, 0.9], [2.6, 6, 1.1, 0.7], [3.4, 27.2, 1.4, 0.8], [-4.4, -36, 0.9, 0.6]];
+export function surfaceAt(x, z) {
+  for (const [px, pz, w, d] of PUDDLES) if (Math.abs(x - px) < w / 2 && Math.abs(z - pz) < d / 2) return 'puddle';
+  const ax = Math.abs(x);
+  if (z >= 30 && z <= 34.5 && ax < 20) return 'paving'; // parade frontage
+  if (z >= 26 && z < 30 && ax < 20) return 'tarmac'; // service road by the parade
+  if (z < 30 && ax < 4) return 'tarmac';
+  if (z < 30 && ax <= 6) return 'paving';
+  return 'grass';
+}
 export default {
-  id: 'pilton', name: 'West Pilton', short: 'Pilton',
+  id: 'pilton', surfaceAt,
+  sounds: { fryer: { x: -9, z: 33.6 }, birds: [[19, -4], [-1, -24], [2, 20], [-20, -10], [22, 10]], gulls: [[0, 60], [30, 40], [-30, 50]], far: [[-60, -30], [55, 60], [40, -60], [-50, 40]], roadX: 45 }, name: 'West Pilton', short: 'Pilton',
   blurb: 'Level 1: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
   intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Easy first one: the auld trolley just up the street on your right.</small>",
   build, spawn: [0, 0.5, -38], spawnYaw: 180,

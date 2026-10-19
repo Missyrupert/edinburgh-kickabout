@@ -163,7 +163,9 @@ let kickAnim = 1;
 
 // ---------- UI ----------
 const $ = (id) => document.getElementById(id);
-const sfx = new Sfx();
+const sfx = new Sfx(); sfx.spots = LEVEL.sounds || { birds: [[0, 0], [-19, -6]], far: [[-60, 0], [60, 40]], roadX: 50 };
+const surfaceAt = LEVEL.surfaceAt || (() => 'paving');
+const TARGET_SURF = { garage: 'garage', bin: 'plastic', wheelie: 'plastic', busstop: 'glass', trolley: 'metal', lamp: 'metal', gap: 'metal', noballs: 'metal', tardis: 'metal', post: 'metal', door: 'wall', bench: 'board', skip: 'metal', case: 'board', cone: 'plastic' };
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
 function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
@@ -173,7 +175,7 @@ function updateHud() { $('scoreVal').textContent = score; $('targetVal').textCon
   $('chal').title = 'Warm-Up · Cocky · Away Ye Go!'; }
 updateHud();
 // ---------- wallet (pocket money) ----------
-let lastEarn = null, stepDist = 0;
+let lastEarn = null, stepDist = 0, stepLen = 1.25;
 const piltonBagged = () => Object.keys(levelDone('pilton') || {}).filter((k) => !k.startsWith('c_')).length;
 const chippyEarned = () => piltonBagged() >= CHIPPY_TARGETS;
 function updateWallet(pop = false) {
@@ -193,7 +195,8 @@ function showGoal(bought = false) {
   if (document.pointerLockElement) document.exitPointerLock();
 }
 $('goalOk').addEventListener('click', () => { $('goalCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
-{ const sb = $('soundBtn'), lab = () => { sb.textContent = sfx.on ? '🔊 Sound: on' : '🔇 Sound: off'; }; lab(); sb.addEventListener('click', () => { sfx.setOn(!sfx.on); lab(); }); }
+{ const sb = $('soundBtn'), lab = () => { sb.textContent = sfx.on ? '🔊 Sound: on' : '🔇 Sound: off'; }; lab(); sb.addEventListener('click', () => { sfx.setOn(!sfx.on); lab(); });
+  const vs = $('volSlider'); vs.value = Math.round(sfx.vol * 100); vs.addEventListener('input', () => sfx.setVolume(vs.value / 100)); }
 $('walletReset').addEventListener('click', () => { if (confirm('Reset your pocket money to £0.00?')) { resetWallet(); updateWallet(); } });
 updateWallet();
 let counterCool = 0;
@@ -401,9 +404,11 @@ function kick(power) {
 function onBallCollide(b, e) {
   const iv = Math.abs(e.contact.getImpactVelocityAlongNormal());
   const now = performance.now();
-  if (iv > 1.2 && now - b.lastSound > 70) { b.lastSound = now; const ob = e.body, tg = ob.userData?.target;
-    const surf = ob.userData?.surface || (ob.shapes[0]?.type === CANNON.Shape.types.PLANE ? (LEVEL.id === 'pilton' && Math.abs(b.body.position.x) > 6.2 && b.body.position.z < 29 ? 'grass' : 'tarmac') : (tg === 'lamp' || tg === 'trolley' || tg === 'busstop' || tg === 'gap') ? 'metal' : 'wall');
-    sfx.bounce(iv, iv > 6, surf); }
+  { const ob = e.body, tg = ob.userData?.target, ground = ob.shapes[0]?.type === CANNON.Shape.types.PLANE, bp = b.body.position;
+    // v2.4: surface-aware impacts; per-ball cooldown, and rolling on the ground (low impact) stays silent
+    if (iv > (ground ? 1.8 : 1.2) && now - b.lastSound > 90) { b.lastSound = now;
+      const surf = ob.userData?.surface || (ground ? surfaceAt(bp.x, bp.z) : TARGET_SURF[tg] || 'wall');
+      sfx.bounce(iv, iv > 6, surf, bp.x, bp.z); } }
   const id = e.body.userData?.target;
   const clean = (b.bounces | 0) === 0;
   if (iv > 0.8 && simTime - (b.kickSim ?? -1) > 0.05) b.bounces = (b.bounces | 0) + 1; // for the "clean in" bonus
@@ -509,7 +514,7 @@ function fixedUpdate(h) {
   const wish = f.multiplyScalar(m.y).add(r.multiplyScalar(m.x));
   if (wish.lengthSq() > 1) wish.normalize();
   const speed = m.run ? 7.2 : 4.2, onGround = grounded(), k = Math.min(1, h * (onGround ? 12 : 2.5));
-  if (onGround && wish.lengthSq() > 0) { stepDist += Math.hypot(player.velocity.x, player.velocity.z) * h; if (stepDist > (m.run ? 1.7 : 1.3)) { stepDist = 0; sfx.step(m.run); } } // v2.1 footsteps
+  if (onGround && wish.lengthSq() > 0) { stepDist += Math.hypot(player.velocity.x, player.velocity.z) * h; if (stepDist > stepLen) { stepDist = 0; stepLen = (m.run ? 1.55 : 1.25) * (0.93 + Math.random() * 0.14); sfx.step(surfaceAt(player.position.x, player.position.z), m.run); } } // v2.4 surface-aware footsteps
   player.velocity.x += (wish.x * speed - player.velocity.x) * k;
   player.velocity.z += (wish.z * speed - player.velocity.z) * k;
   if (onGround && player.velocity.y > 0 && player.velocity.y < 2 && wish.lengthSq() > 0) player.velocity.y = Math.min(player.velocity.y, 1.5);
@@ -554,7 +559,7 @@ function render(dt, t) {
   const sp = Math.hypot(player.velocity.x, player.velocity.z);
   const bob = Math.sin(t * 0.011) * Math.min(1, sp / 4) * 0.04;
   camera.position.set(iP.x, iP.y + 1.25 + bob, iP.z);
-  camera.rotation.set(pitch, yaw, 0);
+  camera.rotation.set(pitch, yaw, 0); sfx.listen(iP.x, iP.z, yaw);
   for (const b of balls) { b.mesh.position.lerpVectors(b.prevP, b.body.position, alpha); iQ.copy(b.body.quaternion); b.mesh.quaternion.slerpQuaternions(b.prevQ, iQ, alpha); }
   for (const d of dynamics) { d.mesh.position.copy(d.body.position); d.mesh.quaternion.copy(d.body.quaternion); }
   kickAnim = Math.min(1, kickAnim + dt * 4);
@@ -584,7 +589,7 @@ function render(dt, t) {
       if (scare(iP.x, iP.z) || balls.some((b) => scare(b.body.position.x, b.body.position.z))) {
         pg.state = 'fly'; pg.t = 4; { let ax = pg.pos.x - iP.x, az = pg.pos.z - iP.z; const l = Math.hypot(ax, az) || 1; const sp = 4.5 + Math.random() * 2, tw = (Math.random() - 0.5) * 0.8; // v2.3: fly away at a climb, not straight up
           ax /= l; az /= l; const cx = ax * Math.cos(tw) - az * Math.sin(tw), cz = ax * Math.sin(tw) + az * Math.cos(tw); pg.vel.set(cx * sp, 2.2 + Math.random(), cz * sp); pg.rot = Math.atan2(-cx, -cz); }
-        if (Math.random() < 0.3) sfx.coo();
+        sfx.flutter(pg.pos.x, pg.pos.z); if (Math.random() < 0.3) sfx.coo(pg.pos.x, pg.pos.z);
       }
     } else if (pg.state === 'fly') {
       pg.pos.addScaledVector(pg.vel, dt); pg.vel.y += dt * 0.5; pg.t -= dt;
@@ -652,7 +657,7 @@ window.__game = {
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
   placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
+  sfx, surfaceAt, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests
@@ -660,7 +665,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.3';
+const BUILD = 'v2.4';
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});
