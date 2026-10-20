@@ -169,7 +169,7 @@ const surfaceAt = LEVEL.surfaceAt || (() => 'paving');
 const TARGET_SURF = { garage: 'garage', bin: 'plastic', wheelie: 'plastic', busstop: 'glass', trolley: 'metal', lamp: 'metal', gap: 'metal', noballs: 'metal', tardis: 'metal', post: 'metal', door: 'wall', bench: 'board', skip: 'metal', case: 'board', cone: 'plastic' };
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
-function updateHud() { $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
+function updateHud() { if (LEVEL.id !== "pilton") try { updateWallet(); } catch (e) { /* v2.9: keep the per-level goal bar in step (wallet not ready during boot) */ } $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
   const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
   // v2.3: compact challenge line for phones (full names live in Help)
   $('chal').classList.remove('hidden'); $('chalVal').textContent = `⭐ ${tc('easy')}  🔥 ${tc('tricky')}` + (challenges.length ? `  ✨ ${tc('legend')}` : '');
@@ -501,7 +501,7 @@ function checkZones(now) {
 
 // ---------- fixed-timestep simulation (independent of frame rate) ----------
 const FIXED = 1 / 120, MAX_STEPS = 15; // 120 Hz: a 20 m/s ball must not sink into kerbs
-let simTime = 0, acc = 0, autopilot = null, respawns = 0;
+let simTime = 0, acc = 0, autopilot = null, respawns = 0, seaLost = 0;
 const prevPlayer = new THREE.Vector3().copy(player.position);
 let moveInput = { x: 0, y: 0, run: false };
 function fixedUpdate(h) {
@@ -540,6 +540,8 @@ function fixedUpdate(h) {
     const p = b.body.position; rayRes.reset(); rayTo.set(p.x, p.y - BALL_R - 0.06, p.z);
     world.raycastClosest(p, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
     if (rayRes.hasHit) { const d = 1 - 0.9 * h; b.body.velocity.x *= d; b.body.velocity.z *= d; }
+    if (LEVEL.sea && p.y < LEVEL.sea.y) { // v2.9: lost to the sea (Granton) -> splash, and the ball is back at its spot
+      sfx.splash?.(p.x, p.z); seaLost++; p.copy(b.home); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.copy(b.home); release?.(b); toast(LEVEL.sea.lines[seaLost % LEVEL.sea.lines.length], 2200); continue; }
     if (p.y < -3 || Math.abs(p.x) > BOUNDS.x + 15 || p.z < BOUNDS.zMin - 10 || p.z > BOUNDS.zMax + 10) { p.copy(b.home); b.body.velocity.setZero(); b.prevP.copy(b.home); toast('Ball lost ower the wall - it\'s back where you found it.', 1800); }
   }
   { const p = player.position; // v2.5: never lose the player - below ground or outside the level bounds -> back to the spawn
@@ -666,7 +668,7 @@ window.__game = {
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
   placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  sfx, surfaceAt, get respawns() { return respawns; }, spawn: PLAYER_SPAWN, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
+  sfx, surfaceAt, get respawns() { return respawns; }, get seaLost() { return seaLost; }, spawn: PLAYER_SPAWN, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests
@@ -674,7 +676,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.8';
+const BUILD = 'v2.9';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
