@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from '../batch.js';
-import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, tarmacTexture, GRIME_UV } from '../textures.js';
+import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, tarmacTexture, slabTexture, GRIME_UV } from '../textures.js';
 import { makeMaterials, mulberry32, mergeSimple } from '../world.js';
 
 export const GT = { QUAY: 20, WATER: -1.3, PIER: [10, 22, 62], SLIP: [-30, -24, 34, -2] };
@@ -39,12 +39,12 @@ function build(scene, world, mats, P) {
   boxBody((PX0 + PX1) / 2, -2, (Q + PZ1) / 2, PX1 - PX0, 4, PZ1 - Q, { surface: 'concrete' }); // Middle Pier
   B.add('flat', QUAD, M4(0, WY, 90, 400, 160, 1, -Math.PI / 2), 0x52687a, {}); // the harbour / the Forth
   for (let i = 0; i < 60; i++) { const x = -70 + rand() * 140, z = 22 + rand() * 120, w = 2 + rand() * 6; B.add('flat', QUAD, M4(x, WY + 0.01, z, w, 0.12, 1, -Math.PI / 2, rand() * 0.3), 0x8698a6, {}); } // glints / ripples
-  B.add('paving', QUAD, M4(0, 0.004, -14, 140, 68, 1, -Math.PI / 2), 0xd2d0cc, { tile: 1.6 }); // flags
-  B.add('cobble', QUAD, M4(-24, 0.006, (8 + Q) / 2, 72, Q - 8, 1, -Math.PI / 2), 0xc2beb6, { tile: 1.6 }); // old quayside setts
+  B.add('slab', QUAD, M4(0, 0.004, -14, 140, 68, 1, -Math.PI / 2), 0xffffff, { tile: 1.8 }); // v2.9.1: grey precast slabs
+  B.add('cobble', QUAD, M4(-24, 0.006, (8 + Q) / 2, 72, Q - 8, 1, -Math.PI / 2), 0xb4b6b8, { tile: 1.6 }); // old quayside setts
   B.add('tarmac', QUAD, M4(0, 0.008, 5, 140, 6, 1, -Math.PI / 2), 0x8a8c88, { tile: 4 }); // harbour road
   B.add('tarmac', QUAD, M4(0, 0.008, -17, 12, 38, 1, -Math.PI / 2), 0x8a8c88, { tile: 4 }); // road up to the square
-  B.add('paving', QUAD, M4((PX0 + PX1) / 2, 0.006, (Q + PZ1) / 2, PX1 - PX0, PZ1 - Q, 1, -Math.PI / 2), 0xcfcdc8, { tile: 3 }); // pier concrete
-  B.add('cobble', QUAD, M4(40, 0.006, (8 + Q) / 2, 36, Q - 8, 1, -Math.PI / 2), 0xc2beb6, { tile: 1.6 });
+  B.add('slab', QUAD, M4((PX0 + PX1) / 2, 0.006, (Q + PZ1) / 2, PX1 - PX0, PZ1 - Q, 1, -Math.PI / 2), 0xe4e2de, { tile: 3 }); // pier concrete
+  B.add('cobble', QUAD, M4(40, 0.006, (8 + Q) / 2, 36, Q - 8, 1, -Math.PI / 2), 0xb4b6b8, { tile: 1.6 });
   for (const s of [-1, 1]) for (const dz of [0.25, 0.4]) B.add('flat', QUAD, M4(0, 0.01, 5 + s * (3 - dz), 136, 0.09, 1, -Math.PI / 2), 0xe8c43a, {});
   // quay walls (stone, down to the water) + granite coping, and the pier sides
   const wallFace = (x0, x1, z, ry) => { solid('stone', (x0 + x1) / 2, WY / 2 - 0.4, z, Math.abs(x1 - x0), -WY + 0.8, 0.6, 0x9a968e, { phys: false, ry, tile: 1.5 }); solid('stone', (x0 + x1) / 2, 0.04, z, Math.abs(x1 - x0), 0.08, 0.7, 0xc4c0b8, { phys: false, ry }); };
@@ -85,15 +85,16 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'square', name: 'Granton Square Sign', hint: 'hit the street sign', points: 50, kind: 'hit', pos: V(x, 0, z - 1.6), ringR: 1.2, stand: V(x, 0, z - 6), aim: V(x, 1.8, z - 1.6), lines: ['Signed, sealed, Granton.', 'Postcode confirmed: EH5.', 'Even the roundabout applauded. Slowly. In a circle.'] }); }
 
   // ---------- the gasholder frame (1901), scrubby ground, chain-link fence ----------
-  const GH = { x: -38, z: -22, R: 12, H: 26 };
+  const GH = { x: -38, z: -22, R: 12, H: 34 }; // v2.9.1: taller so it owns the skyline from the spawn
+  const T1 = GH.H * 0.34, T2 = GH.H * 0.67;
   B.add('flat', new THREE.CircleGeometry(GH.R + 4, 24).rotateX(-Math.PI / 2), M4(GH.x, 0.01, GH.z, 1, 1, 1), 0x7a7a52, {}); // dry scrub
   for (let i = 0; i < 40; i++) { const a = rand() * 7, r = rand() * (GH.R + 3); B.add('flat', new THREE.IcosahedronGeometry(0.4 + rand() * 0.4, 0), M4(GH.x + Math.cos(a) * r, 0.2, GH.z + Math.sin(a) * r, 1, 0.6, 1), pick([0x6b6a40, 0x80744a, 0x5a6a3a]), {}); }
   const NC = 16;
   for (let i = 0; i < NC; i++) { const a = i / NC * Math.PI * 2, x = GH.x + Math.cos(a) * GH.R, z = GH.z + Math.sin(a) * GH.R;
     cyl('metal', x, GH.H / 2, z, 0.28, 0.32, GH.H, TEAL, { seg: 8, target: i === 3 ? 'gasframe' : null }); cyl('metal', x, GH.H + 0.4, z, 0.4, 0.3, 0.8, TEAL, { phys: false, seg: 8 });
     const a2 = (i + 1) / NC * Math.PI * 2, x2 = GH.x + Math.cos(a2) * GH.R, z2 = GH.z + Math.sin(a2) * GH.R, mx = (x + x2) / 2, mz = (z + z2) / 2, L = Math.hypot(x2 - x, z2 - z), ry = -Math.atan2(z2 - z, x2 - x);
-    for (const y of [9, 17.5, GH.H]) solid('metal', mx, y, mz, L, 0.35, 0.18, TEAL, { phys: false, ry });
-    for (const [y0, y1] of [[0.5, 9], [9, 17.5], [17.5, GH.H]]) for (const s of [-1, 1]) solid('metal', mx, (y0 + y1) / 2, mz, 0.08, Math.hypot(L, y1 - y0), 0.08, TEAL, { phys: false, ry, rz: s * Math.atan2(L, y1 - y0) }); // lattice X-bracing
+    for (const y of [T1, T2, GH.H]) solid('metal', mx, y, mz, L, 0.35, 0.18, TEAL, { phys: false, ry });
+    for (const [y0, y1] of [[0.5, T1], [T1, T2], [T2, GH.H]]) for (const s of [-1, 1]) solid('metal', mx, (y0 + y1) / 2, mz, 0.08, Math.hypot(L, y1 - y0), 0.08, TEAL, { phys: false, ry, rz: s * Math.atan2(L, y1 - y0) }); // lattice X-bracing
   }
   { const a = 3 / NC * Math.PI * 2, x = GH.x + Math.cos(a) * GH.R, z = GH.z + Math.sin(a) * GH.R; for (const y of [0.9, 1.5]) cyl('flat', x, y, z, 0.33, 0.33, 0.25, 0xf7c325, { phys: false, seg: 8 });
     addTarget({ id: 'gasframe', name: 'Gasholder Frame', hint: 'ping the banded column of the gasholder', points: 75, kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(x + 4.2, 0, z - 4.2), aim: V(x, 1.2, z), lines: ["Off the gasholder! 1901 ironwork, still daein' a shift.", "You can see this frame fae Pilton. Now it's seen you.", 'BOING. The whole lattice hummed.'] }); }
@@ -133,22 +134,25 @@ function build(scene, world, mats, P) {
     if (mast) { cyl('flat', x, WY + 0.8 + mast / 2, z - 0.5, 0.06, 0.06, mast, 0xdcdcdc, { phys: false, seg: 5 }); solid('flat', x, WY + 2, z - 1.6, 0.05, 0.05, 2.4, 0xdcdcdc, { phys: false, rx: Math.PI / 2 }); }
     else solid('flat', x, WY + 1.3, z - 0.4, 1.6, 1.0, 2.0, 0xe8e2d4, { phys: false }); }
   // ---------- Middle Pier: the Piece Box kiosk, creels, warehouses ----------
-  { const x0 = 14.5, x1 = 17.5, z0 = 25.8, z1 = 28.3, h = 2.6, xc = (x0 + x1) / 2, W2 = 0.12, c = 0xf4f1ea, hx0 = 15.4, hx1 = 16.6, hy0 = 1.0, hy1 = 1.65;
+  { const x0 = 14.5, x1 = 17.5, z0 = 25.8, z1 = 28.3, h = 2.6, xc = (x0 + x1) / 2, W2 = 0.12, c = 0xf4f1ea, hx0 = 15.2, hx1 = 16.8, hy0 = 0.9, hy1 = 1.8; // v2.9.1: wider/taller hatch
     solid('flat', xc, h / 2, z1, x1 - x0, h, W2, c); solid('flat', x0, h / 2, (z0 + z1) / 2, W2, h, z1 - z0, c); solid('flat', x1, h / 2, (z0 + z1) / 2, W2, h, z1 - z0, c);
     solid('flat', (x0 + hx0) / 2, h / 2, z0, hx0 - x0, h, W2, c); solid('flat', (hx1 + x1) / 2, h / 2, z0, x1 - hx1, h, W2, c);
     solid('flat', xc, hy0 / 2, z0, hx1 - hx0, hy0, W2, c); solid('flat', xc, (hy1 + h) / 2, z0, hx1 - hx0, h - hy1, W2, c);
-    solid('flat', xc, h + 0.06, (z0 + z1) / 2, x1 - x0 + 0.5, 0.12, z1 - z0 + 0.6, 0x3D6F8E, { phys: false }); solid('flat', xc, hy1 + 0.18, z0 - 0.35, hx1 - hx0 + 0.6, 0.04, 0.7, 0x3D6F8E, { phys: false, rx: -0.25 });
+    solid('flat', xc, h + 0.06, (z0 + z1) / 2, x1 - x0 + 0.5, 0.12, z1 - z0 + 0.6, 0x3D6F8E, { phys: false }); B.add('roof', ROOF, M4(xc, h + 0.12, (z0 + z1) / 2, x1 - x0 + 0.7, 0.9, z1 - z0 + 0.8), 0x3D6F8E, {}); /* v2.9.1: pitched roof */
+    cyl('metal', x1 - 0.5, h + 1.0, z1 - 0.4, 0.07, 0.07, 1.4, 0x8a8c88, { phys: false, seg: 6 }); cyl('metal', x1 - 0.5, h + 1.75, z1 - 0.4, 0.14, 0.1, 0.12, 0x8a8c88, { phys: false, seg: 6 }); /* flue */
+    solid('flat', xc, hy0 - 0.05, z0 - 0.25, hx1 - hx0 + 0.4, 0.06, 0.5, 0x6b4a2b, { phys: false }); /* serving ledge */
+    for (const s of [-1, 1]) solid('flat', x0 - 0.06, 1.3, (z0 + z1) / 2 + s * 0.4, 0.04, 0.8, 0.5, 0x2a2d31, { phys: false }); sign('TEA 90p · ROLL N SAUSAGE £2', x0 - 0.09, 1.3, (z0 + z1) / 2, 1.0, 0.7, -Math.PI / 2, '#2a2d31', '#f4f1ea', 'bold 30px Arial'); solid('flat', xc, hy1 + 0.18, z0 - 0.35, hx1 - hx0 + 0.6, 0.04, 0.7, 0x3D6F8E, { phys: false, rx: -0.25 });
     solid('flat', xc, 0.95, (z0 + z1) / 2, x1 - x0 - 0.25, 0.06, z1 - z0 - 0.25, 0x6b4a2b); // counter shelf inside
     B.add('lamp', BOX, M4(xc, 1.9, z0 + 0.6, 0.6, 0.1, 0.3), 0xffffff, {});
     quad('atlas', xc, 2.2, z0 - 0.07, x1 - x0 - 0.2, 0.5, Math.PI, atlas.fascia('THE PIECE BOX', 'TEAS · ROLLS · TABLET', '#3D6F8E', '#EFE3C8', (x1 - x0 - 0.2) / 0.5));
     addTarget({ id: 'hatch', name: 'The Piece Box Hatch', hint: 'chip it through the kiosk hatch', points: 150, kind: 'zone', pos: V(xc, 0, z0 - 0.8), ringR: 1.0, stand: V(xc, 0, z0 - 4.6), aim: V(xc, 1.3, z0),
-      zone: new THREE.Box3(V(hx0, 0.98, z0 + 0.05), V(hx1, 1.9, z1 - 0.1)), lines: ['One ball, nae sauce. Through the hatch!', 'Order up: one fitba\' roll, extra mud.', '"We don\'t do refunds, son."'] }); }
+      zone: new THREE.Box3(V(hx0 - 0.15, 0.9, z0 - 0.05), V(hx1 + 0.15, 2.1, z1 - 0.1)) /* v2.9.1: catch margin, as the bin/skip */, lines: ['One ball, nae sauce. Through the hatch!', 'Order up: one fitba\' roll, extra mud.', '"We don\'t do refunds, son."'] }); }
   { const x = 20.4, z = 35; for (const [dx, dy, dz] of [[0, 0.25, -0.8], [0, 0.75, -0.8], [0, 0.25, 0.8], [0.0, 0.75, 0.8]]) solid('flat', x + dx, dy, z + dz, 1.0, 0.5, 0.7, 0x2f5a3a, { phys: dy < 0.5 }); // creel stacks
     const w = 1.0, d = 0.8, h = 0.55, th = 0.05, c = 0x1d3b6b; solid('flat', x, 0.04, z, w, 0.08, d, c); for (const [cx, cz, ww, dd] of [[x - w / 2, z, th, d], [x + w / 2, z, th, d], [x, z - d / 2, w, th], [x, z + d / 2, w, th]]) solid('flat', cx, h / 2, cz, ww, h, dd, c);
     for (let k = -2; k <= 2; k++) solid('flat', x + k * 0.2, h - 0.02, z, 0.02, 0.02, d, 0xc8c4b8, { phys: false }); // netting hoops
     sign('M. LINDSAY · CREELS', x, 1.25, z, 1.2, 0.2, -Math.PI / 2, '#efe3c8', '#1d3b6b', 'bold 44px Georgia');
     addTarget({ id: 'creel', name: 'The Open Creel', hint: 'chip it in the creel', points: 150, kind: 'zone', openTop: true, pos: V(x, 0, z), ringR: 1.0, stand: V(x - 5, 0, z), aim: V(x, 0.4, z),
-      zone: new THREE.Box3(V(x - w / 2 - 0.12, 0.08, z - d / 2 - 0.12), V(x + w / 2 + 0.12, h + 0.25, z + d / 2 + 0.12)), lines: ['In the creel! The lobsters are raging.', "Catch o' the day: one fitba'.", 'Landed. That\'s gaun on the chalkboard.'] }); }
+      zone: new THREE.Box3(V(x - w / 2 - 0.22, 0.08, z - d / 2 - 0.22), V(x + w / 2 + 0.22, h + 0.4, z + d / 2 + 0.22)) /* v2.9.1: bin/skip-style margin */, lines: ['In the creel! The lobsters are raging.', "Catch o' the day: one fitba'.", 'Landed. That\'s gaun on the chalkboard.'] }); }
   { const x0 = PX0 + 0.5, x1 = PX1 - 0.5, z0 = 42, z1 = 60, h = 6; // Middle Pier warehouse: stone, arched openings, pitched roof
     solid('stone', (x0 + x1) / 2, h / 2, (z0 + z1) / 2, x1 - x0, h, z1 - z0, 0xa89a88, { tile: 2.5, grime: 0.3 });
     for (let i = 0; i < 3; i++) quad('facade', x0 + 1.8 + i * 3.6, 2, z0 - 0.01, 3.4, 4, Math.PI, cellUV(FACADE.arch), 0xd8d0c4);
@@ -169,6 +173,37 @@ function build(scene, world, mats, P) {
   for (const [x, z] of [[-6, -5], [6, -5], [-6, -20], [6, -20], [-30, 8], [20, 8]]) { cyl('metal', x, 2.6, z, 0.07, 0.11, 5.2, IRON, { seg: 6 }); solid('flat', x + 0.5, 5.2, z, 1.0, 0.08, 0.12, IRON, { phys: false }); solid('lamp', x + 0.95, 5.12, z, 0.35, 0.1, 0.2, 0xffffff, { phys: false }); } // lamp posts
   for (let i = 0; i < 30; i++) { const x = -56 + rand() * 112, z = -44 + rand() * 62; if (Math.hypot(x - GH.x, z - GH.z) < GH.R + 5) continue; B.add('grime', QUAD, M4(x, 0.012, z, 2 + rand() * 3, 2 + rand() * 2, 1, -Math.PI / 2, rand() * 3), 0xffffff, { uvRect: GRIME_UV[rand() < 0.7 ? 0 : 1] }); }
 
+  // ---------- v2.9.1: close in the waterfront street (spawn view) ----------
+  // near-side chain-link fence round the gasholder (visual only: the ball and player pass the old gaps)
+  for (let i = 0; i <= 22; i++) { const a = -0.1 * Math.PI + i / 22 * 1.0 * Math.PI, r = GH.R + 6, x = GH.x + Math.cos(a) * r, z = GH.z + Math.sin(a) * r; if (x > -21 && z > -14) continue;
+    cyl('metal', x, 1.1, z, 0.04, 0.04, 2.2, 0x8a8c88, { phys: false, seg: 5 });
+    if (i < 22) { const a2 = a + 1.0 * Math.PI / 22, x2 = GH.x + Math.cos(a2) * r, z2 = GH.z + Math.sin(a2) * r; if (x2 > -21 && z2 > -14) continue; const L = Math.hypot(x2 - x, z2 - z), ry = -Math.atan2(z2 - z, x2 - x);
+      for (const y of [0.15, 1.1, 2.15]) solid('metal', (x + x2) / 2, y, (z + z2) / 2, L, 0.04, 0.04, 0x8a8c88, { phys: false, ry }); } }
+  // low harbour-wall run (rubble stone with a cope) between the gas ground and the harbour road
+  solid('stone', -41, 0.45, -1.8, 30, 0.9, 0.6, 0xa8a49a, { tile: 1.5 }); solid('stone', -41, 0.95, -1.8, 30.3, 0.12, 0.8, 0xc4c0b8, { phys: false });
+  // shipping containers stacked by the gas ground (behind the sightline to the frame)
+  for (const [x, y, z, ry, col] of [[-14, 1.3, -36, 0, 0x2E6E8E], [-14, 3.9, -36, 0, 0xb5452e], [-20, 1.3, -37, 0.05, 0x5a7a3a], [-14, 1.3, -18.5, Math.PI / 2, 0xc8902a]]) {
+    solid('flat', x, y, z, 6.1, 2.6, 2.45, col, { ry, phys: y < 2 }); for (let k = -2.8; k <= 2.81; k += 0.4) solid('flat', x + Math.cos(ry) * k, y, z - Math.sin(ry) * k, 0.05, 2.5, 2.5, new THREE.Color(col).multiplyScalar(0.8).getHex(), { phys: false, ry }); } // ribbed sides
+  // parked vans and a car along the kerbs
+  const van = (x, z, ry, col) => { solid('flat', x, 1.15, z, 2.0, 1.9, 5.0, col, { ry }); solid('flat', x, 0.45, z, 2.04, 0.3, 5.04, 0x2a2d31, { phys: false, ry });
+    solid('glass', x + Math.sin(ry) * 2.3, 1.55, z + Math.cos(ry) * 2.3, 1.8, 0.7, 0.5, 0xffffff, { phys: false, ry, rx: -0.3 });
+    for (const [a, b] of [[-0.9, 1.6], [0.9, 1.6], [-0.9, -1.6], [0.9, -1.6]]) cyl('flat', x + Math.cos(ry) * a + Math.sin(ry) * b, 0.36, z - Math.sin(ry) * a + Math.cos(ry) * b, 0.36, 0.36, 0.25, 0x1a1a1a, { phys: false, rz: Math.PI / 2, seg: 10 }); };
+  van(-7.4, -12, 0, 0xf4f1ea); van(-7.4, -4.5, 0, 0x3D6F8E); van(7.4, -10, Math.PI, 0xd8d4cc); van(26, 3.4, Math.PI / 2, 0xf4f1ea);
+  sign('FORTH & FATHOM', -8.42, 1.4, -12, 2.6, 0.45, -Math.PI / 2, '#f4f1ea', '#2f5a6e', 'bold 50px Georgia');
+  // lamp rows down both kerbs and along the harbour road
+  for (const z of [-34, -27, -13, 1]) for (const sx of [-1, 1]) { if (sx < 0 && z === -27) continue; const x = sx * 6.6; cyl('metal', x, 2.9, z, 0.07, 0.11, 5.8, IRON, { seg: 6 }); solid('flat', x - sx * 0.55, 5.8, z, 1.1, 0.08, 0.12, IRON, { phys: false }); solid('lamp', x - sx * 1.0, 5.72, z, 0.35, 0.1, 0.2, 0xffffff, { phys: false }); }
+  for (const x of [-48, -36, 32, 44]) { cyl('metal', x, 2.9, 8.2, 0.07, 0.11, 5.8, IRON, { seg: 6 }); solid('lamp', x, 5.8, 7.6, 0.2, 0.1, 0.4, 0xffffff, { phys: false }); }
+  // east side: new-build waterfront flats close to the road (stepped, balconies, setback penthouse)
+  function flats(x0, x1, z0, z1, floors, col) { const xc = (x0 + x1) / 2, zc = (z0 + z1) / 2, h = floors * 3;
+    solid('flat', xc, h / 2, zc, x1 - x0, h, z1 - z0, col, { tile: 3 }); solid('flat', xc + 1, h + 1.5, zc + 1, x1 - x0 - 4, 3, z1 - z0 - 3, 0xd8dcdc, { phys: false }); // setback penthouse
+    solid('flat', xc, h + 0.3, zc, x1 - x0 + 0.3, 0.6, z1 - z0 + 0.3, 0x5a5e62, { phys: false });
+    for (let j = 1; j <= floors; j++) { const y = j * 3 - 1.6; solid('glass', x0 - 0.02, y, zc, 0.02, 1.6, z1 - z0 - 1.5, 0xffffff, { phys: false }); solid('glass', xc, y, z1 + 0.02, x1 - x0 - 1.5, 1.6, 0.02, 0xffffff, { phys: false });
+      if (j > 1) for (let b = z0 + 2.5; b < z1 - 1.5; b += 5) { solid('flat', x0 - 0.7, y - 1.2, b, 1.4, 0.12, 3, 0xe8e8e4, { phys: false }); solid('glass', x0 - 1.38, y - 0.7, b, 0.03, 0.9, 3, 0xbfd0d8, { phys: false }); } }
+    solid('flat', x0 - 0.05, 1.5, zc, 0.06, 3, z1 - z0, 0x3D6F8E, { phys: false }); }
+  flats(22, 34, -20, -4, 5, 0xe6e2da); flats(38, 52, -36, -16, 7, 0xcfcac0); flats(-58, -51, -8, 0, 6, 0xe0dcd2);
+  // east boundary: a corrugated industrial shed
+  solid('flat', 52, 3, 10, 10, 6, 14, 0x8a9a9e, { tile: 2 }); for (let k = 3.5; k < 16.6; k += 0.5) solid('flat', 47 - 0.03, 3, k, 0.06, 6, 0.08, 0x76868a, { phys: false }); B.add('roof', ROOF, M4(52, 6, 10, 10.4, 1.4, 14.4), 0x6a7478, {});
+  quad('atlas', 46.9, 4.6, 10, 7, 0.7, -Math.PI / 2, atlas.fascia('LOTHIAN NET & ROPE CO.', null, '#2E2F2C', '#EFE3C8', 10));
   // ---------- targets ----------
   function addTarget(t) { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.rotation.x = -Math.PI / 2; const r = t.ringR || 1; m.scale.set(r, r, r); m.position.copy(t.pos).add(V(0, 0.03, 0)); m.visible = false; scene.add(m); t.ring = m; if (t.zone) t.zoneInv = new THREE.Matrix4(); t.done = false; targets.push(t); return t; }
@@ -177,11 +212,11 @@ function build(scene, world, mats, P) {
   const pig = { list: [], body: new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), null, groups.length * 4), head: new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 6, 4), null, groups.length * 4) };
   groups.forEach((c) => { for (let i = 0; i < 4; i++) { const home = V(c.x + (rand() - 0.5) * 2, 0.08, c.z + (rand() - 0.5) * 2); pig.list.push({ home, pos: home.clone(), rot: rand() * 6.28, state: 'idle', t: rand() * 3, vel: V(0, 0, 0) }); } });
   const materials = makeMaterials(P, facadeTex, atlas.tex);
-  { const m = materials.flat.clone(); m.map = tarmacTexture(); materials.tarmac = m; }
+  { const m = materials.flat.clone(); m.map = tarmacTexture(); materials.tarmac = m; const m2 = materials.flat.clone(); m2.map = slabTexture(); materials.slab = m2; }
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   for (const d of dynamics) { d.mesh = new THREE.Mesh(d.geo, materials.flat); d.mesh.castShadow = P.shadows; scene.add(d.mesh); }
   const batches = B.build(scene, materials, { shadows: P.shadows });
-  const views = { spawn: [0, -28, 180, -4], quay: [-20, 12, 180, 0], pier: [16, 22, 180, 0], gas: [-24, -10, 120, 18] };
+  const views = { spawn: [0, -28, 118, 6], quay: [-20, 12, 180, 0], pier: [16, 22, 180, 0], gas: [-24, -10, 120, 18] };
   return { targets, dynamics, pigeons: pig, materials, batches, views };
 }
 const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
@@ -200,10 +235,10 @@ export default {
   id: 'granton', name: 'Granton Harbour', short: 'Granton', surfaceAt,
   sounds: { harbour: true, birds: [[-38, -22], [-20, -10]], gulls: [[0, 40], [-30, 30], [30, 50], [16, 30]], boats: [[-40, 34], [34, 32], [44, 46]], water: [[-20, 22], [16, 40], [40, 22]], far: [[-60, -40], [50, -40], [0, -60]], roadX: 80 },
   blurb: 'Level 3: Granton, doon the harbour. 10 targets round the quay, the pier, the slipway and the gasholder. Mind the edge: the Forth keeps whit it gets.',
-  intro: "Welcome tae Granton!<br><small>That's the gasholder you can see fae Pilton. Easy first one: the Granton Square sign on the roundabout, front right. Mind the quay edge.</small>",
+  intro: "Welcome tae Granton!<br><small>That's the gasholder you can see fae Pilton. Easy first one: the Granton Square sign on the roundabout - turn right. Mind the quay edge.</small>",
   build,
   tiers: { square: 'easy', bollard: 'easy', lifebuoy: 'easy', buoy: 'easy', hmdoor: 'easy', gasframe: 'easy', purge: 'easy', creel: 'tricky', dinghy: 'tricky', hatch: 'tricky' },
-  spawn: [0, 0.5, -28], spawnYaw: 180,
+  spawn: [0, 0.5, -28], spawnYaw: 118, /* v2.9.1: open on the gasholder + harbour */
   ballHomes: () => [[0.3, 0.4, -25.6], [16, 0.4, 23], [-24, 0.4, -6]],
   bounds: { x: 58, zMin: -46, zMax: 64 },
   sea: { y: -1.7, lines: ["Splash! That's in the Forth. Fife's keepin' it - here's another.", "Ower the edge! The seals say ta. Fresh ba' at your feet.", "In the harbour. The tide's no' bringin' that back. New ball's oot."] },

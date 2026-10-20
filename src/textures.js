@@ -337,3 +337,17 @@ export function castleFaceTexture() {
   region(1024 * 0.75, 512, 256, 512, () => {}); // plain rubble
   const t = canvasTex(c, false); t.generateMipmaps = true; return (v2Cache.castle = t);
 }
+
+// v2.9.1: grey precast concrete slabs (2x2 per repeat): per-slab tone, speckled aggregate, dark joints, chips and stains
+export function slabTexture() {
+  if (v2Cache.slab) return v2Cache.slab;
+  const S = 256, [c, g] = canvas(S, S), r = rng(77), n = 2, s = S / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 168 + r() * 26 | 0; g.fillStyle = `rgb(${v},${v},${v - 3})`; g.fillRect(i * s, j * s, s, s);
+    const gr = g.createLinearGradient(i * s, j * s, i * s + s, j * s + s); gr.addColorStop(0, 'rgba(255,255,255,.06)'); gr.addColorStop(1, 'rgba(0,0,0,.08)'); g.fillStyle = gr; g.fillRect(i * s, j * s, s, s); }
+  for (let k = 0; k < 7000; k++) { const v = 110 + r() * 120 | 0; g.fillStyle = `rgba(${v},${v},${v},.45)`; g.fillRect(r() * S, r() * S, 1 + r(), 1 + r()); }
+  for (let k = 0; k < 5; k++) { const x = r() * S, y = r() * S, rr = 10 + r() * 26, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(70,68,62,.22)'); gr.addColorStop(1, 'rgba(70,68,62,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+  g.fillStyle = 'rgba(52,52,50,.85)'; for (let i = 0; i <= n; i++) { g.fillRect(i * s - 2, 0, 4, S); g.fillRect(0, i * s - 2, S, 4); }
+  g.fillStyle = 'rgba(230,230,226,.35)'; for (let i = 0; i < n; i++) { g.fillRect(i * s + 2, 0, 1, S); g.fillRect(0, i * s + 2, S, 1); } // arris highlight
+  for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(60,60,58,.5)'; const x = (r() * n | 0) * s + (r() < 0.5 ? 2 : s - 8), y = r() * S; g.fillRect(x, y, 5 + r() * 4, 3 + r() * 4); } // chipped edges
+  return (v2Cache.slab = canvasTex(c, true));
+}

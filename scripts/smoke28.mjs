@@ -5,7 +5,7 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const URL = process.argv[2] || 'http://localhost:4199/', OUT = process.argv[3] || '';
 let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const VIEWS = { grassmarket: [['castle', [8, -19, 175, 24]], ['square', [55, -12, 100, 3]], ['victoria', [-57.5, 21, 172, 10]], ['vic-up', [-58, 30, 160, 12]], ['memorial', [-44, -6, 60, -25]], ['pub', [-35, 14, 200, -2]], ['phonebox', [-45.5, 17.6, 200, -6]], ['close', [30, -14, 0, 0]], ['north', [0, 10, 180, 30]]],
-  granton: [['spawn', [0, -28, 180, -5]], ['gasholder', [-18, -6, 52, 12]], ['purge', [-14, -6, 56, -10]], ['square', [0, -12, 0, 6]], ['harbour', [-20, 15, 180, 2]], ['pier', [16, 22, 180, 3]], ['slipway', [-27, 12, 180, -10]]],
+  granton: [['spawn', [0, -28, 118, 6]], ['spawn-old', [0, -28, 180, -5]], ['gasholder', [-8, -30, 105, 16]], ['purge', [-14, -6, 56, -10]], ['square', [0, -12, 0, 6]], ['harbour', [-20, 15, 180, 2]], ['pier', [16, 22, 180, 3]], ['slipway', [-24.5, 17, 168, -14]]],
   pilton: [['flats', [-2, -30, 225, 2]], ['parade', [0, 16, 180, 6]], ['spawn', [0, -38, 180, -8]], ['skyline', [0, 0, 0, 2]]] };
 const black = (buf) => new Promise(() => {});
 for (const preset of (process.argv[4] || 'low,medium,high').split(',')) {
