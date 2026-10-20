@@ -103,7 +103,7 @@ function cell(g, i) {
 // ---------- sign atlas: all signs, plaques and the target door share one texture ----------
 export class SignAtlas {
   constructor() {
-    this.W = PRESET.texSize <= 512 ? 1536 : 2048; this.H = this.W; this.k = this.W / 2048; // v2.3: signs stay sharp on low (k=0.75); wall/road textures unchanged
+    this.W = PRESET.texSize <= 512 ? 1536 : 2048; this.H = PRESET.texSize <= 512 ? 2048 : 2048; // v2.7: taller on low (Grassmarket signs overflowed 1536) this.k = this.W / 2048; // v2.3: signs stay sharp on low (k=0.75); wall/road textures unchanged
     [this.c, this.g] = canvas(this.W, this.H); this.x = 0; this.y = 0; this.rowH = 0;
     this.tex = canvasTex(this.c, false);
   }
@@ -226,14 +226,14 @@ export function harlTexture() {
 const v2Cache = {};
 function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) / 2147483647); }
 // Warm pebbledash: chunky light/dark pebbles over a cream base. Tinted per building with vertex colours.
-export function harlTextureV2() {
+export function harlTextureV2() { // v2.7: grey pebbledash (West Pilton flats), stays light so vertex colour can tint it
   if (v2Cache.harl) return v2Cache.harl;
   const S = 256, [c, g] = canvas(S, S), r = rng(11);
-  g.fillStyle = '#efe6d4'; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 2600; i++) { const x = r() * S, y = r() * S, s = 0.8 + r() * 2.2, v = r();
-    g.fillStyle = v < 0.45 ? `rgba(120,108,90,${0.25 + r() * 0.3})` : v < 0.8 ? `rgba(255,250,238,${0.5 + r() * 0.4})` : `rgba(170,150,120,${0.3 + r() * 0.3})`;
+  g.fillStyle = '#e4e2dc'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 7000; i++) { const x = r() * S, y = r() * S, s = 0.6 + r() * 1.6, v = r();
+    g.fillStyle = v < 0.4 ? `rgba(90,88,84,${0.2 + r() * 0.3})` : v < 0.75 ? `rgba(255,255,252,${0.5 + r() * 0.4})` : `rgba(140,130,118,${0.35 + r() * 0.3})`;
     g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
-  g.globalAlpha = 0.07; g.fillStyle = '#4a4238'; for (let i = 0; i < 30; i++) g.fillRect(r() * S, r() * S * 0.4, 1 + r() * 2, 50 + r() * 140); // rain streaks
+  g.globalAlpha = 0.08; g.fillStyle = '#3a3630'; for (let i = 0; i < 30; i++) g.fillRect(r() * S, r() * S * 0.4, 1 + r() * 2, 50 + r() * 140); // rain streaks
   g.globalAlpha = 1; return (v2Cache.harl = canvasTex(c, true));
 }
 // Brick: muted brick courses with lime mortar, a few darker/lighter bricks.
@@ -271,3 +271,17 @@ export function tarmacTexture() {
   g.strokeStyle = 'rgba(30,30,28,.4)'; g.lineWidth = 1.2; for (let i = 0; i < 4; i++) { let x = r() * S, y = r() * S; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 30; y += r() * 18; g.lineTo(x, y); } g.stroke(); }
   return (v2Cache.tarmac = canvasTex(c, true));
 }
+
+// v2.7: soft weathering decals (2x2 atlas): 0 ground blotch, 1 oil/damp stain, 2 vertical wall streaks, 3 kerb-edge dirt
+export function grimeTexture() {
+  if (v2Cache.grime) return v2Cache.grime;
+  const S = 256, H = S / 2, [c, g] = canvas(S, S), r = rng(77);
+  const blot = (ox, oy, n, col) => { for (let i = 0; i < n; i++) { const x = ox + H / 2 + (r() - 0.5) * H * 0.6, y = oy + H / 2 + (r() - 0.5) * H * 0.6, rr = 6 + r() * 26;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, col.replace('A', (0.10 + r() * 0.14).toFixed(2))); gr.addColorStop(1, col.replace('A', '0')); g.fillStyle = gr; g.fillRect(ox, oy, H, H); } };
+  g.save(); g.beginPath(); g.rect(0, 0, H, H); g.clip(); blot(0, 0, 26, 'rgba(40,34,26,A)'); g.restore();
+  g.save(); g.beginPath(); g.rect(H, 0, H, H); g.clip(); blot(H, 0, 14, 'rgba(20,20,22,A)'); g.restore();
+  for (let i = 0; i < 40; i++) { const x = r() * H, w = 1 + r() * 5, len = H * (0.3 + r() * 0.7); const gr = g.createLinearGradient(0, H, 0, H + len); gr.addColorStop(0, `rgba(45,40,34,${0.18 + r() * 0.2})`); gr.addColorStop(1, 'rgba(45,40,34,0)'); g.fillStyle = gr; g.fillRect(x, H, w, len); }
+  { const gr = g.createLinearGradient(0, S, 0, H + H * 0.4); gr.addColorStop(0, 'rgba(38,34,28,.35)'); gr.addColorStop(1, 'rgba(38,34,28,0)'); g.fillStyle = gr; g.fillRect(H, H, H, H); }
+  return (v2Cache.grime = canvasTex(c, true));
+}
+export const GRIME_UV = [[0.002, 0.502, 0.498, 0.998], [0.502, 0.502, 0.998, 0.998], [0.002, 0.002, 0.498, 0.498], [0.502, 0.002, 0.998, 0.498]];

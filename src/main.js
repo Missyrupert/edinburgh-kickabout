@@ -23,13 +23,14 @@ let resScale = 1, dynResOn = DYNRES;
 renderer.setPixelRatio(basePixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = P.shadows;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // v2.7: softer shadow edges
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = P.pbr ? 1.05 : 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-const HAZE = 0xd8d0c0; // v2.0: warmer, softer haze
+const HAZE = 0xdcc9ad; // v2.7: late-afternoon haze
+const _HAZE_OLD = 0xd8d0c0; // v2.0: warmer, softer haze
 scene.fog = new THREE.Fog(HAZE, 50, P.fogFar);
 // Sky: CC0 Poly Haven kloofendal_48d_partly_cloudy_puresky (tonemapped WebP backdrop; the 1K HDR is only loaded on "high" for reflections).
 scene.background = skyTexture(); scene.backgroundIntensity = 0.95;
@@ -48,13 +49,13 @@ function fitFov() { const a = innerWidth / innerHeight, minH = 56 * Math.PI / 18
 fitFov();
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-scene.add(new THREE.HemisphereLight(0xf2e6cf, 0x75604a, P.pbr ? 1.0 : 1.4));
-const sun = new THREE.DirectionalLight(0xffd3a1, P.pbr ? 2.6 : 2.2); // warm, lowish sun from the south-west
-const SUN_OFF = new THREE.Vector3(18, 38, -55);
+scene.add(new THREE.HemisphereLight(0xf0dcc0, 0x6e5a46, P.pbr ? 1.05 : 1.45));
+const sun = new THREE.DirectionalLight(0xffc68a, P.pbr ? 2.5 : 2.1); // warm, lowish sun from the south-west
+const SUN_OFF = new THREE.Vector3(26, 30, -55); // lower, late-afternoon sun
 if (P.shadows) {
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 160 });
-  sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
+  sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 3;
 }
 scene.add(sun, sun.target);
 addEventListener('resize', () => { fitFov(); renderer.setSize(innerWidth, innerHeight); });
@@ -673,7 +674,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.6';
+const BUILD = 'v2.7';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

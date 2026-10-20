@@ -7,13 +7,13 @@ import { roofPrism } from './batch.js';
 // Palace + tower, War Memorial behind), the Half Moon Battery drum and the gatehouse/Esplanade to the east.
 // In this world +x is west (screen-left when facing the castle) and east is -x.
 // Everything goes into two batches: 'castleRock' (vertex-coloured, flags too) and 'castleStone' (sandstone).
-export function buildCastle(B, CX, CZ, rand, up = 30) {
+export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
   const E = (lx) => CX + 16 + lx; // lx: local x; +lx = west (screen-left), -lx = east (screen-right)
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const UP = up; // lift: the rock must dominate the view from the square below
   const M4 = (x, y0, z, sx, sy, sz, ry = 0, rx = 0, rz = 0) => new THREE.Matrix4().compose(V(x, y0 + UP, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'YXZ')), V(sx, sy, sz));
   const BOX = new THREE.BoxGeometry(1, 1, 1), ROOF = roofPrism();
-  const STONE = [0xe2c393, 0xd8b787, 0xcdac7e, 0xe6c99c], SLATE = 0x5c6066, DARK = 0x6e6252;
+  const STONE = [0x9a9c9e, 0x8c8e90, 0xa4a2a0, 0x86888a] /* v2.7: greyer, browner */, SLATE = 0x5c6066, DARK = 0x6e6252;
   const tint = () => STONE[Math.floor(rand() * STONE.length)];
   const box = (lx, y0, lz, w, h, d, c = tint()) => B.add('castleStone', BOX, M4(E(lx), y0 + h / 2, CZ + lz, w, h, d), c, { tile: 7 });
   const roof = (lx, y0, lz, len, wid, h, c = SLATE) => B.add('castleStone', ROOF, M4(E(lx), y0, CZ + lz, wid, h, len, Math.PI / 2), c, { tile: 7 });
@@ -28,22 +28,25 @@ export function buildCastle(B, CX, CZ, rand, up = 30) {
   // ---- Castle Rock: faceted heightfield, dark basalt cliffs with green scrub on the gentler slopes ----
   const T = [[-110, 18], [-92, 28], [-58, 33], [-44, 36], [-32, 44], [20, 44], [27, 38], [64, 37], [78, 26], [90, 6], [100, -6]];
   const top = (lx) => { for (let i = 1; i < T.length; i++) if (lx <= T[i][0]) { const [a, ya] = T[i - 1], [b, yb] = T[i]; const t = THREE.MathUtils.smoothstep(lx, a, b); return ya + (yb - ya) * t; } return -6; };
-  const BASE = -6, W = 34, NX = 52, NZ = 18, LX0 = -110, LX1 = 100;
+  const BASE = -6, W = 34, LX0 = opt.lx0 ?? -110, LX1 = opt.lx1 ?? 100, RUG = opt.rug ?? 1, NX = Math.round((LX1 - LX0) / (RUG > 1 ? 3 : 4)), NZ = RUG > 1 ? 26 : 18;
   const hgt = (lx, lz) => {
     const t = Math.abs(lz) / W, tp = top(lx);
-    let s = 1; if (t > 0.56) s = 1 - Math.pow(Math.min(1, (t - 0.56) / 0.44), 0.55); // sharp cliff edge, scree below
-    const crag = Math.sin(lx * 0.37 + lz * 0.21) * Math.sin(lz * 0.53 - lx * 0.13) * 2.6 + Math.sin(lx * 1.1) * 0.9;
-    return BASE + (tp + UP - BASE) * s + crag * (s < 0.995 ? 1 : 0.12) * Math.min(1, (tp + UP - BASE) / 20);
+    let s = 1; if (t > 0.56) s = 1 - Math.pow(Math.min(1, (t - 0.56) / 0.44), RUG > 1 ? 0.32 : 0.55); // sharp cliff edge, scree below
+    if (RUG > 1) s *= THREE.MathUtils.smoothstep(lx, LX0, LX0 + 22) * THREE.MathUtils.smoothstep(-lx, -LX1, -LX1 + 22); // narrower rock: falls away at the ends
+    let crag = Math.sin(lx * 0.37 + lz * 0.21) * Math.sin(lz * 0.53 - lx * 0.13) * 2.6 + Math.sin(lx * 1.1) * 0.9;
+    if (RUG > 1) crag = crag * RUG + Math.sin(lx * 2.3 + lz * 1.7) * 1.4 + (Math.sin(lx * 0.8) > 0.3 ? -2.2 : 0); // broken dolerite: buttresses, gullies, ledges
+    const yy = BASE + (tp + UP - BASE) * s + crag * (s < 0.995 ? 1 : 0.12) * Math.min(1, (tp + UP - BASE) / 20);
+    return RUG > 1 && s < 0.97 ? THREE.MathUtils.lerp(yy, Math.round(yy / 5) * 5, 0.35) : yy; // stepped ledges
   };
   const g = new THREE.PlaneGeometry(LX1 - LX0, 2 * W, NX, NZ); g.rotateX(-Math.PI / 2);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const lx = p.getX(i) + (LX0 + LX1) / 2, lz = p.getZ(i);
-    const jx = (rand() - 0.5) * 2.2, jz = (rand() - 0.5) * 2.2; // break the grid
+    const jx = (rand() - 0.5) * 2.2 * RUG, jz = (rand() - 0.5) * 2.2 * RUG; // break the grid
     p.setXYZ(i, E(lx + jx), hgt(lx + jx, lz + jz), CZ + lz + jz);
   }
   const rock = g.toNonIndexed(); rock.computeVertexNormals(); // flat facets
-  const ROCK = [new THREE.Color(0x2c2c2d), new THREE.Color(0x38373a), new THREE.Color(0x45423f), new THREE.Color(0x242426)];
+  const ROCK = RUG > 1 ? [0x2a2928, 0x3a3734, 0x4a453f, 0x232322, 0x55504a].map((c) => new THREE.Color(c)) : [new THREE.Color(0x2c2c2d), new THREE.Color(0x38373a), new THREE.Color(0x45423f), new THREE.Color(0x242426)];
   const SCRUB = [new THREE.Color(0x3f5a2c), new THREE.Color(0x4d6b31), new THREE.Color(0x344a26)];
   const triCol = []; const tc = new THREE.Color();
   B.add('castleRock', rock, null, 0xffffff, { vcol: (i, x, y, z, nx, ny) => {
@@ -51,7 +54,7 @@ export function buildCastle(B, CX, CZ, rand, up = 30) {
       const r = rand();
       if (ny > 0.82 && y > 20 + UP) tc.copy(SCRUB[Math.floor(r * 3)]).lerp(ROCK[1], 0.25);
       else if (ny > 0.62 || (ny > 0.38 && r < 0.22)) tc.copy(r < 0.6 ? SCRUB[Math.floor(r * 5) % 3] : ROCK[2]);
-      else tc.copy(ROCK[Math.floor(r * 4)]);
+      else tc.copy(ROCK[Math.floor(r * ROCK.length)]);
       if (y < 6) tc.lerp(SCRUB[2], 0.45); // trees / gardens at the foot
       triCol[tri] = tc.clone();
     }

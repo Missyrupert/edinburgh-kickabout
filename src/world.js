@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from './batch.js';
 import { buildCastle } from './castle.js';
-import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps } from './textures.js';
+import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps , grimeTexture } from './textures.js';
 
 // Layout (metres). Lower street (Grassmarket-style) runs along +Z, z -50..30.
 // At z=30 the street BENDS right by BEND.yaw and climbs (Victoria-Street-style) 3.6 m over 20 m
@@ -479,6 +479,7 @@ export function makeMaterials(P, facadeTex, atlasTex) {
     paving: mk({ ...pbrMaps('paving') }),
     wood: mk({ ...pbrMaps('wood', { normal: false }) }),
     atlas: mk({ map: atlasTex, roughness: 0.7 }),
+    grime: mk({ map: grimeTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), // v2.7 weathering decals
     // distant castle: lighter, partial haze (fog distance scaled) so it reads as far away but stays legible
     castleRock: hazed(mk({ side: THREE.DoubleSide }), 0.5),
     castleStone: hazed(mk({ ...pbrMaps('sandstone', { normal: false }) }), 0.5),

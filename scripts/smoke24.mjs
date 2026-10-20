@@ -5,7 +5,7 @@ const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
 await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
 await pg.evaluate(() => { localStorage.removeItem('ek-sound'); localStorage.removeItem('ek-vol'); }); await pg.reload(); await pg.waitForFunction(() => window.__game);
-ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.6'), 'label v2.6');
+ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.7'), 'label v2.7');
 ok(await pg.evaluate(() => __game.sfx.ctx === null), 'no AudioContext before Play');
 await pg.click('#startBtn'); await pg.waitForTimeout(600);
 const st = await pg.evaluate(() => __game.sfx.ctx && __game.sfx.ctx.state); ok(st === 'running', 'AudioContext created + running after Play (' + st + ')');

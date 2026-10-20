@@ -2,7 +2,7 @@ import { chromium } from 'playwright-core';
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
-const pg = await ctx.newPage(); pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+const pg = await ctx.newPage(); pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
 const EXP = { pilton: [0, -38], grassmarket: [3, -10] };
 const check = async (want, how) => { await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
   const r = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position } })); const [ex, ez] = EXP[want];
