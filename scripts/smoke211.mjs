@@ -5,7 +5,7 @@ for (const [W, H] of [[915, 412], [800, 360], [740, 320]]) {
   const ctx = await b.newContext({ viewport: { width: W, height: H }, hasTouch: true, isMobile: true });
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message));
   await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
-  ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.4'), `${W}x${H} label`);
+  ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.5'), `${W}x${H} label`);
   const fits = async (sel) => pg.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }, sel);
   ok(await fits('#mainPanel'), `${W}x${H} welcome fits`);
   for (const p of ['settingsBtn', 'helpBtn', 'lockerBtn']) { await pg.click('#' + p); await pg.waitForTimeout(150); const panel = p.replace('Btn', 'Panel');

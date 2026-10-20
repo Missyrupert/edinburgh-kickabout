@@ -170,7 +170,7 @@ function build(scene, world, mats, P) {
   cyl('metal', 7.3, 0.4, -40, 0.03, 0.03, 0.8, 0x333333, { phys: false, seg: 4 });
   // boundary: hedges + fences (and invisible walls so you can't wander off the map)
   solid('flat', 0, 0.6, -47, 60, 1.2, 1, 0x3e5a2c); solid('flat', 28, 0.6, -10, 1, 1.2, 74, 0x3e5a2c); solid('flat', -28, 0.6, -10, 1, 1.2, 74, 0x3e5a2c);
-  for (const [x, z, w, d] of [[0, -47, 60, 1], [28, -10, 1, 74], [-28, -10, 1, 74], [0, 43, 60, 1]]) boxBody(x, 3, z, w, 6, d);
+  for (const [x, z, w, d] of [[0, -47, 60, 1], [28, -2, 1, 90], [-28, -2, 1, 90], [0, 43, 60, 1]]) boxBody(x, 3, z, w, 6, d); // v2.5: side walls now reach the back wall (z 27-43 gap let you walk out to the Forth)
   solid('flat', -21, 0.6, 33, 14, 1.2, 1, 0x3e5a2c); solid('flat', 21, 0.6, 33, 14, 1.2, 1, 0x3e5a2c);
 
   // ---------- distant views: Forth, Fife, gasholder frame, the tower blocks ----------

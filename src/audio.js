@@ -65,6 +65,7 @@ export class Sfx {
     switch (surf) {
       case 'grass': this.noise(t, 0.07 * k, 2400 * j, 0.6, 0.06 * k, 'highpass'); this.tone(t, 70, 45, 0.05, 0.03 * k); break; // soft swish
       case 'puddle': this.noise(t, 0.12, 1800 * j, 0.8, 0.12 * k); this.noise(t + 0.03, 0.08, 3500 * j, 1.5, 0.06 * k); break; // splash
+      case 'setts': this.noise(t, 0.035, 1700 * j, 1.6, 0.1 * k); this.noise(t + 0.03 + Math.random() * 0.02, 0.025, 2300 * j, 2, 0.05 * k); this.tone(t, 140 * j, 80, 0.035, 0.05 * k); break; // knocky double tap on granite setts
       case 'paving': this.noise(t, 0.045, 1300 * j, 1.0, 0.11 * k); this.tone(t, 120 * j, 70, 0.04, 0.05 * k); break; // flag slap, slightly hollow
       default: this.noise(t, 0.05, 900 * j, 0.8, 0.1 * k, 'lowpass'); this.tone(t, 95 * j, 60, 0.045, 0.045 * k); // tarmac: dull grit
     }
@@ -80,8 +81,9 @@ export class Sfx {
       case 'glass': this.tone(t, 190 * j, 90, 0.06, 0.04 + A * 0.3, 'sine', node); [2900, 4100].forEach((f) => this.tone(t, f * j, f * j * 0.995, 0.25, 0.03 * A + 0.005, 'sine', node)); return; // bus-stop panel
       case 'garage': this.tone(t, 160 * j, 70, 0.07, 0.05 + A * 0.35, 'sine', node); for (let i = 0; i < 4; i++) this.noise(t + 0.015 + i * 0.045, 0.06, 1200 + i * 300, 2.5, A * (0.22 - i * 0.04), 'bandpass', node); this.tone(t, 330 * j, 310, 0.4, 0.03 * A, 'triangle', node); return; // up-and-over door rattle
     }
-    this.tone(t, (surf === 'tarmac' || surf === 'paving' ? 210 : 170) * j, 80, 0.08, 0.05 + A * 0.38, 'sine', node);
-    this.noise(t, 0.035 + a * 0.03, surf === 'tarmac' ? 1600 : 1100, 1.4, A * (surf === 'tarmac' ? 0.22 : 0.3), 'bandpass', node);
+    this.tone(t, (surf === 'tarmac' || surf === 'paving' || surf === 'setts' ? 210 : 170) * j, 80, 0.08, 0.05 + A * 0.38, 'sine', node);
+    this.noise(t, 0.035 + a * 0.03, surf === 'tarmac' ? 1600 : surf === 'setts' ? 2000 : 1100, 1.4, A * (surf === 'tarmac' ? 0.22 : 0.3), 'bandpass', node);
+    if (surf === 'setts') this.noise(t + 0.025, 0.03, 2600 * j, 2, A * 0.12, 'bandpass', node); // rattle over the joints
     if (surf === 'metal') { [690 * j, 1470 * j, 2380 * j].forEach((f, i) => this.tone(t + i * 0.012, f, f * 0.99, 0.35 - i * 0.08, 0.05 * A + 0.01, 'triangle', node)); this.noise(t + 0.02, 0.08, 4200, 3, A * 0.12, 'bandpass', node); }
   }
   clang() { if (!this.ok) return; const t = this.ctx.currentTime; [523, 1307, 2210].forEach((f, i) => this.tone(t, f, f * 0.98, 0.6 - i * 0.15, 0.1, 'triangle')); }
@@ -120,8 +122,11 @@ export class Sfx {
     const c = this.ctx, S = spots || {};
     // low wind + distant traffic bed: quieter than v2.1 so the street feels calm
     const bed = (freq, gain, off) => { const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq; const g = c.createGain(); g.gain.value = gain; s.connect(f).connect(g).connect(this.amb); s.start(0, off); return f; };
-    const wf = bed(450, 0.025, 0); const lfo = c.createOscillator(); lfo.frequency.value = 0.07; const lg = c.createGain(); lg.gain.value = 220; lfo.connect(lg).connect(wf.frequency); lfo.start();
-    bed(110, 0.045, 1.1);
+    if (S.oldtown) { // v2.5 Old Town: no howling wind; a low city hum + a soft murmur of people, all quiet
+      bed(260, 0.008, 0); bed(140, 0.05, 1.1);
+      const mf = bed(700, 0.006, 0.6); mf.type = 'bandpass'; mf.Q.value = 0.8; } else {
+      const wf = bed(450, 0.025, 0); const lfo = c.createOscillator(); lfo.frequency.value = 0.07; const lg = c.createGain(); lg.gain.value = 220; lfo.connect(lg).connect(wf.frequency); lfo.start();
+      bed(110, 0.045, 1.1); }
     if (S.fryer) this.addLoop({ ...S.fryer, ref: 3, peak: 0.07, build: (out) => { // chippy: fryer sizzle + extractor hum
       const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3500; const sg = c.createGain(); sg.gain.value = 0.5;
       const am = c.createOscillator(); am.frequency.value = 7.3; const amg = c.createGain(); amg.gain.value = 0.25; am.connect(amg).connect(sg.gain); am.start(); s.connect(hp).connect(sg).connect(out); s.start(0, 0.4);
@@ -129,9 +134,11 @@ export class Sfx {
       const h2 = c.createOscillator(); h2.frequency.value = 147; const h2g = c.createGain(); h2g.gain.value = 0.12; h2.connect(h2g).connect(out); h2.start(); } });
     const pick = (a) => a && a.length ? a[Math.floor(Math.random() * a.length)] : [undefined, undefined];
     const every = (min, max, fn) => { const go = () => { fn(); this.timers.push(setTimeout(go, min + Math.random() * (max - min))); }; this.timers.push(setTimeout(go, min * 0.5 + Math.random() * min)); };
-    every(5000, 12000, () => this.bird(...pick(S.birds)));
+    if (S.oldtown) { every(9000, 20000, () => this.voices2(...pick(S.far))); every(16000, 30000, () => this.bird(...pick(S.birds))); every(6000, 14000, () => this.coo(...pick(S.birds))); }
+    else every(5000, 12000, () => this.bird(...pick(S.birds)));
     every(14000, 28000, () => { const [x, z] = pick(S.gulls || S.birds); this.gull(x, z); });
     every(10000, 22000, () => this.carPass(S.roadX ?? -40));
     every(40000, 90000, () => (Math.random() < 0.5 ? this.dog(...pick(S.far)) : this.voices2(...pick(S.far))));
+    this.ambience = S.oldtown ? 'oldtown' : 'scheme';
   }
 }

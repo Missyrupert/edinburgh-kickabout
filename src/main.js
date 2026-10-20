@@ -493,7 +493,7 @@ function checkZones(now) {
 
 // ---------- fixed-timestep simulation (independent of frame rate) ----------
 const FIXED = 1 / 120, MAX_STEPS = 15; // 120 Hz: a 20 m/s ball must not sink into kerbs
-let simTime = 0, acc = 0, autopilot = null;
+let simTime = 0, acc = 0, autopilot = null, respawns = 0;
 const prevPlayer = new THREE.Vector3().copy(player.position);
 let moveInput = { x: 0, y: 0, run: false };
 function fixedUpdate(h) {
@@ -534,7 +534,8 @@ function fixedUpdate(h) {
     if (rayRes.hasHit) { const d = 1 - 0.9 * h; b.body.velocity.x *= d; b.body.velocity.z *= d; }
     if (p.y < -3 || Math.abs(p.x) > BOUNDS.x + 15 || p.z < BOUNDS.zMin - 10 || p.z > BOUNDS.zMax + 10) { p.copy(b.home); b.body.velocity.setZero(); b.prevP.copy(b.home); toast('Ball lost ower the wall - it\'s back where you found it.', 1800); }
   }
-  if (player.position.y < -3) { player.position.copy(PLAYER_SPAWN); player.velocity.setZero(); }
+  { const p = player.position; // v2.5: never lose the player - below ground or outside the level bounds -> back to the spawn
+    if (p.y < -3 || Math.abs(p.x) > BOUNDS.x + 2 || p.z < BOUNDS.zMin - 2 || p.z > BOUNDS.zMax + 2) { p.copy(PLAYER_SPAWN); player.velocity.setZero(); prevPlayer.copy(p); yaw = SPAWN_YAW; respawns++; } }
   checkZones(now);
   checkCounter();
 }
@@ -657,7 +658,7 @@ window.__game = {
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
   placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  sfx, surfaceAt, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
+  sfx, surfaceAt, get respawns() { return respawns; }, spawn: PLAYER_SPAWN, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests
@@ -665,7 +666,8 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.4';
+const BUILD = 'v2.5';
+addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
 }).catch(() => {});

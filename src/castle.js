@@ -10,10 +10,10 @@ import { roofPrism } from './batch.js';
 export function buildCastle(B, CX, CZ, rand) {
   const E = (lx) => CX + 16 + lx; // lx: local x; +lx = west (screen-left), -lx = east (screen-right)
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const UP = 14; // lift: the rock should dominate, as from the Grassmarket
+  const UP = 30; // v2.5: lifted so the Castle dominates the view up the street // lift: the rock should dominate, as from the Grassmarket
   const M4 = (x, y0, z, sx, sy, sz, ry = 0, rx = 0, rz = 0) => new THREE.Matrix4().compose(V(x, y0 + UP, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'YXZ')), V(sx, sy, sz));
   const BOX = new THREE.BoxGeometry(1, 1, 1), ROOF = roofPrism();
-  const STONE = [0xc9b89a, 0xbfae90, 0xb4a487, 0xc4b496], SLATE = 0x5c6066, DARK = 0x6e6252;
+  const STONE = [0xe2c393, 0xd8b787, 0xcdac7e, 0xe6c99c], SLATE = 0x5c6066, DARK = 0x6e6252;
   const tint = () => STONE[Math.floor(rand() * STONE.length)];
   const box = (lx, y0, lz, w, h, d, c = tint()) => B.add('castleStone', BOX, M4(E(lx), y0 + h / 2, CZ + lz, w, h, d), c, { tile: 7 });
   const roof = (lx, y0, lz, len, wid, h, c = SLATE) => B.add('castleStone', ROOF, M4(E(lx), y0, CZ + lz, wid, h, len, Math.PI / 2), c, { tile: 7 });

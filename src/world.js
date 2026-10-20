@@ -121,9 +121,9 @@ export function buildWorld(scene, world, mats, P) {
   const ground = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() });
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(ground);
   B.add('paving', QUAD, M4(0, -0.01, 0, 300, 300, 1, -Math.PI / 2), 0x9d968b, { tile: 2.4 });
-  B.add('cobble', QUAD, M4(0, 0.005, -10, 9.1, 80, 1, -Math.PI / 2), 0xd8d2c8, { tile: 1.8 });
+  B.add('cobble', QUAD, M4(0, 0.005, -10, 9.1, 80, 1, -Math.PI / 2), 0xc6c4be, { tile: 1.8 }); // v2.5 granite-grey setts
   for (const s of [-1, 1]) {
-    B.add('paving', QUAD, M4(s * 5.85, PAVE, -10, 2.3, 80, 1, -Math.PI / 2), 0xd4cdc0, { tile: 1.5 });
+    B.add('paving', QUAD, M4(s * 5.85, PAVE, -10, 2.3, 80, 1, -Math.PI / 2), 0xd9cfbd, { tile: 1.5 }); // flagstones
     solid('stone', s * 4.6, PAVE / 2, -10, 0.3, PAVE + 0.02, 80, 0xa49c90, { phys: false, tile: 1 }); // kerbstones
     const pv = new CANNON.Body({ mass: 0, material: mats.kerb, shape: new CANNON.Box(new CANNON.Vec3(1.125, 0.55, 40)) });
     pv.position.set(s * 5.875, PAVE - 0.55, -10); world.addBody(pv);
@@ -196,24 +196,48 @@ export function buildWorld(scene, world, mats, P) {
 
   // ---------- shopfronts (painted timber, gold lettering) ----------
   const shops = [
-    ['W', -46, -40, 'THE LAST DRAP', '#1d3b2a'], ['W', -30.5, -25, 'TARTAN TAT & TABLET', '#5b1b2a'],
-    ['W', -22, -14, 'HAGGIS EMPORIUM', '#1e2c4f'], ['W', 6, 14, 'BOOKS & BAWBEES', '#3a2a1a', 0, 6.75],
-    ['E', -49, -43, 'THE WEE CHIPPY', '#0f3d5c'], ['E', -32, -26, 'IRN AGE CAFE', '#9a4a12', 0, 6.75],
-    ['E', 1, 9, "MACKAY'S BAKERY", '#2f4a2a'], ['E', 12, 18, 'TABLET & TEA', '#5b1b2a'],
+    ['W', -46, -40, 'THE LAST DRAP', '#1d3b2a', 0, 7, 'pub'], ['W', -30.5, -25, 'FLEMING & DAUGHTER', '#5b1b2a', 0, 7, 'iron'],
+    ['W', -22, -14, 'THE BOW BARBER', '#1e2c4f', 0, 7, 'barber'], ['W', 6, 14, 'BOOKS & BAWBEES', '#3a2a1a', 0, 6.75, 'books'],
+    ['E', -49, -43, 'THE WEST PORT FISH BAR', '#0f3d5c', 0, 7, 'cafe'], ['E', -32, -26, 'THE CORN EXCHANGE CAFE', '#C77B2E', 0, 6.75, 'cafe'],
+    ['E', 1, 9, "MACKAY'S BAKERY", '#2f4a2a', 0, 7, 'bakery'], ['E', 12, 18, 'THE HALF MOON', '#5b1b2a', 0, 7, 'pub'],
   ];
   const northShops = [ // Victoria Street: famously colourful
-    ['W', 1.5, 5.5, 'WITCHERY WOOLS', '#3b2350'], ['W', 6, 9.5, 'WEE WIZARD WANDS', '#b8322a'], ['W', 11, 15, 'CANDLEMAKER', '#1d5c3a'], ['W', 15.5, 19, 'CHEESE & CHUCKLES', '#d9a520'],
-    ['E', 1, 5, 'BRUSH & BROGUE', '#1f4f8f'], ['E', 5.5, 9.5, 'THE SPORRAN SHOP', '#8a2a5a'], ['E', 11, 14.5, 'KILTS-R-US', '#2a6f6f'], ['E', 15, 19, 'PURE DEAD BRILLIANT', '#c4572a'],
+    ['W', 1.5, 5.5, 'PAPER & PRESS', '#3b2350'], ['W', 6, 9.5, 'BOW CHEESE CO.', '#b8322a'], ['W', 11, 15, 'CANDLEMAKER', '#1d5c3a'], ['W', 15.5, 19, 'THE MAP ROOM', '#d9a520'],
+    ['E', 1, 5, 'BRUSH & BROGUE', '#1f4f8f'], ['E', 5.5, 9.5, 'OLD TOWN RECORDS', '#8a2a5a'], ['E', 11, 14.5, 'HOOK & LINE', '#2a6f6f'], ['E', 15, 19, 'PURE DEAD BRILLIANT', '#c4572a'],
   ];
-  function shopfront(side, z0, z1, name, col, yb = 0, fronts = 7) {
+  // v2.5: shop-window displays drawn once per kind into the sign atlas and reused
+  const dispCache = {};
+  const DISP = { pub: ['#3a2416', '#c88a3a', '#e8c070'], iron: ['#3c3f42', '#8a8f94', '#c9a46a'], barber: ['#e8e4dc', '#b02a2a', '#2a4ab0'], books: ['#3a2a1a', '#7a3a2a', '#c9a46a'], cafe: ['#efe3c8', '#C77B2E', '#7a4a2a'], bakery: ['#f2e6cc', '#c88a3a', '#e8d2a0'], shop: ['#e8e2d4', '#2E9C8F', '#9A4E3C'] };
+  const display = (kind) => (dispCache[kind] ||= atlas.draw(256, 192, (g, w, h) => { const [bg, a, b2] = DISP[kind] || DISP.shop;
+    g.fillStyle = bg; g.fillRect(0, 0, w, h); const lit = g.createRadialGradient(w / 2, h * 0.3, 10, w / 2, h * 0.3, w * 0.7); lit.addColorStop(0, 'rgba(255,230,170,.45)'); lit.addColorStop(1, 'rgba(255,230,170,0)'); g.fillStyle = lit; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 3; r++) { g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(8, 40 + r * 50, w - 16, 4); for (let i = 0; i < 9; i++) { g.fillStyle = (i + r) % 3 ? a : b2; const hh = 14 + ((i * 7 + r * 3) % 4) * 6; g.fillRect(14 + i * 26, 40 + r * 50 - hh, 18, hh); } }
+    if (kind === 'barber') for (let y = 0; y < h; y += 16) { g.fillStyle = (y / 16) % 2 ? '#b02a2a' : '#fff'; g.fillRect(w - 22, y, 14, 8); }
+    const sh = g.createLinearGradient(0, 0, w, h); sh.addColorStop(0, 'rgba(255,255,255,.2)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); g.fillStyle = sh; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#2E2F2C'; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8); }));
+  const hangingBasket = (x, y, z) => { solid('metal', x, y + 0.35, z, 0.02, 0.5, 0.02, 0x1c1f22, { phys: false }); B.add('flat', new THREE.IcosahedronGeometry(0.3, 0), M4(x, y, z, 1, 0.75, 1), 0x4a7a3a, { frame: FR });
+    for (let k = 0; k < 5; k++) B.add('flat', BOX, M4(x + Math.cos(k * 1.3) * 0.26, y + 0.05 + (k % 2) * 0.08, z + Math.sin(k * 1.3) * 0.26, 0.1, 0.1, 0.1), [0xc62d4a, 0xf2c94c, 0xe86fb0, 0xffffff, 0x8a4ac6][k], { frame: FR }); };
+  function shopfront(side, z0, z1, name, col, yb = 0, fronts = 7, kind = 'shop') {
     const s = side === 'W' ? -1 : 1, x = s * (fronts - 0.06), len = z1 - z0, zc = (z0 + z1) / 2, c = new THREE.Color(col);
     solid('wood', x, yb + 1.55, zc, 0.12, 3.1 + (yb ? 0.8 : 0), len, c, { phys: false, tile: 1.2 });
     solid('glass', x - s * 0.04, yb + 1.55, zc - len * 0.12, 0.08, 1.7, len * 0.55, 0xffffff, { phys: false });
     solid('wood', x - s * 0.08, yb + 0.35, zc, 0.06, 0.12, len - 0.2, c.clone().multiplyScalar(0.7), { phys: false });
     solid('wood', x - s * 0.1, yb + 2.85, zc, 0.12, 0.7, len + 0.1, c.clone().multiplyScalar(0.8), { phys: false });
     { const sw = Math.min(len - 0.3, 5.5); quad('atlas', x - s * 0.17, yb + 2.85, zc, sw, 0.6, -s * Math.PI / 2, atlas.fascia(name, null, col, '#f1d98a', sw / 0.6)); } // v2.0 painted fascia
+    quad('atlas', x - s * 0.09, yb + 1.55, zc - len * 0.12, len * 0.53, 1.6, -s * Math.PI / 2, display(kind)); // v2.5 lit window display
+    if (kind === 'pub' || kind === 'cafe' || kind === 'bakery') solid('flat', x - s * 0.55, yb + 2.42, zc, 1.0, 0.04, len - 0.4, new THREE.Color(col).lerp(new THREE.Color(0xefe3c8), 0.25), { phys: false, rz: s * 0.28 }); // canvas awning
+    if (kind === 'pub') { solid('metal', x - s * 0.4, yb + 3.55, z0 + 0.4, 0.7, 0.04, 0.04, 0x1c1f22, { phys: false }); hangingBasket(x - s * 0.7, yb + 3.05, z0 + 0.4); }
   }
   for (const sp of shops) shopfront(...sp);
+  // ---------- v2.5 clutter (small props: no colliders; barrels/memorial: simple colliders, off the main lines) ----------
+  for (const [x, z] of [[-6.55, -40.6], [-6.55, -39.9], [6.5, 12.6]]) { cyl('wood', x, PAVE + 0.45, z, 0.3, 0.27, 0.9, 0x6b4a2b, { seg: 10 }); for (const y of [0.15, 0.75]) cyl('metal', x, PAVE + y, z, 0.305, 0.305, 0.05, 0x2a2b29, { phys: false, seg: 10 }); } // pub barrels
+  const aboard = (x, z, s, txt, bg) => { solid('wood', x, PAVE + 0.45, z, 0.06, 0.9, 0.55, 0x2E2F2C, { phys: false, rz: s * 0.12 }); quad('atlas', x - s * 0.04, PAVE + 0.5, z, 0.48, 0.6, -s * Math.PI / 2, atlas.fascia(txt, null, bg, '#EFE3C8', 0.8)); };
+  aboard(-6.45, -42.6, -1, 'LIVE MUSIC', '#1d3b2a'); aboard(6.45, -27.5, 1, 'SOUP & A ROLL', '#C77B2E'); aboard(6.45, 3, 1, 'FRESH BREAD', '#2f4a2a');
+  for (const z of [-34, -32.6]) { for (const dz of [-0.3, 0.3]) cyl('metal', 6.75, PAVE + 0.4, z + dz, 0.025, 0.025, 0.8, 0x2a2b29, { phys: false, seg: 5 }); solid('metal', 6.75, PAVE + 0.8, z, 0.05, 0.05, 0.65, 0x2a2b29, { phys: false }); } // Sheffield bike stands
+  for (const z of [-36, 2]) { solid('wood', -6.45, PAVE + 0.45, z, 0.45, 0.06, 1.6, 0x7a5a3a, { phys: false }); solid('wood', -6.6, PAVE + 0.75, z, 0.06, 0.5, 1.6, 0x7a5a3a, { phys: false }); for (const dz of [-0.7, 0.7]) solid('metal', -6.45, PAVE + 0.22, z + dz, 0.4, 0.44, 0.05, 0x1c1f22, { phys: false }); } // benches against the wall
+  // Covenanters' memorial-style enclosure (generic): low circular wall, railings and a central plaque stone
+  { const mx = 2.6, mz = 25.6, R = 1.35; cyl('stone', mx, 0.3, mz, R, R + 0.05, 0.6, 0xc9b896, { seg: 18 }); cyl('cobble', mx, 0.61, mz, R - 0.15, R - 0.15, 0.02, 0x8a8478, { phys: false, seg: 18 });
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; cyl('metal', mx + Math.cos(a) * (R - 0.05), 0.95, mz + Math.sin(a) * (R - 0.05), 0.014, 0.014, 0.7, 0x1c1f22, { phys: false, seg: 4 }); }
+    solid('stone', mx, 0.95, mz, 0.5, 0.7, 0.18, 0xd8c7a6, { phys: false }); quad('atlas', mx, 1.05, mz - 0.1, 0.4, 0.3, Math.PI, atlas.sign('IN MEMORY', '#d8c7a6', '#4a3a20', 0.4 / 0.3, 'bold 40px Georgia', '#d8c7a6')); }
   inNorth(() => { for (const [sd, z0, z1, n, c] of northShops) shopfront(sd, z0, z1, n, c, rampHeight((z0 + z1) / 2) - 0.4); });
 
   // ---------- signs, plaques & humour ----------
