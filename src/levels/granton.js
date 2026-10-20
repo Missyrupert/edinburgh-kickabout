@@ -41,8 +41,8 @@ function build(scene, world, mats, P) {
   for (let i = 0; i < 60; i++) { const x = -70 + rand() * 140, z = 22 + rand() * 120, w = 2 + rand() * 6; B.add('flat', QUAD, M4(x, WY + 0.01, z, w, 0.12, 1, -Math.PI / 2, rand() * 0.3), 0x8698a6, {}); } // glints / ripples
   B.add('slab', QUAD, M4(0, 0.004, -14, 140, 68, 1, -Math.PI / 2), 0xffffff, { tile: 1.8 }); // v2.9.1: grey precast slabs
   B.add('cobble', QUAD, M4(-24, 0.006, (8 + Q) / 2, 72, Q - 8, 1, -Math.PI / 2), 0xb4b6b8, { tile: 1.6 }); // old quayside setts
-  B.add('tarmac', QUAD, M4(0, 0.008, 5, 140, 6, 1, -Math.PI / 2), 0x8a8c88, { tile: 4 }); // harbour road
-  B.add('tarmac', QUAD, M4(0, 0.008, -17, 12, 38, 1, -Math.PI / 2), 0x8a8c88, { tile: 4 }); // road up to the square
+  B.add('tarmac', QUAD, M4(0, 0.008, 5, 140, 6, 1, -Math.PI / 2), 0xa6a8a4, { tile: 4 }); // harbour road
+  B.add('tarmac', QUAD, M4(0, 0.008, -17, 12, 38, 1, -Math.PI / 2), 0xa6a8a4, { tile: 4 }); // road up to the square (v2.9.2: lighter)
   B.add('slab', QUAD, M4((PX0 + PX1) / 2, 0.006, (Q + PZ1) / 2, PX1 - PX0, PZ1 - Q, 1, -Math.PI / 2), 0xe4e2de, { tile: 3 }); // pier concrete
   B.add('cobble', QUAD, M4(40, 0.006, (8 + Q) / 2, 36, Q - 8, 1, -Math.PI / 2), 0xb4b6b8, { tile: 1.6 });
   for (const s of [-1, 1]) for (const dz of [0.25, 0.4]) B.add('flat', QUAD, M4(0, 0.01, 5 + s * (3 - dz), 136, 0.09, 1, -Math.PI / 2), 0xe8c43a, {});
@@ -106,6 +106,8 @@ function build(scene, world, mats, P) {
     for (const dx of [-1.6, 1.6]) { cyl('flat', x + dx, 0.75, z, 0.6, 0.6, 1.5, PURGE, { seg: 12, target: 'purge', surface: 'metal' }); cyl('flat', x + dx, 1.55, z, 0.66, 0.66, 0.1, PURGE, { phys: false, seg: 12 }); }
     cyl('flat', x, 0.85, z, 0.42, 0.42, 2.2, PURGE, { seg: 10, rz: Math.PI / 2, target: 'purge', surface: 'metal' }); cyl('flat', x, 0.85, z, 0.55, 0.55, 0.4, PURGE, { phys: false, seg: 10, rz: Math.PI / 2 });
     cyl('flat', x, 1.4, z, 0.04, 0.04, 0.4, 0xf7c325, { phys: false, seg: 5 }); solid('flat', x, 1.62, z, 0.5, 0.06, 0.1, 0xf7c325, { phys: false });
+    { const ry = Math.atan2(20, -18) + Math.PI, sx = x + 2.6, sz = z - 1.6; for (const d of [-1.3, 1.3]) cyl('metal', sx + Math.cos(ry) * d, 2.0, sz - Math.sin(ry) * d, 0.06, 0.06, 4.0, IRON, { phys: false, seg: 6 }); /* v2.9.2: tall marker board, readable from the spawn */
+      solid('flat', sx, 3.6, sz, 3.0, 1.05, 0.06, 0x111111, { phys: false, ry }); sign('PURGE POINT', sx + Math.sin(ry) * 0.04, 3.6, sz + Math.cos(ry) * 0.04, 2.9, 0.95, ry, '#f7c325', '#111', 'bold 60px Arial', '#111'); }
     sign('PURGE POINT', x - 1.6, 1.05, z - 0.62, 0.7, 0.32, Math.PI, '#111', '#f7c325', 'bold 50px Arial', '#111');
     addTarget({ id: 'purge', name: 'Purge Point', hint: 'hit the blue pipework', points: 75, kind: 'hit', pos: V(x, 0, z), ringR: 1.6, stand: V(x, 0, z + 4.6), aim: V(x, 0.8, z), lines: ['Purge point: purged.', "Relax, it's been empty for years. The gas, no' your talent.", 'That blue is so bright the gulls wear shades.'] }); }
 
@@ -134,19 +136,19 @@ function build(scene, world, mats, P) {
     if (mast) { cyl('flat', x, WY + 0.8 + mast / 2, z - 0.5, 0.06, 0.06, mast, 0xdcdcdc, { phys: false, seg: 5 }); solid('flat', x, WY + 2, z - 1.6, 0.05, 0.05, 2.4, 0xdcdcdc, { phys: false, rx: Math.PI / 2 }); }
     else solid('flat', x, WY + 1.3, z - 0.4, 1.6, 1.0, 2.0, 0xe8e2d4, { phys: false }); }
   // ---------- Middle Pier: the Piece Box kiosk, creels, warehouses ----------
-  { const x0 = 14.5, x1 = 17.5, z0 = 25.8, z1 = 28.3, h = 2.6, xc = (x0 + x1) / 2, W2 = 0.12, c = 0xf4f1ea, hx0 = 15.2, hx1 = 16.8, hy0 = 0.9, hy1 = 1.8; // v2.9.1: wider/taller hatch
+  { const x0 = 14.5, x1 = 17.5, z0 = 25.8, z1 = 28.3, h = 2.6, xc = (x0 + x1) / 2, W2 = 0.12, c = 0xf4f1ea, hx0 = 14.9, hx1 = 17.1, hy0 = 0.5, hy1 = 1.75; /* v2.9.2: bigger again */ // v2.9.1: wider/taller hatch
     solid('flat', xc, h / 2, z1, x1 - x0, h, W2, c); solid('flat', x0, h / 2, (z0 + z1) / 2, W2, h, z1 - z0, c); solid('flat', x1, h / 2, (z0 + z1) / 2, W2, h, z1 - z0, c);
     solid('flat', (x0 + hx0) / 2, h / 2, z0, hx0 - x0, h, W2, c); solid('flat', (hx1 + x1) / 2, h / 2, z0, x1 - hx1, h, W2, c);
     solid('flat', xc, hy0 / 2, z0, hx1 - hx0, hy0, W2, c); solid('flat', xc, (hy1 + h) / 2, z0, hx1 - hx0, h - hy1, W2, c);
     solid('flat', xc, h + 0.06, (z0 + z1) / 2, x1 - x0 + 0.5, 0.12, z1 - z0 + 0.6, 0x3D6F8E, { phys: false }); B.add('roof', ROOF, M4(xc, h + 0.12, (z0 + z1) / 2, x1 - x0 + 0.7, 0.9, z1 - z0 + 0.8), 0x3D6F8E, {}); /* v2.9.1: pitched roof */
     cyl('metal', x1 - 0.5, h + 1.0, z1 - 0.4, 0.07, 0.07, 1.4, 0x8a8c88, { phys: false, seg: 6 }); cyl('metal', x1 - 0.5, h + 1.75, z1 - 0.4, 0.14, 0.1, 0.12, 0x8a8c88, { phys: false, seg: 6 }); /* flue */
-    solid('flat', xc, hy0 - 0.05, z0 - 0.25, hx1 - hx0 + 0.4, 0.06, 0.5, 0x6b4a2b, { phys: false }); /* serving ledge */
+    solid('flat', xc, hy0 - 0.03, z0 - 0.12, hx1 - hx0 + 0.3, 0.04, 0.24, 0x6b4a2b, { phys: false }); /* v2.9.2: shallow serving ledge */
     for (const s of [-1, 1]) solid('flat', x0 - 0.06, 1.3, (z0 + z1) / 2 + s * 0.4, 0.04, 0.8, 0.5, 0x2a2d31, { phys: false }); sign('TEA 90p · ROLL N SAUSAGE £2', x0 - 0.09, 1.3, (z0 + z1) / 2, 1.0, 0.7, -Math.PI / 2, '#2a2d31', '#f4f1ea', 'bold 30px Arial'); solid('flat', xc, hy1 + 0.18, z0 - 0.35, hx1 - hx0 + 0.6, 0.04, 0.7, 0x3D6F8E, { phys: false, rx: -0.25 });
-    solid('flat', xc, 0.95, (z0 + z1) / 2, x1 - x0 - 0.25, 0.06, z1 - z0 - 0.25, 0x6b4a2b); // counter shelf inside
+    solid('flat', xc, 0.47, (z0 + z1) / 2, x1 - x0 - 0.25, 0.06, z1 - z0 - 0.25, 0x6b4a2b); // counter shelf inside
     B.add('lamp', BOX, M4(xc, 1.9, z0 + 0.6, 0.6, 0.1, 0.3), 0xffffff, {});
     quad('atlas', xc, 2.2, z0 - 0.07, x1 - x0 - 0.2, 0.5, Math.PI, atlas.fascia('THE PIECE BOX', 'TEAS · ROLLS · TABLET', '#3D6F8E', '#EFE3C8', (x1 - x0 - 0.2) / 0.5));
     addTarget({ id: 'hatch', name: 'The Piece Box Hatch', hint: 'chip it through the kiosk hatch', points: 150, kind: 'zone', pos: V(xc, 0, z0 - 0.8), ringR: 1.0, stand: V(xc, 0, z0 - 4.6), aim: V(xc, 1.3, z0),
-      zone: new THREE.Box3(V(hx0 - 0.15, 0.9, z0 - 0.05), V(hx1 + 0.15, 2.1, z1 - 0.1)) /* v2.9.1: catch margin, as the bin/skip */, lines: ['One ball, nae sauce. Through the hatch!', 'Order up: one fitba\' roll, extra mud.', '"We don\'t do refunds, son."'] }); }
+      zone: new THREE.Box3(V(hx0 - 0.15, 0.45, z0 - 0.05), V(hx1 + 0.15, 2.1, z1 - 0.1)) /* v2.9.1: catch margin, as the bin/skip */, lines: ['One ball, nae sauce. Through the hatch!', 'Order up: one fitba\' roll, extra mud.', '"We don\'t do refunds, son."'] }); }
   { const x = 20.4, z = 35; for (const [dx, dy, dz] of [[0, 0.25, -0.8], [0, 0.75, -0.8], [0, 0.25, 0.8], [0.0, 0.75, 0.8]]) solid('flat', x + dx, dy, z + dz, 1.0, 0.5, 0.7, 0x2f5a3a, { phys: dy < 0.5 }); // creel stacks
     const w = 1.0, d = 0.8, h = 0.55, th = 0.05, c = 0x1d3b6b; solid('flat', x, 0.04, z, w, 0.08, d, c); for (const [cx, cz, ww, dd] of [[x - w / 2, z, th, d], [x + w / 2, z, th, d], [x, z - d / 2, w, th], [x, z + d / 2, w, th]]) solid('flat', cx, h / 2, cz, ww, h, dd, c);
     for (let k = -2; k <= 2; k++) solid('flat', x + k * 0.2, h - 0.02, z, 0.02, 0.02, d, 0xc8c4b8, { phys: false }); // netting hoops
@@ -182,7 +184,7 @@ function build(scene, world, mats, P) {
   // low harbour-wall run (rubble stone with a cope) between the gas ground and the harbour road
   solid('stone', -41, 0.45, -1.8, 30, 0.9, 0.6, 0xa8a49a, { tile: 1.5 }); solid('stone', -41, 0.95, -1.8, 30.3, 0.12, 0.8, 0xc4c0b8, { phys: false });
   // shipping containers stacked by the gas ground (behind the sightline to the frame)
-  for (const [x, y, z, ry, col] of [[-14, 1.3, -36, 0, 0x2E6E8E], [-14, 3.9, -36, 0, 0xb5452e], [-20, 1.3, -37, 0.05, 0x5a7a3a], [-14, 1.3, -18.5, Math.PI / 2, 0xc8902a]]) {
+  for (const [x, y, z, ry, col] of [[-14, 1.3, -36, 0, 0x2E6E8E], [-14, 3.9, -36, 0, 0xb5452e], [-20, 1.3, -37, 0.05, 0x5a7a3a], [-26, 1.3, -38, 0, 0xc8902a]]) {
     solid('flat', x, y, z, 6.1, 2.6, 2.45, col, { ry, phys: y < 2 }); for (let k = -2.8; k <= 2.81; k += 0.4) solid('flat', x + Math.cos(ry) * k, y, z - Math.sin(ry) * k, 0.05, 2.5, 2.5, new THREE.Color(col).multiplyScalar(0.8).getHex(), { phys: false, ry }); } // ribbed sides
   // parked vans and a car along the kerbs
   const van = (x, z, ry, col) => { solid('flat', x, 1.15, z, 2.0, 1.9, 5.0, col, { ry }); solid('flat', x, 0.45, z, 2.04, 0.3, 5.04, 0x2a2d31, { phys: false, ry });
@@ -235,11 +237,11 @@ export default {
   id: 'granton', name: 'Granton Harbour', short: 'Granton', surfaceAt,
   sounds: { harbour: true, birds: [[-38, -22], [-20, -10]], gulls: [[0, 40], [-30, 30], [30, 50], [16, 30]], boats: [[-40, 34], [34, 32], [44, 46]], water: [[-20, 22], [16, 40], [40, 22]], far: [[-60, -40], [50, -40], [0, -60]], roadX: 80 },
   blurb: 'Level 3: Granton, doon the harbour. 10 targets round the quay, the pier, the slipway and the gasholder. Mind the edge: the Forth keeps whit it gets.',
-  intro: "Welcome tae Granton!<br><small>That's the gasholder you can see fae Pilton. Easy first one: the Granton Square sign on the roundabout - turn right. Mind the quay edge.</small>",
+  intro: "Welcome tae Granton!<br><small>That's the gasholder you can see fae Pilton. Ball's at your feet. Easy first one: the blue purge point, straight ahead by the gasholder. Mind the quay edge.</small>",
   build,
   tiers: { square: 'easy', bollard: 'easy', lifebuoy: 'easy', buoy: 'easy', hmdoor: 'easy', gasframe: 'easy', purge: 'easy', creel: 'tricky', dinghy: 'tricky', hatch: 'tricky' },
   spawn: [0, 0.5, -28], spawnYaw: 118, /* v2.9.1: open on the gasholder + harbour */
-  ballHomes: () => [[0.3, 0.4, -25.6], [16, 0.4, 23], [-24, 0.4, -6]],
+  ballHomes: () => [[-2.2, 0.4, -26.8], /* v2.9.2: in front of the 118° spawn facing */ [16, 0.4, 23], [-24, 0.4, -6]],
   bounds: { x: 58, zMin: -46, zMax: 64 },
   sea: { y: -1.7, lines: ["Splash! That's in the Forth. Fife's keepin' it - here's another.", "Ower the edge! The seals say ta. Fresh ba' at your feet.", "In the harbour. The tide's no' bringin' that back. New ball's oot."] },
   next: 'pilton',

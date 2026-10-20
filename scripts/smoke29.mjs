@@ -27,7 +27,7 @@ const sea = await pg.evaluate(() => { const g = __game, n0 = g.seaLost; g.telepo
 ok(sea.lost >= 1 && sea.y > -1, 'ball lost to the sea respawns ' + JSON.stringify(sea));
 // every target scores with real kicks
 const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of g.targets) { let n = 0;
-  for (const pitch of [-0.45, -0.3, -0.15, 0.0, 0.12, 0.25, 0.35, 0.5]) for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);
+  for (const pitch of [0.0, 0.12, -0.15, 0.25, -0.3, 0.35, -0.45, 0.5]) /* v2.9.2: level aim first, as a player would */ for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);
     g.placeBall(0, P.x - Math.sin(y) * 0.8, P.y - 0.2, P.z - Math.cos(y) * 0.8); g.simulate(0.2); g.kick(p); g.simulate(4); n++; } res[t.id] = t.done ? n : 0; } return res; });
 ok(Object.values(k).every(Boolean), 'every Granton target scores with real kicks (tries) ' + JSON.stringify(k));
 { await pg.waitForTimeout(800); const h = await pg.evaluate(() => document.getElementById('goalTxt').innerHTML); ok(/10\/10|cleared|all/i.test(h), 'HUD progress counts up: ' + h + ' ' + await pg.evaluate(() => __game.targets.filter(t => t.done).length + ' ' + document.getElementById('targetVal').textContent)); }
