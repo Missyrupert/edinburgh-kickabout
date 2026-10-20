@@ -106,8 +106,8 @@ function build(scene, world, mats, P) {
     for (const dx of [-1.6, 1.6]) { cyl('flat', x + dx, 0.75, z, 0.6, 0.6, 1.5, PURGE, { seg: 12, target: 'purge', surface: 'metal' }); cyl('flat', x + dx, 1.55, z, 0.66, 0.66, 0.1, PURGE, { phys: false, seg: 12 }); }
     cyl('flat', x, 0.85, z, 0.42, 0.42, 2.2, PURGE, { seg: 10, rz: Math.PI / 2, target: 'purge', surface: 'metal' }); cyl('flat', x, 0.85, z, 0.55, 0.55, 0.4, PURGE, { phys: false, seg: 10, rz: Math.PI / 2 });
     cyl('flat', x, 1.4, z, 0.04, 0.04, 0.4, 0xf7c325, { phys: false, seg: 5 }); solid('flat', x, 1.62, z, 0.5, 0.06, 0.1, 0xf7c325, { phys: false });
-    { const ry = Math.atan2(20, -18) + Math.PI, sx = x + 2.6, sz = z - 1.6; for (const d of [-0.95, 0.95]) cyl('metal', sx + Math.cos(ry) * d, 1.9, sz - Math.sin(ry) * d, 0.06, 0.06, 3.8, IRON, { phys: false, seg: 6 }); /* v2.9.2: tall marker board, readable from the spawn */
-      sign('PURGE POINT', sx, 3.4, sz, 1.9, 0.68, ry, '#f7c325', '#111', 'bold 60px Arial', '#111'); }
+    { const ry = Math.atan2(20, -18) + Math.PI, sx = x + 2.6, sz = z - 1.6; for (const d of [-1.6, 1.6]) cyl('metal', sx + Math.cos(ry) * d, 2.6, sz - Math.sin(ry) * d, 0.07, 0.07, 5.2, IRON, { phys: false, seg: 6 }); /* v2.9.2: tall marker board, readable from the spawn */
+      solid('flat', sx, 4.6, sz, 3.4, 1.3, 0.05, 0x111111, { phys: false, ry }); solid('flat', sx, 4.6, sz, 3.2, 1.1, 0.09, 0xf7c325, { phys: false, ry }); /* geometry board: never depends on the sign atlas */ }
     sign('PURGE POINT', x - 1.6, 1.05, z - 0.62, 0.7, 0.32, Math.PI, '#111', '#f7c325', 'bold 50px Arial', '#111');
     addTarget({ id: 'purge', name: 'Purge Point', hint: 'hit the blue pipework', points: 75, kind: 'hit', pos: V(x, 0, z), ringR: 1.6, stand: V(x, 0, z + 4.6), aim: V(x, 0.8, z), lines: ['Purge point: purged.', "Relax, it's been empty for years. The gas, no' your talent.", 'That blue is so bright the gulls wear shades.'] }); }
 
