@@ -181,6 +181,13 @@ const chippyEarned = () => piltonBagged() >= CHIPPY_TARGETS;
 function updateWallet(pop = false) {
   $('walletVal').textContent = fmt(wallet.pence);
   const n = Math.min(piltonBagged(), CHIPPY_TARGETS), f = Math.min(1, wallet.pence / GOAL.pence, n / CHIPPY_TARGETS);
+  if (LEVEL.id !== 'pilton') { // v2.6: the supper is a Pilton goal; elsewhere show this level's own progress
+    const k = targets.filter((t) => t.done).length; $('goalFill').style.width = `${k / targets.length * 100}%`;
+    $('goalTxt').innerHTML = k >= targets.length ? `🏆 <b>${LEVEL.short} cleared!</b> ${k}/${targets.length}` : `🎯 ${LEVEL.short}: <b>${k}/${targets.length}</b> targets`;
+    $('wallet').classList.toggle('full', k >= targets.length);
+    if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
+    return;
+  }
   $('goalFill').style.width = `${f * 100}%`;
   $('goalTxt').innerHTML = f >= 1 ? (built.counter ? '🍟 <b>Chippy unlocked!</b> Visit the counter' : '🍟 <b>Chippy unlocked!</b> Back tae Pilton') : `🍟 Supper: <b>${n}/${CHIPPY_TARGETS}</b> Pilton targets · <b>${fmt(Math.min(wallet.pence, GOAL.pence))}/${fmt(GOAL.pence)}</b>`;
   $('wallet').classList.toggle('full', f >= 1);
@@ -666,7 +673,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v2.5';
+const BUILD = 'v2.6';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

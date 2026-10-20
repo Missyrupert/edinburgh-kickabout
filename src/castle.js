@@ -7,10 +7,10 @@ import { roofPrism } from './batch.js';
 // Palace + tower, War Memorial behind), the Half Moon Battery drum and the gatehouse/Esplanade to the east.
 // In this world +x is west (screen-left when facing the castle) and east is -x.
 // Everything goes into two batches: 'castleRock' (vertex-coloured, flags too) and 'castleStone' (sandstone).
-export function buildCastle(B, CX, CZ, rand) {
+export function buildCastle(B, CX, CZ, rand, up = 30) {
   const E = (lx) => CX + 16 + lx; // lx: local x; +lx = west (screen-left), -lx = east (screen-right)
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const UP = 30; // v2.5: lifted so the Castle dominates the view up the street // lift: the rock should dominate, as from the Grassmarket
+  const UP = up; // lift: the rock must dominate the view from the square below
   const M4 = (x, y0, z, sx, sy, sz, ry = 0, rx = 0, rz = 0) => new THREE.Matrix4().compose(V(x, y0 + UP, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'YXZ')), V(sx, sy, sz));
   const BOX = new THREE.BoxGeometry(1, 1, 1), ROOF = roofPrism();
   const STONE = [0xe2c393, 0xd8b787, 0xcdac7e, 0xe6c99c], SLATE = 0x5c6066, DARK = 0x6e6252;

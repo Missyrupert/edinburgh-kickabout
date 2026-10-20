@@ -104,7 +104,7 @@ export class Sfx {
     const zs = this.L.z - dir * 60, ze = this.L.z + dir * 60, dist = Math.abs(roadX - this.L.x), peak = 0.06 * Math.min(1, 30 / Math.max(dist, 30));
     f.frequency.setValueAtTime(180, t); f.frequency.linearRampToValueAtTime(560, t + d / 2); f.frequency.linearRampToValueAtTime(160, t + d);
     const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + d / 2); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    let out = g; if (c.createStereoPanner) { const p = c.createStereoPanner(), y = this.L.yaw, pn = (zz) => clamp(((roadX - this.L.x) * Math.cos(y) - (zz - this.L.z) * Math.sin(y)) / Math.hypot(roadX - this.L.x, zz - this.L.z), -1, 1) * 0.8;
+    let out = g; if (c.createStereoPanner) { const p = c.createStereoPanner(), y = this.L.yaw, pn = (zz) => clamp(((roadX - this.L.x) * Math.cos(y) - (zz - this.L.z) * Math.sin(y)) / Math.max(1, Math.hypot(roadX - this.L.x, zz - this.L.z)), -1, 1) * 0.8;
       p.pan.setValueAtTime(pn(zs), t); p.pan.linearRampToValueAtTime(pn(this.L.z), t + d / 2); p.pan.linearRampToValueAtTime(pn(ze), t + d); g.connect(p); out = p; }
     s.connect(f).connect(g); out.connect(this.amb); this.release(s); s.start(t, Math.random()); s.stop(t + d + 0.1);
   }

@@ -1,25 +1,23 @@
-// Level data: the Grassmarket -> Victoria Street (the original v1-v1.3 level, unchanged).
-import * as THREE from 'three';
-import { buildWorld, NORTH, BEND } from '../world.js';
-// v2.5: what's under foot / under the ball. Road = granite setts, pavements = flagstones, back court = flags, the close = setts.
-const INV = NORTH.clone().invert(), tmp = new THREE.Vector3();
+// Level data: the Grassmarket (v2.6: reworked as the real wide market square below the Castle).
+import { buildSquare, GM } from './grassmarket-square.js';
+// what's under foot / under the ball
 export function surfaceAt(x, z) {
-  if (z > BEND.pivotZ) { tmp.set(x, 0, z).applyMatrix4(INV); x = tmp.x; z = tmp.z; if (Math.abs(x) < 4.6) return 'setts'; return 'paving'; } // Victoria Street side
-  if (Math.abs(x - 2.6) < 1.2 && Math.abs(z - 25.6) < 1.2) return 'paving'; // memorial top
-  if (x < -14 && x > -24 && z > -18 && z < 0) return Math.hypot(x + 22.5, z + 2.5) < 2.2 ? 'grass' : 'paving'; // back court, grass round the tree
-  if (x <= -7 && x > -14 && Math.abs(z + 9.25) < 0.8) return 'setts'; // the close
-  if (Math.abs(x) < 4.6) return 'setts';
+  if (x < -52 && z > GM.FRONT) return 'setts'; // Victoria Street climb
+  if (z < -GM.FRONT - 0.5) return x > 29 && x < 31 && z > -GM.FRONT - GM.DEPTH ? 'setts' : (Math.hypot(x - 22.5, z + 41) < 2.2 ? 'grass' : 'paving'); // the close / back court
+  const az = Math.abs(z);
+  if (az < GM.SQ) return Math.hypot(x + 50, z + 2) < 2 ? 'paving' : 'setts';
+  if (az < GM.ROAD) return 'tarmac';
   return 'paving';
 }
 export default {
-  id: 'grassmarket', surfaceAt,
-  sounds: { oldtown: true, birds: [[-22.5, -2.5], [0, 40]], gulls: [[0, 120], [-40, 60]], far: [[-40, -20], [40, 10], [0, -70], [-30, 50], [30, -40]], roadX: 60 }, name: 'The Grassmarket', short: 'Grassmarket',
-  blurb: "A wee kickabout in the Old Town. 11 targets hidden around the street, the close and up the hill.",
-  intro: "Welcome tae the Grassmarket!<br><small>There's a ba' at your feet. Try the green bin up on the left.</small>",
-  build: buildWorld,
+  id: 'grassmarket', name: 'The Grassmarket', short: 'Grassmarket', surfaceAt,
+  sounds: { oldtown: true, birds: [[-42, -11], [-46, 10], [45, -11], [54, 9], [12, 12]], gulls: [[0, 120], [-40, 60]], far: [[-80, 40], [80, 0], [0, -70], [-30, 60], [40, -50]], roadX: 95 },
+  blurb: 'Level 2: the Grassmarket, the old market square under the Castle. 11 targets round the square, the close and the back court.',
+  intro: "Welcome tae the Grassmarket!<br><small>Ba' at your feet. Look up: that's the Castle. Easy first one: the traffic cone just ahead.</small>",
+  build: buildSquare,
   tiers: { bench: 'easy', cone: 'easy', lamp: 'easy', door: 'easy', post: 'easy', tardis: 'easy', bin: 'tricky', close: 'tricky', dug: 'tricky', case: 'tricky', skip: 'tricky' },
-  spawn: [0, 0.5, -36], spawnYaw: 180,
-  ballHomes: (views) => [[0.3, 0.4, -33.6], [-19, 0.4, -6], [views.terrace[0] - 1.5, 4.0, views.terrace[1] + 2]],
-  bounds: { x: 45, zMin: -60, zMax: 80 },
+  spawn: [3, 0.5, -10], spawnYaw: 180,
+  ballHomes: () => [[3.3, 0.4, -7.6], [30, 0.4, -38], [-2, 0.4, 0]],
+  bounds: { x: 66, zMin: -52, zMax: 34 },
   next: 'pilton',
 };
