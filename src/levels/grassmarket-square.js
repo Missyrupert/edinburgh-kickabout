@@ -31,7 +31,7 @@ export function buildSquare(scene, world, mats, P) {
   const quad = (key, x, y, z, w, h, ry, uvRect = null, color = 0xffffff, { rx = 0, grime = 0, tile = 0 } = {}) => B.add(key, QUAD, M4(x, y, z, w, h, 1, rx, ry), color, { uvRect, grime, tile });
   const sign = (text, x, y, z, w, h, ry, bg, fg, font, border) => quad('atlas', x, y, z, w, h, ry, atlas.sign(text, bg, fg, w / h, font, border));
   const cellUV = (i) => { const c = i % 4, r = Math.floor(i / 4), e = 0.004; return [c / 4 + e, 1 - (r + 1) / 4 + e, (c + 1) / 4 - e, 1 - r / 4 - e]; };
-  const IRON = 0x1c1f22, X = GM.X, F = GM.FRONT;
+  const IRON = 0x2a2d31, X = GM.X, F = GM.FRONT;
 
   // ---------- ground ----------
   const ground = new CANNON.Body({ mass: 0, material: mats.ground, shape: new CANNON.Plane() }); ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); world.addBody(ground);
@@ -45,7 +45,7 @@ export function buildSquare(scene, world, mats, P) {
   }
 
   // ---------- tenement terraces ----------
-  const TINT = [0x9aa0aa, 0x8e949e, 0x868a92, 0xa6a8aa, 0xbcc0c4, 0x8c9090, 0xa09c98]; // v2.7: cool tints pull the honey sandstone towards grey-brown // honey, brown, grey sandstone, cream harl
+  const TINT = [0xf4f2ee, 0xe6e4e0, 0xd8d6d2, 0xf2ece0, 0xffffff, 0xe0dcd4, 0xcfcbc4]; // v2.8: the stone texture carries the colour now; tints only vary brightness (one buff, one cream-harled) // v2.7: cool tints pull the honey sandstone towards grey-brown // honey, brown, grey sandstone, cream harl
   const UPPER = [FACADE.sashA, FACADE.sashA, FACADE.sashB, FACADE.sashA, FACADE.triple, FACADE.lit, FACADE.flowers, FACADE.pediment];
   function facadeFace(cx, cz, ry, L, nf, fh, base, tint, skipGround) { // ry: facing direction (0 = +z)
     const nb = Math.max(1, Math.round(L / 3.4)), bw = L / nb, ax = Math.cos(ry), az = -Math.sin(ry), nx = Math.sin(ry), nz = Math.cos(ry);
@@ -64,23 +64,23 @@ export function buildSquare(scene, world, mats, P) {
   // ground-floor shop / pub / cafe: painted timber front, fascia, lit display, door, optional awning
   function shopfront(x0, x1, s, name, col, kind, awning) { // s = +1 north terrace (faces -z), -1 south (faces +z)
     const z = s * F, ry = s > 0 ? Math.PI : 0, len = x1 - x0, xc = (x0 + x1) / 2, n = -s;
-    solid('wood', xc, 1.7, z + n * 0.08, len - 0.3, 3.4, 0.16, new THREE.Color(col), { phys: false, tile: 1.2 });
+    solid('wood', xc, 1.7, z + n * 0.08, len - 0.3, 3.4, 0.16, new THREE.Color(col).lerp(new THREE.Color(0xffffff), 0.25).multiplyScalar(1.9), { phys: false, tile: 1.2 }); // v2.8: painted timber reads as colour, not a black slab
     quad('atlas', xc, 3.0, z + n * 0.17, len - 0.6, 0.62, ry, atlas.fascia(name, null, col, '#f1d98a', (len - 0.6) / 0.62));
     quad('atlas', xc - (len * 0.12) * (s > 0 ? -1 : 1), 1.55, z + n * 0.17, len * 0.55, 1.9, ry, display(kind));
-    quad('flat', xc + (len * 0.36) * (s > 0 ? -1 : 1), 1.2, z + n * 0.17, 1.0, 2.3, ry, null, new THREE.Color(col).multiplyScalar(0.55));
+    quad('flat', xc + (len * 0.36) * (s > 0 ? -1 : 1), 1.2, z + n * 0.17, 1.0, 2.3, ry, null, new THREE.Color(col).multiplyScalar(1.1));
     if (awning) solid('flat', xc, 2.55, z + n * 0.75, len - 0.5, 0.05, 1.4, awning, { phys: false, rx: s * 0.3 });
     for (const px of [x0 + 0.25, x1 - 0.25]) { solid('wood', px, 1.7, z + n * 0.22, 0.32, 3.4, 0.14, new THREE.Color(col).multiplyScalar(0.8), { phys: false }); solid('wood', px, 3.45, z + n * 0.26, 0.42, 0.25, 0.2, new THREE.Color(col).multiplyScalar(0.9), { phys: false }); } // pilasters + capitals
     if (kind === 'pub') { // traditional pub front: gold-lined fascia, swan lamps, a hanging sign on a bracket
       solid('flat', xc, 3.34, z + n * 0.2, len - 0.5, 0.05, 0.04, 0xd4af37, { phys: false }); solid('flat', xc, 2.66, z + n * 0.2, len - 0.5, 0.05, 0.04, 0xd4af37, { phys: false });
       for (const lx of [x0 + len * 0.3, x1 - len * 0.3]) { solid('metal', lx, 3.6, z + n * 0.35, 0.05, 0.05, 0.5, IRON, { phys: false }); B.add('lamp', BOX, M4(lx, 3.55, z + n * 0.6, 0.16, 0.2, 0.16), 0xffffff, {}); }
       const hx = x0 + 0.5; solid('metal', hx, 4.4, z + n * 0.6, 0.05, 0.05, 1.2, IRON, { phys: false });
-      const hs = atlas.sign(name.split(' ').slice(-1)[0], col, '#f1d98a', 1.6, 'bold 70px Georgia, serif'); for (const f of [1, -1]) quad('atlas', hx + f * 0.03, 3.85, z + n * 0.8, 0.9, 0.56, s > 0 ? -Math.PI / 2 * f : Math.PI / 2 * f, hs);
+      const hs = (pubSign[name] ||= atlas.sign(name.split(' ').slice(-1)[0], col, '#f1d98a', 1.6, 'bold 70px Georgia, serif')); for (const f of [1, -1]) quad('atlas', hx + f * 0.03, 3.85, z + n * 0.8, 0.9, 0.56, s > 0 ? -Math.PI / 2 * f : Math.PI / 2 * f, hs);
     }
   }
   const NAMES = [['THE LAST DRAP', '#1d3b2a', 'pub', 0xa82a24], ['FLEMING & DAUGHTER', '#5b1b2a', 'iron'], ['THE BOW BARBER', '#1e2c4f', 'barber'], ['BOOKS & BAWBEES', '#2f4a2a', 'books'],
     ['THE WEST PORT FISH BAR', '#0f3d5c', 'cafe', 0xa82a24], ['THE CORN EXCHANGE CAFE', '#C77B2E', 'cafe', 0xc8b89a], ["MACKAY'S BAKERY", '#2f4a2a', 'bakery', 0x2f5a3a], ['THE HALF MOON', '#5b1b2a', 'pub', 0xa82a24],
     ['PAPER & PRESS', '#3b2350', 'shop'], ['CANDLEMAKER', '#1d5c3a', 'shop'], ['THE MAP ROOM', '#2f4a2a', 'books'], ['HOOK & LINE', '#2a6f6f', 'shop']];
-  let shopI = 0;
+  let shopI = 0; const pubSign = {};
   // one tenement unit along a terrace. gable: 'crow' | 'dutch' | 'plain' (dormers)
   function unit(x0, x1, s, { floors = 4 + (rand() < 0.4 ? 1 : 0), gable = pick(['crow', 'dutch', 'plain', 'plain']), shop = true, gap = null } = {}) {
     const len = x1 - x0, xc = (x0 + x1) / 2, D = GM.DEPTH, z0 = s * F, zc = s * (F + D / 2), fh = 3.3, h = floors * fh + 0.6, tint = pick(TINT), ry = s > 0 ? Math.PI : 0, n = -s;
@@ -135,24 +135,27 @@ export function buildSquare(scene, world, mats, P) {
   cyl('wood', 22.5, 1.2, -41, 0.12, 0.16, 2.4, 0x6b4a2b, { seg: 6 }); B.add('flat', new THREE.IcosahedronGeometry(1.3, 0), M4(22.5, 3.1, -41, 1, 1.2, 1), 0x4f6b3a, {});
 
   // ---------- Victoria Street / West Bow vista from the north-east corner ----------
-  const VS = { cx: -87, cz: F, R: 30 }, vsAt = (a, r) => [VS.cx + r * Math.cos(a), VS.cz + r * Math.sin(a)];
+  const VS = { cx: -101, cz: F, R: 44 } /* v2.8: longer, wider sweep */, vsAt = (a, r) => [VS.cx + r * Math.cos(a), VS.cz + r * Math.sin(a)];
   const VCOL = ['#efe3c8', '#e8692a', '#1f4fb8', '#d8668a', '#c22a2a', '#2E9C8F', '#f2c94c', '#1f4fb8'];
-  const vsDraw = {}, vsFront = (col) => (vsDraw[col] ||= atlas.draw(160, 192, (g, w, h) => {
+  const vsCanvas = document.createElement('canvas'); vsCanvas.width = 1024; vsCanvas.height = 256; let vsN = 0; // v2.8: the coloured fronts get their own small texture (no atlas neighbours to bleed in)
+  const vsDraw = {}, vsFront = (col) => (vsDraw[col] ||= (() => { const i = vsN++, g = vsCanvas.getContext('2d'); g.save(); g.translate(i * 128, 0); g.scale(128 / 160, 256 / 192); ((g, w, h) => {
     g.fillStyle = col; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(0, h * 0.5, w, 4);
     for (const x of [0.12, 0.58]) { g.fillStyle = '#f4f1ea'; g.fillRect(w * x, h * 0.08, w * 0.3, h * 0.32); g.fillStyle = '#3a4a5a'; g.fillRect(w * x + 5, h * 0.08 + 5, w * 0.3 - 10, h * 0.32 - 10); g.fillStyle = '#f4f1ea'; g.fillRect(w * x, h * 0.24, w * 0.3, 3); g.fillRect(w * (x + 0.15) - 1, h * 0.08, 3, h * 0.32);
       g.fillStyle = '#4a7a3a'; g.fillRect(w * x - 2, h * 0.4, w * 0.3 + 4, 8); g.fillStyle = '#c62d4a'; for (let i = 0; i < 4; i++) g.fillRect(w * x + i * 12, h * 0.38, 6, 6); }
-    g.fillStyle = '#2E2F2C'; g.fillRect(w * 0.05, h * 0.52, w * 0.9, h * 0.1); g.fillStyle = '#e8e2d4'; g.fillRect(w * 0.08, h * 0.65, w * 0.55, h * 0.3); g.fillStyle = 'rgba(255,220,150,.4)'; g.fillRect(w * 0.08, h * 0.65, w * 0.55, h * 0.3);
-    g.fillStyle = '#f4f1ea'; g.fillRect(w * 0.7, h * 0.65, w * 0.2, h * 0.35); g.fillStyle = '#c22a2a'; g.fillRect(w * 0.72, h * 0.67, w * 0.16, h * 0.33); }));
-  const SEG = 12, A1 = 1.25, RISE = 9;
+    g.fillStyle = '#4a463e'; g.fillRect(w * 0.05, h * 0.52, w * 0.9, h * 0.1); g.fillStyle = '#e8e2d4'; g.fillRect(w * 0.08, h * 0.65, w * 0.55, h * 0.3); g.fillStyle = 'rgba(255,220,150,.4)'; g.fillRect(w * 0.08, h * 0.65, w * 0.55, h * 0.3);
+    g.fillStyle = '#f4f1ea'; g.fillRect(w * 0.7, h * 0.65, w * 0.2, h * 0.35); g.fillStyle = '#c22a2a'; g.fillRect(w * 0.72, h * 0.67, w * 0.16, h * 0.33); })(g, 160, 192); g.restore(); return [i / 8 + 0.002, 0.002, (i + 1) / 8 - 0.002, 0.998]; })());
+  const SEG = 20, A1 = 1.55, RISE = 15;
   for (let i = 0; i < SEG; i++) { const a0 = i / SEG * A1, a1 = (i + 1) / SEG * A1, am = (a0 + a1) / 2, t = (i + 0.5) / SEG, y = RISE * Math.pow(t, 1.2), [x, z] = vsAt(am, VS.R), len = VS.R * (a1 - a0) + 0.2, ry = -am; // street heading ~ +z turning to -x
     const slope = Math.atan2(RISE * 1.2 * Math.pow(t, 0.2) / SEG, len);
     B.add('cobble', QUAD, M4(x, y + 0.02, z, 8.5, len, 1, -Math.PI / 2 - slope, ry), 0xa8a6a0, { tile: 1.6 });
-    if (i < 2) { boxBody(x, y - 0.5, z, 8.5, 1, len, { rx: -slope, ry }); } else B.add('stone', BOX, M4(x, y / 2 - 0.3, z, 8.5, y, len, 0, ry), 0x8a8478, { tile: 3 });
+    for (const off of [-3.0, -2.84, 2.84, 3.0]) { const [lx, lz] = vsAt(am, VS.R + off); B.add('flat', QUAD, M4(lx, y + 0.045, lz, 0.08, len, 1, -Math.PI / 2 - slope, ry), 0xe8c43a, {}); } // double yellows
+    for (const off of [-3.7, 3.7]) { const [px, pz] = vsAt(am, VS.R + off); B.add('paving', BOX, M4(px, y + 0.06, pz, 1.3, 0.14, len + 0.1, -slope, ry), 0xc8c0b0, { tile: 1.4 }); } // flagstone pavements
+    if (i < 3) { boxBody(x, y - 0.5, z, 8.5, 1, len, { rx: -slope, ry }); } else B.add('stone', BOX, M4(x, y / 2 - 0.3, z, 8.5, y, len, 0, ry), 0x8a8478, { tile: 3 });
     // outer side (west / left looking up): the colourful two-storey shop terrace with a balustraded walkway on top
     const [ox, oz] = vsAt(am, VS.R + 5.6), col = VCOL[i % VCOL.length];
     solid('flat', ox, y + 3.5, oz, 3.0, 7, len, new THREE.Color(col), { phys: false, ry: ry });
-    quad('atlas', ...[vsAt(am, VS.R + 4.08)[0]], y + 3.5, vsAt(am, VS.R + 4.08)[1], len - 0.1, 7, ry - Math.PI / 2, vsFront(col));
-    if (i === 0) quad('atlas', ox, y + 3.5, oz - len / 2 - 0.02, 3.0, 7, ry + Math.PI, vsFront('#c22a2a')); // v2.7: the end of the terrace gets a proper shopfront, not a blank wall
+    quad('vsfront', ...[vsAt(am, VS.R + 4.08)[0]], y + 3.5, vsAt(am, VS.R + 4.08)[1], len - 0.1, 7, ry - Math.PI / 2, vsFront(col));
+    if (i === 0) quad('vsfront', ox, y + 3.5, oz - len / 2 - 0.02, 3.0, 7, ry + Math.PI, vsFront('#c22a2a')); // v2.7: the end of the terrace gets a proper shopfront, not a blank wall
     for (let k = 0; k < 5; k++) { const [bx, bz] = vsAt(am + (k / 5 - 0.4) * (a1 - a0), VS.R + 4.3); solid('stone', bx, y + 7.45, bz, 0.12, 0.8, 0.12, 0xe8e2d4, { phys: false }); }
     solid('stone', ox - 1.4 * Math.cos(am), y + 7.9, oz - 1.4 * Math.sin(am), 0.2, 0.12, len, 0xe8e2d4, { phys: false, ry: ry }); // balustrade rail
     // tall dark tenements behind and above (6-7 storeys) on both sides
@@ -164,14 +167,18 @@ export function buildSquare(scene, world, mats, P) {
     solid('stone', ix, y + ih / 2, iz, 9, ih, len + 0.3, 0x8a8274, { phys: false, ry: ry, tile: 3 });
     for (let j = 0; j < 5; j++) quad('facade', ...[vsAt(am, VS.R - 4.45)[0]], y + 1.6 + j * 3.2, vsAt(am, VS.R - 4.45)[1], len, 3.2, ry + Math.PI / 2, cellUV(j === 0 ? FACADE.rustic : FACADE.sashA), 0x9a9080);
   }
-  { const [sx, sz] = vsAt(A1 * 0.9, VS.R + 14); B.add('stone', BOX, M4(sx, 34, sz, 4, 14, 4), 0x6e665c, {}); B.add('flat', new THREE.ConeGeometry(2.4, 14, 8), M4(sx, 48, sz, 1, 1, 1), 0x5c564e, {}); } // spire above the street
+  { const [ex, ez] = vsAt(A1 + 0.12, VS.R), ry = Math.PI - A1, nx = Math.sin(ry), nz = Math.cos(ry), ax = Math.cos(ry), az = -Math.sin(ry), base = RISE - 1, H = 30; // the top of the street closes on a tall, dark tenement range
+    solid('stone', ex - nx * 5, base + H / 2, ez - nz * 5, 22, H, 10, 0x9a968e, { phys: false, ry, tile: 3 });
+    for (let c = 0; c < 6; c++) for (let rr = 0; rr < 9; rr++) quad('facade', ex + ax * (c - 2.5) * 3.4 + nx * 0.02, base + 1.6 + rr * 3.2, ez + az * (c - 2.5) * 3.4 + nz * 0.02, 3.4, 3.2, ry, cellUV(rr === 8 ? FACADE.small : rr === 0 ? FACADE.rustic : pick(UPPER)), 0xb0aca4);
+    for (const k of [-1, 1]) B.add('roof', ROOF, M4(ex - nx * 5 + ax * k * 6, base + H, ez - nz * 5 + az * k * 6, 10, 6, 7, 0, ry), 0x6e727a, {}); }
+  { const [sx, sz] = vsAt(A1 * 0.62, VS.R + 22); B.add('stone', BOX, M4(sx, 30, sz, 7, 30, 7), 0xb4b0a8, { tile: 3 }); for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B.add('stone', new THREE.ConeGeometry(0.6, 5, 4), M4(sx + dx * 3.2, 47.5, sz + dz * 3.2, 1, 1, 1), 0xb4b0a8, {}); B.add('stone', new THREE.ConeGeometry(3.4, 28, 8), M4(sx, 59, sz, 1, 1, 1), 0x9a968e, {}); /* the tall Gothic spire above Victoria Street */ } // spire above the street
   boxBody(VS.cx + VS.R * Math.cos(0.24), 5, VS.cz + VS.R * Math.sin(0.24), 12, 10, 0.5, { ry: -0.24 }); // the climb is walkable only a short way
   sign('VICTORIA STREET', -55.2, 3.6, F - 0.2, 2.6, 0.36, Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial', '#111');
 
   // ---------- the Castle on its crag, behind and above the north terrace ----------
   buildCastle(B, 4, 112, mulberry32(1544), 46, { lx0: -104, lx1: 82, rug: 1.8 });
   { // v2.7: the green slope below the crag (Castle Terrace gardens): grass, scrub and trees between the north terrace and the rock
-    const SX0 = -70, SX1 = 80, SZ0 = F + GM.DEPTH + 6, SZ1 = 100, g = new THREE.PlaneGeometry(SX1 - SX0, SZ1 - SZ0, 30, 12); g.rotateX(-Math.PI / 2);
+    const SX0 = -44, SX1 = 80, SZ0 = F + GM.DEPTH + 6, SZ1 = 100, g = new THREE.PlaneGeometry(SX1 - SX0, SZ1 - SZ0, 30, 12); g.rotateX(-Math.PI / 2);
     const pp = g.attributes.position; for (let i = 0; i < pp.count; i++) { const x = pp.getX(i) + (SX0 + SX1) / 2, z = pp.getZ(i) + (SZ0 + SZ1) / 2, t = (z - SZ0) / (SZ1 - SZ0);
       pp.setXYZ(i, x, 14 + t * 42 + Math.sin(x * 0.3) * 1.5 + Math.sin(x * 0.11 + z * 0.2) * 3, z); }
     const sg = g.toNonIndexed(); sg.computeVertexNormals(); const GR = [0x5a7a36, 0x4e6e30, 0x66863c, 0x41602a].map((c) => new THREE.Color(c)); const tcs = [];
@@ -180,7 +187,7 @@ export function buildSquare(scene, world, mats, P) {
       B.add('flat', new THREE.IcosahedronGeometry(r, 0), M4(x, y + r * 0.8, z, 1, 1.15, 1, rand(), rand()), pick([0x3e5a28, 0x4a6a2e, 0x35502a, 0x6a8a48, 0x8a9a7a]), {}); }
   }
   for (let i = 0; i < 40; i++) { // Old Town roofs between the terrace and the slope
-    const x = -60 + rand() * 130, z = F + GM.DEPTH + 2 + rand() * 12, base = (z - F - 14) * 0.35, h = 16 + rand() * 8, w = 7 + rand() * 8, d = 6 + rand() * 6;
+    const x = -42 + rand() * 112, z = F + GM.DEPTH + 2 + rand() * 12, /* v2.8: kept clear of the Victoria Street sightline */ base = (z - F - 14) * 0.35, h = 16 + rand() * 8, w = 7 + rand() * 8, d = 6 + rand() * 6;
     B.add('stone', BOX, M4(x, base + h / 2, z, w, h, d), new THREE.Color().setHSL(0.09, 0.18, 0.42 + rand() * 0.14), { tile: 4 });
     B.add('roof', ROOF, M4(x, base + h, z, w, 2.6, d), 0x6e727a, {});
   }
@@ -227,7 +234,7 @@ export function buildSquare(scene, world, mats, P) {
   { const x = 30, z = 17.6; solid('flat', x, 1.6, z, 11, 2.9, 2.5, 0x8a1c2a, { surface: 'metal' }); solid('flat', x, 2.2, z, 11.05, 0.9, 2.55, 0xefe9de, { phys: false }); // parked bus
     solid('glass', x, 2.25, z - 1.28, 10.4, 0.8, 0.02, 0xffffff, { phys: false }); for (const dx of [-3.8, 3.6]) for (const s of [-1, 1]) cyl('flat', x + dx, 0.45, z + s * 1.2, 0.45, 0.45, 0.3, 0x1a1a1a, { phys: false, seg: 10 }); }
   for (const [x, col] of [[-36, 0x2a4a6a], [55, 0xb8b8b4]]) { const z = -17.6; solid('flat', x, 0.65, z, 4.2, 0.8, 1.8, col, { surface: 'metal' }); solid('glass', x + 0.2, 1.3, z, 2.2, 0.55, 1.6, 0xffffff, { phys: false }); for (const dx of [-1.3, 1.3]) for (const s of [-1, 1]) cyl('flat', x + dx, 0.32, z + s * 0.85, 0.32, 0.32, 0.2, 0x1a1a1a, { phys: false, seg: 10 }); } // parked cars
-  const aboard = (x, z, s, txt, bg) => { solid('wood', x, 0.45, z, 0.55, 0.9, 0.06, 0x2E2F2C, { phys: false, rx: s * 0.12 }); quad('atlas', x, 0.5, z - s * 0.04, 0.48, 0.6, s > 0 ? Math.PI : 0, atlas.fascia(txt, null, bg, '#EFE3C8', 0.8)); };
+  const aboard = (x, z, s, txt, bg) => { solid('wood', x, 0.45, z, 0.55, 0.9, 0.06, 0x2E2F2C, { phys: false, rx: s * 0.12 }); solid('flat', x, 0.45, z - s * 0.035, 0.48, 0.8, 0.01, new THREE.Color(bg), { phys: false, rx: s * 0.12 }); quad('atlas', x, 0.62, z - s * 0.05, 0.46, 0.29, s > 0 ? Math.PI : 0, atlas.fascia(txt, null, bg, '#EFE3C8', 1.6)); }; // v2.8: wide fascia (was a tall 512x640 tile)
   aboard(-30, 20.2, 1, 'LIVE MUSIC', '#1d3b2a'); aboard(20, -20.2, -1, 'SOUP & A ROLL', '#C77B2E'); aboard(4, 20.2, 1, 'FRESH BREAD', '#2f4a2a'); aboard(-55, -20.2, -1, 'OPEN', '#a82a24');
   for (const [x, z] of [[-41.6, 21.3], [-41, 21.3]]) { cyl('wood', x, 0.45, z, 0.3, 0.27, 0.9, 0x6b4a2b, { seg: 10 }); cyl('metal', x, 0.75, z, 0.305, 0.305, 0.05, 0x2a2b29, { phys: false, seg: 10 }); } // pub barrels
   for (const x of [-4, -2.8]) { for (const dx of [-0.3, 0.3]) cyl('metal', x + dx, 0.4, -20.9, 0.025, 0.025, 0.8, 0x2a2b29, { phys: false, seg: 5 }); solid('metal', x, 0.8, -20.9, 0.65, 0.05, 0.05, 0x2a2b29, { phys: false }); } // bike stands
@@ -308,6 +315,7 @@ export function buildSquare(scene, world, mats, P) {
   // ---------- materials + build ----------
   const materials = makeMaterials(P, facadeTex, atlas.tex);
   { const m = materials.flat.clone(); m.map = tarmacTexture(); materials.tarmac = m; }
+  { const m = materials.flat.clone(), t = new THREE.CanvasTexture(vsCanvas); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; m.map = t; materials.vsfront = m; }
   { const m = materials.flat.clone(), t = new THREE.CanvasTexture(fanCanvas); t.colorSpace = THREE.SRGBColorSpace; m.map = t; materials.fan = m; }
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   for (const d of dynamics) { d.mesh = new THREE.Mesh(d.geo, materials.flat); d.mesh.castShadow = P.shadows; scene.add(d.mesh); }

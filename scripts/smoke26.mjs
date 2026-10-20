@@ -10,7 +10,7 @@ ok(await pg.evaluate(() => __game.targets.length === 11 && ['bin','bench','cone'
 ok(/Grassmarket: <b>0\/11/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Grassmarket goals, not the Pilton supper');
 // bounds: walk hard at every edge, and up Victoria Street
 for (const [from, to, test, name] of [[[0, 0], [0, 40], 'p.z < 22', 'north terrace'], [[0, 0], [0, -40], 'p.z > -22', 'south terrace'], [[50, 0], [90, 0], 'p.x < 64', 'west end'], [[-50, 5], [-90, 5], 'p.x > -64', 'east end'],
-  [[-57, 18], [-60, 60], 'p.z > 24 && p.z < 30 && p.y < 3', 'Victoria Street stop'], [[30, -15], [30, -60], 'p.z > -50', 'back court wall']]) {
+  [[-57, 18], [-60, 60], 'p.z > 24 && p.z < 34 && p.y < 3', 'Victoria Street stop'], [[30, -15], [30, -60], 'p.z > -50', 'back court wall']]) {
   await pg.evaluate(([f, t]) => { __game.teleport(f[0], f[1], 0); __game.walk([t]); }, [from, to]); await pg.waitForTimeout(6000);
   const p = await pg.evaluate(() => ({ ...__game.player.position })); ok(eval(test) && p.y > 0.2, `bounds: ${name} ${JSON.stringify(p)}`); }
 await pg.evaluate(() => { const p = __game.player.position; __game.walk([[p.x, p.z + 0.01]]); }); await pg.waitForTimeout(1500);

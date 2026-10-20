@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from './batch.js';
 import { buildCastle } from './castle.js';
-import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps , grimeTexture } from './textures.js';
+import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, pbrMaps , grimeTexture, stoneTexture, castleFaceTexture } from './textures.js';
 
 // Layout (metres). Lower street (Grassmarket-style) runs along +Z, z -50..30.
 // At z=30 the street BENDS right by BEND.yaw and climbs (Victoria-Street-style) 3.6 m over 20 m
@@ -473,7 +473,7 @@ export function makeMaterials(P, facadeTex, atlasTex) {
     glass: mk({ color: P.pbr ? 0x2b3a48 : 0x41505c, emissive: 0x2e2616, roughness: 0.12, metalness: 0.3 }),
     lamp: new THREE.MeshBasicMaterial({ color: 0xffe2a0 }),
     facade: mk({ map: facadeTex, roughness: 0.9 }),
-    stone: mk({ ...pbrMaps('sandstone') }),
+    stone: mk({ ...pbrMaps('sandstone'), map: stoneTexture('ashlar') }), // v2.8: generated grey ashlar (photo normal/roughness kept on higher presets)
     roof: mk({ ...pbrMaps('slate', { normal: false }) }),
     cobble: mk({ ...pbrMaps('cobble') }),
     paving: mk({ ...pbrMaps('paving') }),
@@ -482,7 +482,8 @@ export function makeMaterials(P, facadeTex, atlasTex) {
     grime: mk({ map: grimeTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), // v2.7 weathering decals
     // distant castle: lighter, partial haze (fog distance scaled) so it reads as far away but stays legible
     castleRock: hazed(mk({ side: THREE.DoubleSide }), 0.5),
-    castleStone: hazed(mk({ ...pbrMaps('sandstone', { normal: false }) }), 0.5),
+    castleStone: hazed(mk({ ...pbrMaps('sandstone', { normal: false }), map: stoneTexture('rubble') }), 0.5),
+    castleFace: hazed(mk({ map: castleFaceTexture() }), 0.5),
     pigeon: new THREE.MeshLambertMaterial({ color: 0x6f7480 }),
     pigeonHead: new THREE.MeshLambertMaterial({ color: 0x4b5f6a }),
   };
