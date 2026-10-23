@@ -29,8 +29,9 @@ body.touch #crosshair{width:8px;height:8px}
 #lookZone{position:fixed;right:0;top:0;width:55vw;height:100vh;z-index:4}
 #touch button{position:fixed;z-index:6;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,40,70,.55);color:#fff;font-weight:800;touch-action:none}
 #btnKick{right:calc(26px + env(safe-area-inset-right));bottom:calc(36px + env(safe-area-inset-bottom));width:96px;height:96px;font-size:20px;background:rgba(200,60,40,.6)!important}
-#btnJump{right:calc(134px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:66px;height:66px;font-size:13px}
-#btnBall{right:calc(40px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:13px}
+/* v3.0.1: JUMP sits just above KICK, BALL moved left of KICK (further from the thumb) so free balls aren't wasted by accident */
+#btnJump{right:calc(40px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:13px}
+#btnBall{right:calc(134px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:66px;height:66px;font-size:13px}
 #btnPause{right:calc(12px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));width:44px;height:44px;font-size:14px}
 #perf{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:30;background:rgba(0,0,0,.65);color:#9f9;font:12px/1.35 ui-monospace,Menlo,monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;text-align:left}
 #perf.hidden{display:none}
@@ -94,7 +95,7 @@ body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}
 #ballArrow small { display: block; font-size: 12px; }
 
 /* ================= v2.0 design pass: "Nostalgic Street Realism" (style sheet signed off 18 Oct 2026) ================= */
-:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--target:#FFD93D;--bagged:#47D16C}
+:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--granton:#3D6F8E;--newhaven:#B8405E;--leith:#6B3F73;--target:#FFD93D;--bagged:#47D16C}
 html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sans-serif}
 #hud{font-size:17px;font-weight:700;gap:5px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
 #hud>#score,#hud>#targets,#hud>#chal{background:rgba(46,47,44,.72);border-left:5px solid var(--yellow);padding:1px 10px 1px 8px;border-radius:4px;align-self:flex-start;letter-spacing:.5px;text-transform:uppercase;font-size:14px}
@@ -130,6 +131,9 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 .card .levels button small{display:block;font-weight:500;font-size:13px}
 .card .levels button.on[data-level=pilton]{background:var(--pilton);color:#fff}
 .card .levels button.on[data-level=grassmarket]{background:var(--oldtown);color:#fff}
+.card .levels button.on[data-level=granton]{background:var(--granton);color:#fff}
+.card .levels button.on[data-level=newhaven]{background:var(--newhaven);color:#fff}
+.card .levels button.on[data-level=leith]{background:var(--leith);color:#fff}
 .card .gfx button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;background:#fff8e8;color:var(--charcoal);border:2px solid var(--charcoal);box-shadow:none}
 .card .gfx button.on{background:var(--yellow)}
 .card.goal{border-color:var(--charcoal)}
@@ -179,3 +183,4 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 /* v2.4 volume slider */
 .vol{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin:4px 8px;color:var(--charcoal)}
 .vol input{width:130px;accent-color:var(--brick);touch-action:pan-x}
+#toast .splash-msg{display:block;font-size:34px;line-height:1.1;letter-spacing:.04em;color:#1f6fa6;text-shadow:0 2px 0 rgba(255,255,255,.7)}

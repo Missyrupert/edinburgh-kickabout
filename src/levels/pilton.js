@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from '../batch.js';
-import { SignAtlas, drawTargetDoor, harlTextureV2, brickTexture, garageDoorTexture, tarmacTexture } from '../textures.js';
+import { GRIME_UV, SignAtlas, drawTargetDoor, harlTextureV2, brickTexture, garageDoorTexture, tarmacTexture } from '../textures.js';
 import { buildParade } from './pilton-parade.js';
 import { makeMaterials, mulberry32, mergeSimple } from '../world.js';
 
@@ -64,7 +64,7 @@ function build(scene, world, mats, P) {
   quad('atlas', 0, 0.01, -20, 3.2, 0.8, 0, atlas.sign('SLOW', '#6a6c68', '#EFE3C8', 4, 'bold 60px "Barlow Condensed", Arial'), 0xffffff, { rx: -Math.PI / 2 });
 
   // ---------- buildings ----------
-  const HARL = [0xefe3c8, 0xe8dcc2, 0xd6cdbd, 0xeee5d2], PINK = 0xdcc6b6, GREY = 0xc9c7c1;
+  const HARL = [0xc9c6be, 0xbdb9b0, 0xd2cdc2, 0xe6dcc6] /* v2.7: grey pebbledash, one cream block kept for warmth */, PINK = 0xdcc6b6, GREY = 0xc9c7c1;
   // windows + frames on one face. face: '+x' etc. Positions are along the face.
   function windows(face, fx, fz, len, floors, fh, base, { door = null, doorCol = 0x2f5a3a } = {}) {
     const ry = ROT[face], n = Math.max(1, Math.round(len / 3)), bw = len / n;
@@ -93,7 +93,7 @@ function build(scene, world, mats, P) {
   function block(x0, x1, z0, z1, h, floors, { col = pick(HARL), roof = 'pitched', front = '-x', doors = [1], back = true, chimneys = 2 } = {}) {
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
     solid('harl', cx, h / 2, cz, w, h, d, col, { tile: 2.5, grime: 0.12 });
-    solid('flat', cx, 0.25, cz, w + 0.06, 0.5, d + 0.06, 0x8f8c86, { phys: false }); // dark base course
+    solid('flat', cx, 0.45, cz, w + 0.06, 0.9, d + 0.06, 0x7a6254, { phys: false }); // v2.7: brown render base course, as on the walk-up flats
     const alongZ = d > w, fh = h / floors;
     const faces = alongZ ? [['-x', x0, cz, d], ['+x', x1, cz, d]] : [['-z', cx, z0, w], ['+z', cx, z1, w]];
     faces.forEach(([f, fx, fz, len], k) => { if (k === 1 && !back) return; windows(f, fx, fz, len, floors, fh, 0, { door: f === front ? doors : null, doorCol: pick([0x2f5a3a, 0x8e1c1c, 0x1d3b6b, 0x5a4a32]) }); });
@@ -157,13 +157,21 @@ function build(scene, world, mats, P) {
   // ---------- street furniture ----------
   function lamp(x, z, side, target = null) { // concrete column, swan-neck head
     cyl('flat', x, 3, z, 0.09, 0.14, 6, 0xb9b7ae, { seg: 6, target });
-    solid('flat', x - side * 0.55, 6.05, z, 1.1, 0.1, 0.14, 0xb9b7ae, { phys: false });
-    solid('lamp', x - side * 1.0, 5.92, z, 0.45, 0.12, 0.22, 0xffffff, { phys: false });
+    for (let k = 0; k < 5; k++) { const a = (k + 0.5) / 5 * Math.PI / 2; solid('flat', x - side * (0.3 - Math.cos(a) * 0.3), 6 + Math.sin(a) * 0.3, z, 0.09, 0.14, 0.12, 0xb9b7ae, { phys: false, rz: side * a }); } // v2.7: true swan neck
+    solid('flat', x - side * 0.65, 6.3, z, 0.7, 0.08, 0.12, 0xb9b7ae, { phys: false, rz: side * -0.08 });
+    solid('flat', x - side * 1.05, 6.22, z, 0.55, 0.12, 0.26, 0x8f8d86, { phys: false }); solid('lamp', x - side * 1.05, 6.14, z, 0.45, 0.05, 0.2, 0xffffff, { phys: false });
   }
   for (let z = -40; z <= 24; z += 16) { if (z !== 24) lamp(5.6, z, 1); if (z !== -8 && z !== 24) lamp(-5.6, z + 8, -1); }
   lamp(4.3, 24, 1); lamp(-4.6, 30.3, -1); // v2.3: moved to the kerb so they don't stand in front of the shopfronts
   // bins: green wheelies by the cottage-flat gates; big communal bins by the garages
   function wheelie(x, z, col, ry = 0) { solid('flat', x, 0.5, z, 0.6, 1.0, 0.72, col, { ry }); solid('flat', x, 1.02, z, 0.66, 0.06, 0.78, new THREE.Color(col).multiplyScalar(0.8), { phys: false, ry }); }
+  // v2.7: commercial 1100-litre bins (grey, domed lids, four castors) and a concrete kerb island with bollards
+  function bigBin(x, z, col) { solid('flat', x, 0.62, z, 1.25, 1.0, 1.0, col, { surface: 'plastic' }); B.add('flat', new THREE.CylinderGeometry(0.52, 0.52, 1.3, 10, 1, false, -Math.PI / 2, Math.PI), M4(x, 1.12, z, 1, 1, 0.6, 0, 0, Math.PI / 2), new THREE.Color(col).multiplyScalar(0.85), {});
+    for (const [dx, dz] of [[-0.5, -0.4], [0.5, -0.4], [-0.5, 0.4], [0.5, 0.4]]) cyl('flat', x + dx, 0.07, z + dz, 0.07, 0.07, 0.1, 0x1a1a1a, { phys: false, seg: 6 }); }
+  bigBin(-9.2, -44.6, 0x6f7472); bigBin(-10.8, -44.6, 0x2e5a34);
+  solid('flat', 0, 0.07, -43.5, 1.4, 0.14, 4, 0xb4b0a6, { phys: false }); boxBody(0, 0.07, -43.5, 1.4, 0.14, 4, { surface: 'paving' });
+  for (const dz of [-1.6, 1.6]) { cyl('flat', 0, 0.55, -43.5 + dz, 0.12, 0.14, 0.9, 0xe8e6e0, { seg: 8 }); cyl('flat', 0, 0.82, -43.5 + dz, 0.125, 0.125, 0.12, 0x1d3b6b, { phys: false, seg: 8 }); }
+  for (let k = 0; k < 4; k++) cyl('flat', -5.2, 0.4, -44 + k * 1.6, 0.13, 0.15, 0.8, 0xc9c6bc, { seg: 6 }); // concrete bollards at the kerb
   wheelie(-6.6, -31.5, 0x2e5a34); wheelie(-6.6, -14.2, 0x1d1f1f); wheelie(-6.6, -10.8, 0x2e5a34);
   // grass verges with "keep off" humour, a bench, the bus stop and a trolley
   sign('DOGS MUST BE KEPT ON A LEAD', 7.3, 0.85, -40, 2.4, 0.3, -Math.PI / 2, '#1d3b6b', '#fff', 'bold 30px Arial', '#fff');
@@ -324,6 +332,9 @@ function build(scene, world, mats, P) {
   const tm = (t) => { const m = materials.flat.clone(); m.map = t; return m; };
   materials.harl = tm(harlTextureV2()); materials.brick = tm(brickTexture()); materials.garage = tm(garageDoorTexture()); materials.tarmac = tm(tarmacTexture());
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
+  { const rr = mulberry32(2707); // v2.7: oil stains and worn patches on the road, gutter dirt along the kerbs
+    for (let k = 0; k < 22; k++) { const x = (rr() - 0.5) * 8, z = -44 + rr() * 66, w = 1.5 + rr() * 3; B.add('grime', QUAD, M4(x, 0.012, z, w, w * 0.7, 1, -Math.PI / 2, rr() * 3), 0xffffff, { uvRect: GRIME_UV[rr() < 0.6 ? 1 : 0] }); }
+    for (const sx of [-1, 1]) for (let k = 0; k < 9; k++) B.add('grime', QUAD, M4(sx * 4.3, 0.013, -44 + k * 7.5, 1.0, 5, 1, -Math.PI / 2), 0xffffff, { uvRect: GRIME_UV[3] }); }
   const batches = B.build(scene, materials, { shadows: P.shadows });
   const views = { spawn: [0, -36, 180, -8], midstreet: [0, 0, 180, -4], terrace: [15, -4, -90, 2, rise + 0.9] };
   return { targets, challenges, sparkles: spk, dynamics, pigeons: pig, materials, batches, views, counter: COUNTER };

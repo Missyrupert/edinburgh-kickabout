@@ -1,8 +1,11 @@
 // Level registry + selection. Order: ?level= URL param > saved choice > West Pilton (default for new players).
 import grassmarket from './grassmarket.js';
 import pilton from './pilton.js';
-export const LEVELS = { pilton, grassmarket };
-export const LEVEL_ORDER = ['pilton', 'grassmarket'];
+import granton from './granton.js';
+import newhaven from './newhaven.js';
+import leith from './leith.js';
+export const LEVELS = { pilton, grassmarket, granton, newhaven, leith };
+export const LEVEL_ORDER = ['pilton', 'grassmarket', 'granton', 'newhaven', 'leith'];
 const q = new URLSearchParams(location.search);
 let saved = null; try { saved = localStorage.getItem('ek-level'); } catch {}
 const fromUrl = q.get('level');

@@ -2,13 +2,18 @@
 import { chromium } from 'playwright-core';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-const PORT = 4179, BASE = `http://127.0.0.1:${PORT}/`, URL = BASE + '?level=grassmarket';
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { stdio: 'ignore' });
+const PORT = Number(process.env.VERIFY_PORT) || 4300 + Math.floor(Math.random() * 600), BASE = `http://127.0.0.1:${PORT}/`, URL = BASE + '?level=grassmarket';
+const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { stdio: 'ignore', detached: true });
+const killServer = () => { try { process.kill(-server.pid, 'SIGTERM'); } catch {} };
+process.on('exit', killServer);
+const WATCHDOG_MS = Number(process.env.VERIFY_TIMEOUT_MS) || 20 * 60 * 1000;
+setTimeout(() => { console.log('FAIL watchdog: verify exceeded ' + WATCHDOG_MS + ' ms'); killServer(); process.exit(2); }, WATCHDOG_MS).unref();
+console.log(`verify: preview on port ${PORT}`);
 await new Promise((r) => setTimeout(r, 2500));
 mkdirSync('screenshots', { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const results = []; let fail = false;
-const check = (name, ok, info = '') => { results.push(`${ok ? 'PASS' : 'FAIL'} ${name} ${info}`); if (!ok) fail = true; };
+const check = (name, ok, info = '') => { const line = `${ok ? 'PASS' : 'FAIL'} ${name} ${info}`; results.push(line); console.log(line); if (!ok) fail = true; };
 const wait = (p, ms) => p.waitForTimeout(ms);
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -247,9 +252,9 @@ try {
   }
   check('welcome screen fits 412x915 and 915x412 with no scroll', Object.values(fit).every((f) => f.ok), JSON.stringify(fit));
   // level select: menu button -> Grassmarket, travel button -> back to Pilton, ?level= param
-  await Promise.all([pg.waitForURL(/level=grassmarket/, { timeout: 60000 }), pg.click('[data-level="grassmarket"]')]); await ready();
+  await Promise.all([pg.waitForURL(/level=grassmarket/, { timeout: 60000, waitUntil: 'domcontentloaded' }), pg.click('[data-level="grassmarket"]')]); await ready();
   const lv1 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
-  await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000 }), pg.evaluate(() => { window.__game.start(); window.__game.pause(); }).then(() => pg.click('#travelBtn'))]); await ready();
+  await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000, waitUntil: 'domcontentloaded' }), pg.evaluate(() => { window.__game.start(); window.__game.pause(); }).then(() => pg.click('#travelBtn'))]); await ready();
   const lv2 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
   await go(BASE); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
   check('level transition both ways (menu + travel button + saved)', lv1[0] === 'grassmarket' && lv1[1] === 11 && lv2[0] === 'pilton' && lv3 === 'pilton', JSON.stringify({ lv1, lv2, lv3 }));
@@ -431,6 +436,6 @@ check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | ')
   await pmp.evaluate(() => window.__game.teleport(16, -4, 90, 0, 2.1)); await wait(pmp, 800); await pmp.screenshot({ path: 'screenshots/pilton-phone-drying-green.png' });
   check('Pilton: no console errors (mobile)', pmerr.length === 0, pmerr.join(' | '));
 } catch (e) { check('script', false, String(e)); }
-await browser.close(); server.kill();
-console.log(results.join('\n'));
+await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 10000))]); killServer();
+console.log(`verify done: ${results.filter((l) => l.startsWith('PASS')).length} pass, ${results.filter((l) => l.startsWith('FAIL')).length} fail`);
 process.exit(fail ? 1 : 0);

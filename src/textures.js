@@ -54,12 +54,14 @@ export function facadeAtlas(onReady) {
     }
     t.needsUpdate = true; onReady && onReady();
   };
-  draw(null);
-  const img = new Image(); img.onload = () => draw(img); img.src = BASE + 'tex/sandstone_diff.webp';
+  // v2.8: the honey photo is gone - each bay is generated coursed ashlar in cool Edinburgh grey (16 different seeds)
+  for (let i = 0; i < 16; i++) { const x0 = (i % 4) * C, y0 = Math.floor(i / 4) * C; g.save(); g.beginPath(); g.rect(x0, y0, C, C); g.clip(); g.translate(x0, y0); g.scale(C / 256, C / 256);
+    const [cc, gg] = canvas(256, 256); drawEdinStone(gg, 256, 256, 20 + i, { courses: 10, soot: 0.6 }); g.drawImage(cc, 0, 0); cell(g, i); g.restore(); }
+  t.needsUpdate = true; onReady && onReady();
   return t;
 }
 function sash(g, x, y, w, h, { lit = false, panes = 2, surround = true } = {}) {
-  if (surround) { g.fillStyle = '#d2bc94'; g.fillRect(x - 10, y - 10, w + 20, h + 22); g.fillStyle = 'rgba(40,30,15,.3)'; g.fillRect(x - 10, y + h + 8, w + 20, 4); }
+  if (surround) { g.fillStyle = '#bdb7aa'; g.fillRect(x - 10, y - 10, w + 20, h + 22); g.fillStyle = 'rgba(40,30,15,.3)'; g.fillRect(x - 10, y + h + 8, w + 20, 4); }
   g.fillStyle = '#1b2129'; g.fillRect(x, y, w, h);
   const gr = g.createLinearGradient(x, y, x + w, y + h);
   if (lit) { gr.addColorStop(0, '#f7d58f'); gr.addColorStop(1, '#a8743a'); } else { gr.addColorStop(0, '#a9bfd0'); gr.addColorStop(0.5, '#4b6074'); gr.addColorStop(1, '#1a222b'); }
@@ -70,7 +72,7 @@ function sash(g, x, y, w, h, { lit = false, panes = 2, surround = true } = {}) {
   g.lineWidth = 4; g.strokeStyle = '#efe9dc'; g.strokeRect(x + 4, y + 4, w - 8, h - 8);
 }
 function door(g, col) {
-  g.fillStyle = '#cdb68d'; g.fillRect(70, 40, 116, 216); // surround
+  g.fillStyle = '#b9b3a6'; g.fillRect(70, 40, 116, 216); // surround
   g.fillStyle = '#2a2a2a'; g.beginPath(); g.arc(128, 82, 40, Math.PI, 0); g.fill(); // fanlight
   g.fillStyle = '#87a0b4'; g.beginPath(); g.arc(128, 82, 34, Math.PI, 0); g.fill();
   g.strokeStyle = '#eee'; g.lineWidth = 3; for (let a = 1; a < 6; a++) { g.beginPath(); g.moveTo(128, 82); g.lineTo(128 - Math.cos(a / 6 * Math.PI) * 34, 82 - Math.sin(a / 6 * Math.PI) * 34); g.stroke(); }
@@ -83,16 +85,16 @@ function cell(g, i) {
   switch (i) {
     case F.plain: break;
     case F.sashA: sash(g, 78, 40, 100, 170); break;
-    case F.sashB: g.fillStyle = '#d2bc94'; g.fillRect(64, 18, 128, 14); sash(g, 80, 46, 96, 164, { panes: 3 }); break;
+    case F.sashB: g.fillStyle = '#bdb7aa'; g.fillRect(64, 18, 128, 14); sash(g, 80, 46, 96, 164, { panes: 3 }); break;
     case F.triple: sash(g, 30, 50, 52, 160, { surround: true }); sash(g, 98, 50, 60, 160); sash(g, 174, 50, 52, 160); break;
     case F.small: sash(g, 88, 70, 80, 110); break;
     case F.door: door(g, '#1d3b2a'); break;
-    case F.blind: g.fillStyle = '#c3ad86'; g.fillRect(70, 30, 116, 190); g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(80, 40, 96, 170); break; // blocked window (window tax)
+    case F.blind: g.fillStyle = '#a9a398'; g.fillRect(70, 30, 116, 190); g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(80, 40, 96, 170); break; // blocked window (window tax)
     case F.lit: sash(g, 78, 40, 100, 170, { lit: true }); break;
     case F.flowers: sash(g, 78, 30, 100, 160); g.fillStyle = '#5a3b22'; g.fillRect(70, 196, 116, 22); for (let k = 0; k < 9; k++) { g.fillStyle = ['#c62d4a', '#f2c94c', '#e86fb0'][k % 3]; g.beginPath(); g.arc(80 + k * 12, 192, 7, 0, 7); g.fill(); } break;
-    case F.pediment: g.fillStyle = '#d2bc94'; g.beginPath(); g.moveTo(60, 40); g.lineTo(128, 6); g.lineTo(196, 40); g.fill(); sash(g, 80, 50, 96, 160); break;
+    case F.pediment: g.fillStyle = '#bdb7aa'; g.beginPath(); g.moveTo(60, 40); g.lineTo(128, 6); g.lineTo(196, 40); g.fill(); sash(g, 80, 50, 96, 160); break;
     case F.rustic: g.strokeStyle = 'rgba(40,28,14,.5)'; g.lineWidth = 5; for (let y = 32; y < 256; y += 48) { g.beginPath(); g.moveTo(0, y); g.lineTo(256, y); g.stroke(); } sash(g, 82, 60, 92, 120); break;
-    case F.arch: g.fillStyle = '#cdb68d'; g.fillRect(50, 60, 156, 196); g.fillStyle = '#121418'; g.fillRect(66, 110, 124, 146); g.beginPath(); g.arc(128, 110, 62, Math.PI, 0); g.fill(); break;
+    case F.arch: g.fillStyle = '#b9b3a6'; g.fillRect(50, 60, 156, 196); g.fillStyle = '#121418'; g.fillRect(66, 110, 124, 146); g.beginPath(); g.arc(128, 110, 62, Math.PI, 0); g.fill(); break;
     case F.shopUpper: g.fillStyle = 'rgba(40,28,14,.25)'; g.fillRect(0, 200, 256, 56); sash(g, 78, 30, 100, 150); break;
     case F.doorRed: door(g, '#7a1a1a'); break;
     case F.doorGreen: door(g, '#20304f'); break;
@@ -103,14 +105,15 @@ function cell(g, i) {
 // ---------- sign atlas: all signs, plaques and the target door share one texture ----------
 export class SignAtlas {
   constructor() {
-    this.W = PRESET.texSize <= 512 ? 1536 : 2048; this.H = this.W; this.k = this.W / 2048; // v2.3: signs stay sharp on low (k=0.75); wall/road textures unchanged
+    this.W = 1536; this.H = 2048; /* v2.8: same atlas on every preset (k = 0.75 stays sharp; 2048 at k = 1 overflowed on medium/high) */ this.k = this.W / 2048; /* v2.7: taller on low. v2.8 fix: a comment here had swallowed this.k, so every sign was drawn at NaN (blank/black) in v2.7 */ // v2.3: signs stay sharp on low (k=0.75); wall/road textures unchanged
     [this.c, this.g] = canvas(this.W, this.H); this.x = 0; this.y = 0; this.rowH = 0;
-    this.tex = canvasTex(this.c, false);
+    this.g.fillStyle = '#8a857c'; this.g.fillRect(0, 0, this.W, this.H); // v2.8: unused atlas space is mid-grey, not transparent black (mip levels were bleeding black into signs seen at a grazing angle)
+    this.tex = canvasTex(this.c, false); this.tex.anisotropy = 8;
   }
   alloc(w, h) { // in 2048-space px
     w *= this.k; h *= this.k;
     if (this.x + w > this.W) { this.x = 0; this.y += this.rowH + 2; this.rowH = 0; }
-    const r = { x: this.x, y: this.y, w, h }; this.x += w + 2; this.rowH = Math.max(this.rowH, h);
+    const r = { x: this.x, y: this.y, w, h }; this.x += w + 2; this.rowH = Math.max(this.rowH, h); if (!(w > 0 && h > 0)) console.warn('sign atlas full (bad alloc)'); if (location.search.includes('atlasdebug')) console.log('ALLOC', r.x | 0, r.y | 0, w | 0, h | 0, new Error().stack.split('\n')[3]);
     if (this.y + h > this.H) console.warn('sign atlas full');
     return r;
   }
@@ -226,14 +229,14 @@ export function harlTexture() {
 const v2Cache = {};
 function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) / 2147483647); }
 // Warm pebbledash: chunky light/dark pebbles over a cream base. Tinted per building with vertex colours.
-export function harlTextureV2() {
+export function harlTextureV2() { // v2.7: grey pebbledash (West Pilton flats), stays light so vertex colour can tint it
   if (v2Cache.harl) return v2Cache.harl;
   const S = 256, [c, g] = canvas(S, S), r = rng(11);
-  g.fillStyle = '#efe6d4'; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 2600; i++) { const x = r() * S, y = r() * S, s = 0.8 + r() * 2.2, v = r();
-    g.fillStyle = v < 0.45 ? `rgba(120,108,90,${0.25 + r() * 0.3})` : v < 0.8 ? `rgba(255,250,238,${0.5 + r() * 0.4})` : `rgba(170,150,120,${0.3 + r() * 0.3})`;
+  g.fillStyle = '#e4e2dc'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 7000; i++) { const x = r() * S, y = r() * S, s = 0.6 + r() * 1.6, v = r();
+    g.fillStyle = v < 0.4 ? `rgba(90,88,84,${0.2 + r() * 0.3})` : v < 0.75 ? `rgba(255,255,252,${0.5 + r() * 0.4})` : `rgba(140,130,118,${0.35 + r() * 0.3})`;
     g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
-  g.globalAlpha = 0.07; g.fillStyle = '#4a4238'; for (let i = 0; i < 30; i++) g.fillRect(r() * S, r() * S * 0.4, 1 + r() * 2, 50 + r() * 140); // rain streaks
+  g.globalAlpha = 0.08; g.fillStyle = '#3a3630'; for (let i = 0; i < 30; i++) g.fillRect(r() * S, r() * S * 0.4, 1 + r() * 2, 50 + r() * 140); // rain streaks
   g.globalAlpha = 1; return (v2Cache.harl = canvasTex(c, true));
 }
 // Brick: muted brick courses with lime mortar, a few darker/lighter bricks.
@@ -270,4 +273,116 @@ export function tarmacTexture() {
   g.fillStyle = 'rgba(40,40,38,.18)'; g.fillRect(40, 150, 90, 60); g.fillRect(170, 30, 50, 44); // patch repairs
   g.strokeStyle = 'rgba(30,30,28,.4)'; g.lineWidth = 1.2; for (let i = 0; i < 4; i++) { let x = r() * S, y = r() * S; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 30; y += r() * 18; g.lineTo(x, y); } g.stroke(); }
   return (v2Cache.tarmac = canvasTex(c, true));
+}
+
+// v2.7: soft weathering decals (2x2 atlas): 0 ground blotch, 1 oil/damp stain, 2 vertical wall streaks, 3 kerb-edge dirt
+export function grimeTexture() {
+  if (v2Cache.grime) return v2Cache.grime;
+  const S = 256, H = S / 2, [c, g] = canvas(S, S), r = rng(77);
+  const blot = (ox, oy, n, col) => { for (let i = 0; i < n; i++) { const x = ox + H / 2 + (r() - 0.5) * H * 0.6, y = oy + H / 2 + (r() - 0.5) * H * 0.6, rr = 6 + r() * 26;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, col.replace('A', (0.10 + r() * 0.14).toFixed(2))); gr.addColorStop(1, col.replace('A', '0')); g.fillStyle = gr; g.fillRect(ox, oy, H, H); } };
+  g.save(); g.beginPath(); g.rect(0, 0, H, H); g.clip(); blot(0, 0, 26, 'rgba(40,34,26,A)'); g.restore();
+  g.save(); g.beginPath(); g.rect(H, 0, H, H); g.clip(); blot(H, 0, 14, 'rgba(20,20,22,A)'); g.restore();
+  for (let i = 0; i < 40; i++) { const x = r() * H, w = 1 + r() * 5, len = H * (0.3 + r() * 0.7); const gr = g.createLinearGradient(0, H, 0, H + len); gr.addColorStop(0, `rgba(45,40,34,${0.18 + r() * 0.2})`); gr.addColorStop(1, 'rgba(45,40,34,0)'); g.fillStyle = gr; g.fillRect(x, H, w, len); }
+  { const gr = g.createLinearGradient(0, S, 0, H + H * 0.4); gr.addColorStop(0, 'rgba(38,34,28,.35)'); gr.addColorStop(1, 'rgba(38,34,28,0)'); g.fillStyle = gr; g.fillRect(H, H, H, H); }
+  return (v2Cache.grime = canvasTex(c, true));
+}
+export const GRIME_UV = [[0.002, 0.502, 0.498, 0.998], [0.502, 0.502, 0.998, 0.998], [0.002, 0.002, 0.498, 0.498], [0.502, 0.002, 0.998, 0.498]];
+
+// ---------- v2.8: Edinburgh stone, generated in code ----------
+// Cool grey Craigleith-type sandstone: coursed ashlar (or random rubble) blocks, each with its own tone
+// (grey, blue-grey, the odd buff or rust-stained stone), speckle grain, lime mortar joints with a shadowed
+// upper edge, patchy black soot crust and rain streaks. Tileable in x and y.
+const STONE_TONES = [[150, 148, 142], [138, 136, 131], [160, 156, 148], [128, 128, 126], [146, 140, 128], [168, 162, 150], [120, 118, 114], [152, 142, 124]];
+export function drawEdinStone(g, W, H, seed = 5, { rubble = false, courses = 8, soot = 0.5, mortar = '#a8a296' } = {}) {
+  const r = rng(seed * 7919 + 13);
+  g.fillStyle = mortar; g.fillRect(0, 0, W, H);
+  const block = (x, y, w, h) => { const t = STONE_TONES[Math.floor(r() * STONE_TONES.length)], v = (r() - 0.5) * 18;
+    const col = (k = 0) => `rgb(${t[0] + v + k | 0},${t[1] + v + k | 0},${t[2] + v + k | 0})`;
+    for (const dx of [-W, 0, W]) for (const dy of [-H, 0, H]) { const X = x + dx, Y = y + dy; if (X > W || X + w < 0 || Y > H || Y + h < 0) continue;
+      const gr = g.createLinearGradient(X, Y, X, Y + h); gr.addColorStop(0, col(8)); gr.addColorStop(1, col(-10)); g.fillStyle = gr;
+      if (rubble) { g.beginPath(); g.moveTo(X + r() * 3, Y + r() * 3); g.lineTo(X + w - r() * 3, Y + r() * 3); g.lineTo(X + w - r() * 3, Y + h - r() * 3); g.lineTo(X + r() * 3, Y + h - r() * 3); g.fill(); }
+      else g.fillRect(X, Y, w, h);
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(X, Y, w, Math.max(1, h * 0.06)); // shadow under the joint above
+      g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(X, Y + h - Math.max(1, h * 0.05), w, Math.max(1, h * 0.05)); } };
+  if (rubble) { let y = 0; while (y < H) { const ch = H / courses * (0.6 + r() * 0.8); let x = -r() * 20; while (x < W) { const w = ch * (1 + r() * 1.6); block(x + 1.5, y + 1.5, w - 3, ch - 3); x += w; } y += ch; } }
+  else { const ch = H / courses; for (let i = 0; i < courses; i++) { let x = -r() * 40; const bw = ch * (2.2 + r() * 0.8); while (x < W) { const w = bw * (0.7 + r() * 0.6); block(x + 1, i * ch + 1, w - 2, ch - 2); x += w; } } }
+  const img = g.getImageData(0, 0, W, H), d = img.data; // grain speckle
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n * 0.9; }
+  g.putImageData(img, 0, 0);
+  for (let i = 0; i < 18 * soot; i++) { const x = r() * W, y = r() * H, rr = (0.05 + r() * 0.18) * W; const gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, `rgba(28,28,30,${0.25 + r() * 0.3})`); gr.addColorStop(1, 'rgba(28,28,30,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+  for (let i = 0; i < 26; i++) { const x = r() * W, w = 1 + r() * W * 0.02, len = H * (0.2 + r() * 0.6), y = r() * H; const gr = g.createLinearGradient(0, y, 0, y + len); gr.addColorStop(0, `rgba(40,40,42,${0.1 + r() * 0.15})`); gr.addColorStop(1, 'rgba(40,40,42,0)'); g.fillStyle = gr; g.fillRect(x, y, w, len); }
+}
+export function stoneTexture(kind = 'ashlar') {
+  const key = 'stone_' + kind; if (v2Cache[key]) return v2Cache[key];
+  const S = PRESET.texSize <= 512 ? 256 : 512, [c, g] = canvas(S, S);
+  drawEdinStone(g, S, S, kind === 'rubble' ? 9 : 3, { rubble: kind === 'rubble', courses: kind === 'rubble' ? 9 : 8 });
+  const t = canvasTex(c, true); t.generateMipmaps = true; return (v2Cache[key] = t);
+}
+// Castle faces: one small canvas with five painted elevations (rubble walls, irregular small windows, string courses).
+// Regions (u0,v0,u1,v1) in CASTLE_UV.
+export const CASTLE_UV = { barracks: [0, 0.5, 0.5, 1], hall: [0.5, 0.5, 1, 1], palace: [0, 0, 0.5, 0.5], tower: [0.5, 0, 0.75, 0.5], plain: [0.75, 0, 1, 0.5] };
+export function castleFaceTexture() {
+  if (v2Cache.castle) return v2Cache.castle;
+  const S = PRESET.texSize <= 512 ? 512 : 1024, k = S / 1024, [c, g] = canvas(S, S / 2 * 2), r = rng(1544);
+  const region = (x, y, w, h, fn) => { g.save(); g.beginPath(); g.rect(x * k, y * k, w * k, h * k); g.clip(); g.translate(x * k, y * k); g.scale(k, k);
+    const [cc, gg] = canvas(w, h); drawEdinStone(gg, w, h, (x + y) | 0, { rubble: true, courses: Math.round(h / 22), soot: 0.8, mortar: '#8e8a82' }); g.drawImage(cc, 0, 0); fn(w, h); g.restore(); };
+  const win = (x, y, w, h, lit = false) => { g.fillStyle = '#bdb8ac'; g.fillRect(x - 3, y - 3, w + 6, h + 6); g.fillStyle = lit ? '#c99a52' : '#1c2026'; g.fillRect(x, y, w, h); g.fillStyle = 'rgba(160,180,200,.25)'; g.fillRect(x + 1, y + 1, w - 2, h * 0.4); };
+  const course = (y, w) => { g.fillStyle = 'rgba(200,196,186,.55)'; g.fillRect(0, y, w, 4); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, y + 4, w, 2); };
+  region(0, 0, 512, 512, (w, h) => { for (let row = 0; row < 4; row++) { course(60 + row * 110 - 14, w); for (let i = 0; i < 12; i++) win(14 + i * 41.5, 60 + row * 110, 18, 46, r() < 0.06); } }); // New Barracks: regular grid
+  region(512, 0, 512, 512, (w, h) => { course(90, w); for (let i = 0; i < 7; i++) { const x = 30 + i * 68; win(x, 200, 30, 180); g.fillStyle = '#1c2026'; g.beginPath(); g.arc(x + 15, 200, 15, Math.PI, 0); g.fill(); } }); // Great Hall: tall arched windows
+  region(0, 512, 512, 512, (w, h) => { for (let row = 0; row < 4; row++) { course(80 + row * 105 - 18, w); for (let i = 0; i < 6; i++) if (r() > 0.15) win(24 + i * 82 + (r() - 0.5) * 16, 80 + row * 105 + (r() - 0.5) * 10, 22 + r() * 10, 40 + r() * 16, r() < 0.08); } // Palace: irregular windows, a corbelled parapet
+    g.fillStyle = 'rgba(0,0,0,.3)'; for (let x = 0; x < w; x += 22) g.fillRect(x, 20, 10, 14); });
+  region(1024 * 0.5, 512, 256, 512, (w, h) => { for (let row = 0; row < 5; row++) win(110 + (row % 2) * 12, 50 + row * 92, 26, 44); course(30, w); g.fillStyle = '#efe9da'; g.beginPath(); g.arc(128, 260, 26, 0, 7); g.fill(); g.strokeStyle = '#2a2a2a'; g.lineWidth = 3; g.beginPath(); g.moveTo(128, 260); g.lineTo(128, 240); g.moveTo(128, 260); g.lineTo(142, 266); g.stroke(); }); // Palace tower with its clock
+  region(1024 * 0.75, 512, 256, 512, () => {}); // plain rubble
+  const t = canvasTex(c, false); t.generateMipmaps = true; return (v2Cache.castle = t);
+}
+
+// v2.9.1: grey precast concrete slabs (2x2 per repeat): per-slab tone, speckled aggregate, dark joints, chips and stains
+export function slabTexture() {
+  if (v2Cache.slab) return v2Cache.slab;
+  const S = 256, [c, g] = canvas(S, S), r = rng(77), n = 2, s = S / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 168 + r() * 26 | 0; g.fillStyle = `rgb(${v},${v},${v - 3})`; g.fillRect(i * s, j * s, s, s);
+    const gr = g.createLinearGradient(i * s, j * s, i * s + s, j * s + s); gr.addColorStop(0, 'rgba(255,255,255,.06)'); gr.addColorStop(1, 'rgba(0,0,0,.08)'); g.fillStyle = gr; g.fillRect(i * s, j * s, s, s); }
+  for (let k = 0; k < 7000; k++) { const v = 110 + r() * 120 | 0; g.fillStyle = `rgba(${v},${v},${v},.45)`; g.fillRect(r() * S, r() * S, 1 + r(), 1 + r()); }
+  for (let k = 0; k < 5; k++) { const x = r() * S, y = r() * S, rr = 10 + r() * 26, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(70,68,62,.22)'); gr.addColorStop(1, 'rgba(70,68,62,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+  g.fillStyle = 'rgba(52,52,50,.85)'; for (let i = 0; i <= n; i++) { g.fillRect(i * s - 2, 0, 4, S); g.fillRect(0, i * s - 2, S, 4); }
+  g.fillStyle = 'rgba(230,230,226,.35)'; for (let i = 0; i < n; i++) { g.fillRect(i * s + 2, 0, 1, S); g.fillRect(0, i * s + 2, S, 1); } // arris highlight
+  for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(60,60,58,.5)'; const x = (r() * n | 0) * s + (r() < 0.5 ? 2 : s - 8), y = r() * S; g.fillRect(x, y, 5 + r() * 4, 3 + r() * 4); } // chipped edges
+  return (v2Cache.slab = canvasTex(c, true));
+}
+
+// v2.9.3: red engineering brick in English bond with lime mortar, soot and weathering (gas works office)
+export function gasBrickTexture() {
+  if (v2Cache.gasbrick) return v2Cache.gasbrick;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1902), bh = 16, bw = 32;
+  g.fillStyle = '#b8ad9a'; g.fillRect(0, 0, S, S);
+  for (let row = 0; row < S / bh; row++) { const header = row % 2 === 1, w = header ? bw / 2 : bw, off = header ? (row % 4 === 1 ? 0 : w / 2) : 0;
+    for (let x = -off; x < S; x += w) { const v = r(), R = 132 + v * 50 | 0, G = 52 + v * 22 + r() * 10 | 0, B = 38 + v * 16 | 0; g.fillStyle = `rgb(${R},${G},${B})`; g.fillRect(x + 1.5, row * bh + 1.5, w - 3, bh - 3);
+      if (r() < 0.25) { g.fillStyle = 'rgba(30,18,14,.25)'; g.fillRect(x + 1.5, row * bh + 1.5, w - 3, bh - 3); } } }
+  for (let k = 0; k < 3000; k++) { g.fillStyle = `rgba(0,0,0,${r() * 0.12})`; g.fillRect(r() * S, r() * S, 1.5, 1.5); }
+  return (v2Cache.gasbrick = canvasTex(c, true));
+}
+
+// v3.0: red clay pantiles (Newhaven / East Coast cottages): S-profile courses with shadowed troughs, lichen and colour drift
+export function pantileTexture() {
+  if (v2Cache.pantile) return v2Cache.pantile;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1500), cw = 32, ch = 32;
+  for (let row = 0; row < S / ch; row++) for (let col = 0; col < S / cw; col++) { const x = col * cw, y = row * ch, v = r();
+    const gr = g.createLinearGradient(x, 0, x + cw, 0); const R = 170 + v * 40 | 0, G = 72 + v * 26 | 0, B = 46 + v * 14 | 0;
+    gr.addColorStop(0, `rgb(${R - 60},${G - 30},${B - 20})`); gr.addColorStop(0.3, `rgb(${R},${G},${B})`); gr.addColorStop(0.55, `rgb(${R + 22},${G + 16},${B + 10})`); gr.addColorStop(1, `rgb(${R - 40},${G - 22},${B - 14})`);
+    g.fillStyle = gr; g.fillRect(x, y, cw, ch); g.fillStyle = 'rgba(40,18,10,.45)'; g.fillRect(x, y + ch - 3, cw, 3); // course shadow
+    if (r() < 0.18) { g.fillStyle = `rgba(${150 + r() * 40 | 0},${150 + r() * 30 | 0},90,.35)`; g.beginPath(); g.arc(x + r() * cw, y + r() * ch, 3 + r() * 6, 0, 7); g.fill(); } } // lichen
+  return (v2Cache.pantile = canvasTex(c, true));
+}
+
+// v3.0: lime-washed harling (Newhaven cottages): bright, soft-grained, with faint drips and patching so tints stay white
+export function limewashTexture() {
+  if (v2Cache.limewash) return v2Cache.limewash;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1888);
+  g.fillStyle = '#f3f1ea'; g.fillRect(0, 0, S, S);
+  for (let k = 0; k < 9000; k++) { const v = 205 + r() * 50 | 0; g.fillStyle = `rgba(${v},${v},${v - 6},.5)`; g.fillRect(r() * S, r() * S, 1 + r() * 2, 1 + r() * 2); }
+  for (let k = 0; k < 14; k++) { const x = r() * S, y = r() * S, w = 20 + r() * 50, h = 14 + r() * 40; g.fillStyle = `rgba(${200 + r() * 30 | 0},${198 + r() * 30 | 0},${188 + r() * 30 | 0},.25)`; g.fillRect(x, y, w, h); } // patched lime
+  g.strokeStyle = 'rgba(150,145,130,.18)'; for (let k = 0; k < 10; k++) { const x = r() * S; g.lineWidth = 1 + r() * 2; g.beginPath(); g.moveTo(x, r() * 40); g.lineTo(x + (r() - 0.5) * 6, 60 + r() * 120); g.stroke(); } // drips
+  return (v2Cache.limewash = canvasTex(c, true));
 }
