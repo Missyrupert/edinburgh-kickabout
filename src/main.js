@@ -323,7 +323,7 @@ function release(b) {
 function seaReturnSpot() { // v2.9.3: a lost ball comes back a few metres in front of you (in view), never into the water
   const f = forwardFlat(), P = player.position;
   for (const [d, side] of [[3, 0], [2.2, 0], [1.4, 0], [2.2, 1], [2.2, -1], [-1.2, 0]]) { const x = P.x + f.x * d - f.z * side * 1.5, z = P.z + f.z * d + f.x * side * 1.5;
-    if (LEVEL.surfaceAt?.(x, z) === 'water' || Math.abs(x) > BOUNDS.x - 1 || z < BOUNDS.zMin + 1 || z > BOUNDS.zMax - 1) continue;
+    if ((LEVEL.sea?.lostForGood ? [[0, 0], [1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2]] : [[0, 0]]).some(([ox, oz]) => LEVEL.surfaceAt?.(x + ox, z + oz) === 'water') || Math.abs(x) > BOUNDS.x - 1 || z < BOUNDS.zMin + 1 || z > BOUNDS.zMax - 1) continue;
     rayRes.reset(); const from = new CANNON.Vec3(x, P.y + 1, z); rayTo.set(x, P.y - 2, z); world.raycastClosest(from, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
     if (rayRes.hasHit && rayRes.hitPointWorld.y > P.y - 1.2) return [x, rayRes.hitPointWorld.y + BALL_R + 0.02, z]; }
   return [P.x, P.y + 0.1, P.z]; }
@@ -334,7 +334,12 @@ const splRings = [0, 1].map(() => { const m = new THREE.Mesh(new THREE.RingGeome
 const splCol = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.8, 1, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })); splCol.visible = false; scene.add(splCol);
 const spl = { t: 9, x: 0, y: 0, z: 0, d: [] }, splM = new THREE.Matrix4(), splV = new THREE.Vector3();
 function splashFx(x, y, z) { spl.t = 0; spl.x = x; spl.y = y; spl.z = z; spl.d = Array.from({ length: SPL_N }, () => { const a = Math.random() * 6.283, r = 0.8 + Math.random() * 3.4; return { vx: Math.cos(a) * r, vz: Math.sin(a) * r, vy: 4.5 + Math.random() * 6, s: 0.6 + Math.random() * 1.2 }; }); }
-function updateSplash(dt) { if (spl.t > 1.6) { splDrops.count = 0; splRings.forEach((m) => (m.visible = false)); splCol.visible = false; return; } spl.t += dt; const t = spl.t;
+const riverDecoys = []; // v3.1: balls lost to the Water of Leith drift away downstream and sink; they never come back
+function loseToRiver(b, x, z) { const m = b.mesh.clone(); m.position.set(x, (LEVEL.sea.water ?? -0.85) + 0.05, z); scene.add(m); riverDecoys.push({ m, t: 0, x, z }); if (riverDecoys.length > 6) { const o = riverDecoys.shift(); scene.remove(o.m); } }
+function updateRiver(dt) { const [dx, dz] = LEVEL.sea?.drift || [1, 0]; for (let i = riverDecoys.length - 1; i >= 0; i--) { const d = riverDecoys[i]; d.t += dt; d.x += dx * 0.9 * dt; d.z += dz * 0.9 * dt;
+    d.m.position.set(d.x, (LEVEL.sea.water ?? -0.85) + 0.05 + Math.sin(d.t * 2.2) * 0.04 - Math.max(0, d.t - 14) * 0.08, d.z); d.m.rotation.z -= dt * 0.8;
+    if (d.t > 18) { scene.remove(d.m); riverDecoys.splice(i, 1); } } }
+function updateSplash(dt) { updateRiver(dt); if (spl.t > 1.6) { splDrops.count = 0; splRings.forEach((m) => (m.visible = false)); splCol.visible = false; return; } spl.t += dt; const t = spl.t;
   let n = 0; for (const d of spl.d) { const yy = spl.y + d.vy * t - 4.9 * t * t; if (yy < spl.y - 0.2) continue; splV.set(spl.x + d.vx * t, yy, spl.z + d.vz * t); splM.makeScale(d.s, d.s, d.s).setPosition(splV); splDrops.setMatrixAt(n++, splM); }
   splDrops.count = n; splDrops.instanceMatrix.needsUpdate = true;
   splRings.forEach((m, i) => { const k = Math.max(0, t - i * 0.25); m.visible = k > 0; m.position.set(spl.x, spl.y + 0.03, spl.z); const r = 1 + k * 5; m.scale.set(r, r, r); m.material.opacity = Math.max(0, 0.85 - k * 0.65); });
@@ -561,8 +566,9 @@ function fixedUpdate(h) {
     if (rayRes.hasHit) { const d = 1 - 0.9 * h; b.body.velocity.x *= d; b.body.velocity.z *= d; }
     if (LEVEL.sea && p.y < LEVEL.sea.y) { // v2.9: lost to the sea (Granton) -> splash, and the ball is back at its spot
       sfx.splash?.(p.x, p.z); seaLost++; splashFx(p.x, LEVEL.sea.water ?? LEVEL.sea.y + 0.4, p.z); release?.(b);
+      if (LEVEL.sea.lostForGood) loseToRiver(b, p.x, p.z); /* v3.1 Leith: the old ball floats off for good; a fresh one is handed over */
       const [rx, ry, rz] = seaReturnSpot(); p.set(rx, ry, rz); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.copy(p); lastSeaReturn = { x: rx, y: ry, z: rz, t: simTime };
-      toast(`<span class="splash-msg">🌊 SPLASH!</span><br>${LEVEL.sea.lines[seaLost % LEVEL.sea.lines.length]}<br><small>Ball's back at your feet.</small>`, 3400); continue; }
+      toast(`<span class="splash-msg">🌊 SPLASH!</span><br>${LEVEL.sea.lines[seaLost % LEVEL.sea.lines.length]}<br><small>${LEVEL.sea.lostForGood ? 'Here\'s a fresh ball at your feet.' : 'Ball\'s back at your feet.'}</small>`, 3400); continue; }
     if (p.y < -3 || Math.abs(p.x) > BOUNDS.x + 15 || p.z < BOUNDS.zMin - 10 || p.z > BOUNDS.zMax + 10) { p.copy(b.home); b.body.velocity.setZero(); b.prevP.copy(b.home); toast('Ball lost ower the wall - it\'s back where you found it.', 1800); }
   }
   { const p = player.position; // v2.5: never lose the player - below ground or outside the level bounds -> back to the spawn
@@ -689,7 +695,7 @@ window.__game = {
   teleport(x, z, yawDeg, pitchDeg = -15, y) { player.position.set(x, y ?? player.position.y, z); player.velocity.setZero(); prevPlayer.copy(player.position); yaw = yawDeg * Math.PI / 180; pitch = pitchDeg * Math.PI / 180; },
   aim(yawRad, pitchRad) { yaw = yawRad; pitch = pitchRad; },
   placeBall(i, x, y, z) { const b = balls[i]; release(b); b.body.position.set(x, y, z); b.body.velocity.setZero(); b.body.angularVelocity.setZero(); b.prevP.set(x, y, z); },
-  sfx, surfaceAt, get respawns() { return respawns; }, get seaLost() { return seaLost; }, get lastSeaReturn() { return lastSeaReturn; }, get splashT() { return spl.t; }, camera, spawn: PLAYER_SPAWN, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
+  sfx, surfaceAt, get respawns() { return respawns; }, get seaLost() { return seaLost; }, get lastSeaReturn() { return lastSeaReturn; }, get splashT() { return spl.t; }, get riverDecoys() { return riverDecoys.map((d) => ({ x: d.x, z: d.z, t: d.t })); }, camera, spawn: PLAYER_SPAWN, kick, restart, fetchBall, get inReach() { return inReach; }, get freeFetchesLeft() { return freeFetchesLeft; }, get lastTouched() { return balls.indexOf(lastTouched); }, get trapped() { return balls.map((b) => !!b.trapped); }, get moveInput() { return moveInput; }, world, renderer, scene, camera,
   setDynRes(on) { dynResOn = on; if (!on) { resScale = 1; renderer.setPixelRatio(basePixelRatio); } },
   simulate(sec) { for (let i = 0; i < Math.round(sec / FIXED); i++) fixedUpdate(FIXED); },
   advance, // frame-path stepping (accumulator) for timestep-consistency tests
@@ -697,7 +703,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.0.1';
+const BUILD = 'v3.1';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

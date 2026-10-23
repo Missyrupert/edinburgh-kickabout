@@ -220,5 +220,5 @@ export default {
   ballHomes: () => [[11.5, 0.4, -12.2], [-2, 0.4, -12], [-27, 0.4, 16]],
   bounds: { x: 40, zMin: -28, zMax: 34 },
   sea: { y: -1.7, water: -1.3, lines: ["Splash! Intae the harbour. The partans are playin' keepy-uppy wi' it.", "Ower the railings! Newhaven's no' a beach, son.", "Gone fishin'. Fresh ball at your feet."] },
-  next: 'pilton',
+  next: 'leith',
 };

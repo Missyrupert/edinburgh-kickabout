@@ -11,7 +11,7 @@ await pg.evaluate(() => localStorage.clear()); await pg.reload(); await pg.waitF
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, amb: __game.sfx.ambience }));
 ok(g0.lv === 'newhaven' && Math.hypot(g0.p.x - 14, g0.p.z + 13) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on Main Street ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pilton,grassmarket,granton,newhaven', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pilton,grassmarket,granton,newhaven,leith', 'level order ' + g0.levels);
 ok(/Newhaven: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Newhaven goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=newhaven]')), 'level-select button');
 { const L = await pg.evaluate(() => Object.fromEntries(['btnKick', 'btnJump', 'btnBall'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [id, { x: r.left + r.width / 2, y: r.top + r.height / 2 }]; })));
@@ -40,5 +40,5 @@ ok(Object.values(k).every(Boolean), 'every Newhaven target scores with real kick
 { await pg.waitForTimeout(800); const h = await pg.evaluate(() => document.getElementById('goalTxt').innerHTML); ok(/10\/10|cleared|all/i.test(h), 'HUD progress counts up: ' + h + ' ' + await pg.evaluate(() => __game.targets.filter(t => t.done).length + ' ' + document.getElementById('targetVal').textContent)); }
 // wiring: Granton -> Newhaven -> Pilton
 await pg.goto(URL + '?level=granton&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Newhaven/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Granton travels on to Newhaven');
-await pg.goto(URL + '?level=newhaven&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Pilton/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Newhaven travels on to Pilton');
+await pg.goto(URL + '?level=newhaven&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Leith/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Newhaven travels on to Leith');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

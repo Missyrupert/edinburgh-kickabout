@@ -7,12 +7,13 @@ let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c
 const VIEWS = { grassmarket: [['castle', [8, -19, 175, 24]], ['square', [55, -12, 100, 3]], ['victoria', [-57.5, 21, 172, 10]], ['vic-up', [-58, 30, 160, 12]], ['memorial', [-44, -6, 60, -25]], ['pub', [-35, 14, 200, -2]], ['phonebox', [-45.5, 17.6, 200, -6]], ['close', [30, -14, 0, 0]], ['north', [0, 10, 180, 30]]],
   granton: [['spawn', [0, -28, 118, 6]], ['spawn-old', [0, -28, 180, -5]], ['gasholder', [-8, -30, 105, 16]], ['purge', [-14, -6, 56, -10]], ['square', [0, -12, 0, 6]], ['harbour', [-20, 15, 180, 2]], ['pier', [16, 22, 180, 3]], ['slipway', [-24.5, 17, 168, -14]]],
   newhaven: [['spawn', [14, -13, 108, 4]], ['street', [-2, -12, 90, 6]], ['cottages', [-20, -8, 0, 14]], ['harbour', [0, 8, 160, 2]], ['lighthouse', [-27, 18, 180, 8]], ['market', [14, -1, 270, 6]]],
+  leith: [['spawn', [26, -4, 112, 4]], ['river', [30, 0, 90, 6]], ['bridge', [4, -8, 180, 6]], ['pub', [0, -2, 0, 8]], ['granary', [20, -3, 20, 8]], ['timber', [-30, -4, 0, 12]]],
   pilton: [['flats', [-2, -30, 225, 2]], ['parade', [0, 16, 180, 6]], ['spawn', [0, -38, 180, -8]], ['skyline', [0, 0, 0, 2]]] };
 const black = (buf) => new Promise(() => {});
 for (const preset of (process.argv[4] || 'low,medium,high').split(',')) {
   const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true }), pg = await ctx.newPage(), errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
-  for (const lv of ['grassmarket', 'pilton', 'granton', 'newhaven']) {
+  for (const lv of (process.argv[5] || 'grassmarket,pilton,granton,newhaven,leith').split(',')) {
     await pg.goto(`${URL}?level=${lv}&preset=${preset}`); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(3000);
     await pg.evaluate(() => { for (const id of ['toast', 'hud', 'touch', 'wallet']) { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; } document.querySelectorAll('.hud, #touchUI, #joy, .btn, #kickBtn, #jumpBtn, #ballBtn, #pauseBtn').forEach(e => e.style.visibility = 'hidden'); });
     for (const [n, v] of VIEWS[lv]) {
