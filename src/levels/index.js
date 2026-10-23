@@ -2,8 +2,9 @@
 import grassmarket from './grassmarket.js';
 import pilton from './pilton.js';
 import granton from './granton.js';
-export const LEVELS = { pilton, grassmarket, granton };
-export const LEVEL_ORDER = ['pilton', 'grassmarket', 'granton'];
+import newhaven from './newhaven.js';
+export const LEVELS = { pilton, grassmarket, granton, newhaven };
+export const LEVEL_ORDER = ['pilton', 'grassmarket', 'granton', 'newhaven'];
 const q = new URLSearchParams(location.search);
 let saved = null; try { saved = localStorage.getItem('ek-level'); } catch {}
 const fromUrl = q.get('level');

@@ -363,3 +363,26 @@ export function gasBrickTexture() {
   for (let k = 0; k < 3000; k++) { g.fillStyle = `rgba(0,0,0,${r() * 0.12})`; g.fillRect(r() * S, r() * S, 1.5, 1.5); }
   return (v2Cache.gasbrick = canvasTex(c, true));
 }
+
+// v3.0: red clay pantiles (Newhaven / East Coast cottages): S-profile courses with shadowed troughs, lichen and colour drift
+export function pantileTexture() {
+  if (v2Cache.pantile) return v2Cache.pantile;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1500), cw = 32, ch = 32;
+  for (let row = 0; row < S / ch; row++) for (let col = 0; col < S / cw; col++) { const x = col * cw, y = row * ch, v = r();
+    const gr = g.createLinearGradient(x, 0, x + cw, 0); const R = 170 + v * 40 | 0, G = 72 + v * 26 | 0, B = 46 + v * 14 | 0;
+    gr.addColorStop(0, `rgb(${R - 60},${G - 30},${B - 20})`); gr.addColorStop(0.3, `rgb(${R},${G},${B})`); gr.addColorStop(0.55, `rgb(${R + 22},${G + 16},${B + 10})`); gr.addColorStop(1, `rgb(${R - 40},${G - 22},${B - 14})`);
+    g.fillStyle = gr; g.fillRect(x, y, cw, ch); g.fillStyle = 'rgba(40,18,10,.45)'; g.fillRect(x, y + ch - 3, cw, 3); // course shadow
+    if (r() < 0.18) { g.fillStyle = `rgba(${150 + r() * 40 | 0},${150 + r() * 30 | 0},90,.35)`; g.beginPath(); g.arc(x + r() * cw, y + r() * ch, 3 + r() * 6, 0, 7); g.fill(); } } // lichen
+  return (v2Cache.pantile = canvasTex(c, true));
+}
+
+// v3.0: lime-washed harling (Newhaven cottages): bright, soft-grained, with faint drips and patching so tints stay white
+export function limewashTexture() {
+  if (v2Cache.limewash) return v2Cache.limewash;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1888);
+  g.fillStyle = '#f3f1ea'; g.fillRect(0, 0, S, S);
+  for (let k = 0; k < 9000; k++) { const v = 205 + r() * 50 | 0; g.fillStyle = `rgba(${v},${v},${v - 6},.5)`; g.fillRect(r() * S, r() * S, 1 + r() * 2, 1 + r() * 2); }
+  for (let k = 0; k < 14; k++) { const x = r() * S, y = r() * S, w = 20 + r() * 50, h = 14 + r() * 40; g.fillStyle = `rgba(${200 + r() * 30 | 0},${198 + r() * 30 | 0},${188 + r() * 30 | 0},.25)`; g.fillRect(x, y, w, h); } // patched lime
+  g.strokeStyle = 'rgba(150,145,130,.18)'; for (let k = 0; k < 10; k++) { const x = r() * S; g.lineWidth = 1 + r() * 2; g.beginPath(); g.moveTo(x, r() * 40); g.lineTo(x + (r() - 0.5) * 6, 60 + r() * 120); g.stroke(); } // drips
+  return (v2Cache.limewash = canvasTex(c, true));
+}

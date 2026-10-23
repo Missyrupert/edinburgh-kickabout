@@ -260,5 +260,5 @@ export default {
   ballHomes: () => [[-2.2, 0.4, -26.8], /* v2.9.2: in front of the 118° spawn facing */ [16, 0.4, 23], [-24, 0.4, -6]],
   bounds: { x: 58, zMin: -46, zMax: 64 },
   sea: { y: -1.7, water: -1.3, lines: ["Splash! That's in the Forth. Fife's keepin' it - here's another.", "Ower the edge! The seals say ta. Fresh ba' at your feet.", "In the harbour. The tide's no' bringin' that back. New ball's oot."] },
-  next: 'pilton',
+  next: 'newhaven',
 };
