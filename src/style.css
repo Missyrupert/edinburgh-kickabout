@@ -180,3 +180,4 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 /* v2.4 volume slider */
 .vol{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin:4px 8px;color:var(--charcoal)}
 .vol input{width:130px;accent-color:var(--brick);touch-action:pan-x}
+#toast .splash-msg{display:block;font-size:34px;line-height:1.1;letter-spacing:.04em;color:#1f6fa6;text-shadow:0 2px 0 rgba(255,255,255,.7)}

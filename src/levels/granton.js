@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Batcher, QUAD, roofPrism } from '../batch.js';
-import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, tarmacTexture, slabTexture, GRIME_UV } from '../textures.js';
+import { facadeAtlas, FACADE, SignAtlas, drawTargetDoor, tarmacTexture, slabTexture, gasBrickTexture, GRIME_UV } from '../textures.js';
 import { makeMaterials, mulberry32, mergeSimple } from '../world.js';
 
 export const GT = { QUAY: 20, WATER: -1.3, PIER: [10, 22, 62], SLIP: [-30, -24, 34, -2] };
@@ -206,6 +206,22 @@ function build(scene, world, mats, P) {
   // east boundary: a corrugated industrial shed
   solid('flat', 52, 3, 10, 10, 6, 14, 0x8a9a9e, { tile: 2 }); for (let k = 3.5; k < 16.6; k += 0.5) solid('flat', 47 - 0.03, 3, k, 0.06, 6, 0.08, 0x76868a, { phys: false }); B.add('roof', ROOF, M4(52, 6, 10, 10.4, 1.4, 14.4), 0x6a7478, {});
   quad('atlas', 46.9, 4.6, 10, 7, 0.7, -Math.PI / 2, atlas.fascia('LOTHIAN NET & ROPE CO.', null, '#2E2F2C', '#EFE3C8', 10));
+  // ---------- v2.9.3: the gas works office (fictional "Forth Gas Board"), red brick with stone dressings, beside the frame ----------
+  { const x0 = -26, x1 = -17, z0 = -34, z1 = -27, h = 7.6, xc = (x0 + x1) / 2, zc = (z0 + z1) / 2, BR = 0xffffff, ST = 0xd8cfbe;
+    solid('brick', xc, h / 2, zc, x1 - x0, h, z1 - z0, BR, { tile: 2.2 });
+    solid('stone', xc, 0.35, zc, x1 - x0 + 0.2, 0.7, z1 - z0 + 0.2, 0x9a958c, { phys: false }); // plinth
+    solid('stone', xc, 3.75, zc, x1 - x0 + 0.12, 0.22, z1 - z0 + 0.12, ST, { phys: false }); solid('stone', xc, h - 0.15, zc, x1 - x0 + 0.4, 0.35, z1 - z0 + 0.4, ST, { phys: false }); // string course + cornice
+    for (const [qx, qz] of [[x0, z0], [x0, z1], [x1, z0], [x1, z1]]) for (let y = 0.9; y < h - 0.4; y += 0.7) solid('stone', qx, y, qz, 0.5, 0.32, 0.5, ST, { phys: false }); // quoins
+    B.add('roof', ROOF, M4(xc, h, zc, z1 - z0 + 0.5, 2.8, x1 - x0 + 0.5, 0, Math.PI / 2), 0x5c6168, { tile: 2 });
+    for (const zz of [z0 + 1.2, z1 - 1.2]) { solid('brick', xc, h + 2.4, zz, 1.0, 2.2, 0.8, BR, { phys: false, tile: 2.2 }); for (const k of [-0.25, 0.25]) cyl('flat', xc + k, h + 3.7, zz, 0.12, 0.14, 0.45, 0xa65a3a, { phys: false, seg: 6 }); }
+    // east face (towards the road/spawn): central door with stone pediment, 2x2 sash windows each side, then the board's name
+    for (const dz of [-2.4, 2.4]) for (const y of [2.0, 5.5]) { quad('facade', x1 + 0.02, y, zc + dz, 1.5, 2.6, Math.PI / 2, cellUV(y > 3 ? FACADE.sashB : FACADE.sashA), 0xf0ece4); solid('stone', x1 + 0.08, y - 1.38, zc + dz, 0.16, 0.14, 1.7, ST, { phys: false }); solid('stone', x1 + 0.08, y + 1.38, zc + dz, 0.16, 0.2, 1.7, ST, { phys: false }); }
+    solid('wood', x1 + 0.06, 1.35, zc, 0.1, 2.7, 1.3, 0x2f4a3a, { phys: false }); solid('stone', x1 + 0.15, 2.95, zc, 0.3, 0.3, 2.0, ST, { phys: false }); B.add('roof', ROOF, M4(x1 + 0.18, 3.1, zc, 0.3, 0.5, 2.1, 0, 0), ST, {});
+    quad('facade', x1 + 0.02, 5.5, zc, 1.5, 2.6, Math.PI / 2, cellUV(FACADE.sashA), 0xf0ece4);
+    quad('atlas', x1 + 0.2, 4.35, zc, 6.4, 0.75, Math.PI / 2, atlas.fascia('FORTH GAS BOARD', 'GRANTON WORKS · OFFICE · 1902', '#6b1f1a', '#f1d98a', 6.4 / 0.75));
+    for (const xx of [x0 + 2.2, xc, x1 - 2.2]) for (const y of [2.0, 5.5]) quad('facade', xx, y, z1 + 0.02, 1.5, 2.6, 0, cellUV(FACADE.sashA), 0xf0ece4); // north face
+    quad('grime', x1 + 0.04, h - 1.2, zc, 8, 2.4, Math.PI / 2, GRIME_UV[2]);
+    cyl('metal', x1 + 3.2, 3.2, zc - 4.2, 0.06, 0.06, 6.4, IRON, { phys: false, seg: 6 }); }
   // ---------- targets ----------
   function addTarget(t) { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.rotation.x = -Math.PI / 2; const r = t.ringR || 1; m.scale.set(r, r, r); m.position.copy(t.pos).add(V(0, 0.03, 0)); m.visible = false; scene.add(m); t.ring = m; if (t.zone) t.zoneInv = new THREE.Matrix4(); t.done = false; targets.push(t); return t; }
@@ -214,7 +230,7 @@ function build(scene, world, mats, P) {
   const pig = { list: [], body: new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), null, groups.length * 4), head: new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 6, 4), null, groups.length * 4) };
   groups.forEach((c) => { for (let i = 0; i < 4; i++) { const home = V(c.x + (rand() - 0.5) * 2, 0.08, c.z + (rand() - 0.5) * 2); pig.list.push({ home, pos: home.clone(), rot: rand() * 6.28, state: 'idle', t: rand() * 3, vel: V(0, 0, 0) }); } });
   const materials = makeMaterials(P, facadeTex, atlas.tex);
-  { const m = materials.flat.clone(); m.map = tarmacTexture(); materials.tarmac = m; const m2 = materials.flat.clone(); m2.map = slabTexture(); materials.slab = m2; }
+  { const m = materials.flat.clone(); m.map = tarmacTexture(); materials.tarmac = m; const m2 = materials.flat.clone(); m2.map = slabTexture(); materials.slab = m2; const m3 = materials.flat.clone(); m3.map = gasBrickTexture(); materials.brick = m3; }
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   for (const d of dynamics) { d.mesh = new THREE.Mesh(d.geo, materials.flat); d.mesh.castShadow = P.shadows; scene.add(d.mesh); }
   const batches = B.build(scene, materials, { shadows: P.shadows });
@@ -243,6 +259,6 @@ export default {
   spawn: [0, 0.5, -28], spawnYaw: 118, /* v2.9.1: open on the gasholder + harbour */
   ballHomes: () => [[-2.2, 0.4, -26.8], /* v2.9.2: in front of the 118° spawn facing */ [16, 0.4, 23], [-24, 0.4, -6]],
   bounds: { x: 58, zMin: -46, zMax: 64 },
-  sea: { y: -1.7, lines: ["Splash! That's in the Forth. Fife's keepin' it - here's another.", "Ower the edge! The seals say ta. Fresh ba' at your feet.", "In the harbour. The tide's no' bringin' that back. New ball's oot."] },
+  sea: { y: -1.7, water: -1.3, lines: ["Splash! That's in the Forth. Fife's keepin' it - here's another.", "Ower the edge! The seals say ta. Fresh ba' at your feet.", "In the harbour. The tide's no' bringin' that back. New ball's oot."] },
   next: 'pilton',
 };

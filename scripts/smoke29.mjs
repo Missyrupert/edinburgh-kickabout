@@ -25,6 +25,11 @@ await pg.evaluate(() => { const p = __game.player.position; __game.walk([[p.x, p
 const sea = await pg.evaluate(() => { const g = __game, n0 = g.seaLost; g.teleport(-50, 16, 180, -10); g.simulate(0.3); const P = g.player.position; g.placeBall(0, P.x, P.y - 0.2, P.z + 0.8); g.simulate(0.2); g.kick(0.9); g.simulate(4);
   const bp = g.balls[0].body.position; return { lost: g.seaLost - n0, y: bp.y, home: Math.hypot(bp.x - g.balls[0].home?.x || 0, bp.z - (g.balls[0].home?.z || 0)) }; });
 ok(sea.lost >= 1 && sea.y > -1, 'ball lost to the sea respawns ' + JSON.stringify(sea));
+await pg.waitForTimeout(400); // let a frame render, then check the returned ball is on screen and a few metres in front (v2.9.3)
+const vis = await pg.evaluate(() => { const g = __game, c = g.camera, r = g.lastSeaReturn, v = c.position.clone().set(r.x, r.y, r.z).project(c), P = g.player.position;
+  return { ndc: [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(3)], d: +Math.hypot(r.x - P.x, r.z - P.z).toFixed(2), splash: g.splashT, msg: document.getElementById('toast').innerText.slice(0, 40) }; });
+ok(Math.abs(vis.ndc[0]) < 0.9 && Math.abs(vis.ndc[1]) < 0.95 && vis.ndc[2] < 1 && vis.d >= 1 && vis.d <= 4, 'returned ball is in view, a few metres in front ' + JSON.stringify(vis));
+ok(/SPLASH/.test(vis.msg), 'splash message shown');
 // every target scores with real kicks
 const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of g.targets) { let n = 0;
   for (const pitch of [0.0, 0.12, -0.15, 0.25, -0.3, 0.35, -0.45, 0.5]) /* v2.9.2: level aim first, as a player would */ for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);

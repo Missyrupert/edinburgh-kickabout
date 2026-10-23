@@ -351,3 +351,15 @@ export function slabTexture() {
   for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(60,60,58,.5)'; const x = (r() * n | 0) * s + (r() < 0.5 ? 2 : s - 8), y = r() * S; g.fillRect(x, y, 5 + r() * 4, 3 + r() * 4); } // chipped edges
   return (v2Cache.slab = canvasTex(c, true));
 }
+
+// v2.9.3: red engineering brick in English bond with lime mortar, soot and weathering (gas works office)
+export function gasBrickTexture() {
+  if (v2Cache.gasbrick) return v2Cache.gasbrick;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1902), bh = 16, bw = 32;
+  g.fillStyle = '#b8ad9a'; g.fillRect(0, 0, S, S);
+  for (let row = 0; row < S / bh; row++) { const header = row % 2 === 1, w = header ? bw / 2 : bw, off = header ? (row % 4 === 1 ? 0 : w / 2) : 0;
+    for (let x = -off; x < S; x += w) { const v = r(), R = 132 + v * 50 | 0, G = 52 + v * 22 + r() * 10 | 0, B = 38 + v * 16 | 0; g.fillStyle = `rgb(${R},${G},${B})`; g.fillRect(x + 1.5, row * bh + 1.5, w - 3, bh - 3);
+      if (r() < 0.25) { g.fillStyle = 'rgba(30,18,14,.25)'; g.fillRect(x + 1.5, row * bh + 1.5, w - 3, bh - 3); } } }
+  for (let k = 0; k < 3000; k++) { g.fillStyle = `rgba(0,0,0,${r() * 0.12})`; g.fillRect(r() * S, r() * S, 1.5, 1.5); }
+  return (v2Cache.gasbrick = canvasTex(c, true));
+}
