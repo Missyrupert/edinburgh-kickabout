@@ -34,6 +34,11 @@ ok(/SPLASH/.test(vis.msg) && /fresh ball/i.test(vis.msg) && !/back at your feet/
 ok(vis.decoys.length >= 1 && vis.decoys[0].z > 4 && vis.decoys[0].z < 14, 'the lost ball stays in the river ' + JSON.stringify(vis.decoys));
 await pg.waitForTimeout(2500);
 const d2 = await pg.evaluate(() => __game.riverDecoys); ok(d2.length >= 1 && d2[0].x > vis.decoys[0].x + 1, 'and drifts away downstream ' + JSON.stringify(d2));
+// v3.1.1: dribbling/carrying the ball onto the bridge deck must NOT count (bridgetop is kick-only)
+{ await pg.evaluate(() => { const g = __game; g.teleport(4, -2.5, 180, -10); g.simulate(0.3); const P = g.player.position; g.placeBall(0, 4, P.y - 0.2, P.z + 0.8); g.simulate(0.2); g.aim(Math.PI, 0); g.kick(0.12); g.simulate(0.5); g.walk([[4, 9]]); });
+  await pg.waitForTimeout(9000); const r = await pg.evaluate(() => ({ done: __game.targets.find(t => t.id === 'bridgetop').done, b: { ...__game.balls[0].body.position }, p: { ...__game.player.position } }));
+  ok(!r.done, 'carrying the ball up onto the bridge does not score bridgetop ' + JSON.stringify(r));
+  await pg.evaluate(() => { const p = __game.player.position; __game.walk([[p.x, p.z + 0.01]]); }); await pg.waitForTimeout(800); }
 const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of g.targets) { let n = 0;
   for (const pitch of [0.0, 0.12, -0.15, 0.25, -0.3, 0.35, -0.45, 0.5]) /* v2.9.2: level aim first, as a player would */ for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);
     g.placeBall(0, P.x - Math.sin(y) * 0.8, P.y - 0.2, P.z - Math.cos(y) * 0.8); g.simulate(0.2); g.kick(p); g.simulate(4); n++; } res[t.id] = t.done ? n : 0; } return res; });

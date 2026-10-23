@@ -184,3 +184,6 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 .vol{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin:4px 8px;color:var(--charcoal)}
 .vol input{width:130px;accent-color:var(--brick);touch-action:pan-x}
 #toast .splash-msg{display:block;font-size:34px;line-height:1.1;letter-spacing:.04em;color:#1f6fa6;text-shadow:0 2px 0 rgba(255,255,255,.7)}
+/* v3.1.1: toasts sit near the top, clear of the centre reticle, slightly translucent */
+#toast{top:calc(8px + env(safe-area-inset-top)) !important;background:rgba(239,227,200,.84);max-width:min(500px,52vw);max-height:34vh}
+@media (max-height:500px){ #toast{font-size:15px;padding:4px 12px;line-height:1.15} #toast .splash-msg{font-size:24px} }

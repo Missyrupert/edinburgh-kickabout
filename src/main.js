@@ -138,19 +138,33 @@ const balls = BALL_HOMES.map(([x, y, z]) => {
 
 // boot (kick animation), attached to the camera: one mesh
 // a scuffed trainer (default) or unlockable classic black boots, with shin; cosmetic only (no physics)
-function footGeo(style) {
-  const parts = [], B = (w, h, d, x, y, z, c) => parts.push([new THREE.BoxGeometry(w, h, d).translate(x, y, z).toNonIndexed(), c]);
-  B(0.11, 0.48, 0.11, 0, 0.33, 0.01, 0x3b4a63); // trouser shin
-  B(0.105, 0.07, 0.105, 0, 0.08, 0.01, style === 'boots' ? 0x101010 : 0xe8e8e4); // sock / collar
-  if (style === 'boots') {
-    B(0.13, 0.085, 0.27, 0, 0.035, -0.07, 0x141414); B(0.12, 0.05, 0.08, 0, 0.02, -0.19, 0x1c1c1c); B(0.135, 0.022, 0.285, 0, -0.016, -0.07, 0x2a2a2a);
-    for (const z of [-0.17, -0.09, 0.02]) for (const x of [-0.045, 0.045]) B(0.022, 0.02, 0.022, x, -0.035, z, 0x8a8a8a); // studs
-    B(0.03, 0.006, 0.12, 0, 0.08, -0.08, 0xdddddd); // white laces
-  } else {
-    B(0.135, 0.09, 0.26, 0, 0.035, -0.07, 0xdedcd6); B(0.125, 0.06, 0.08, 0, 0.02, -0.18, 0xc9c6bf); // upper + scuffed toe
-    B(0.145, 0.035, 0.285, 0, -0.012, -0.07, 0x8d8f93); B(0.04, 0.007, 0.12, 0, 0.082, -0.07, 0x9a9a9a); // sole, laces
-    B(0.137, 0.03, 0.06, 0, 0.03, -0.205, 0x6f6a62); // mucky scuff
-  }
+function footGeo(style) { // v3.1.1: a proper first-person football boot + sock + shin (low-poly, one merged mesh, fictional "flash" panel)
+  const parts = [], add = (geo, c, m) => { if (m) geo.applyMatrix4(m); parts.push([geo.index ? geo.toNonIndexed() : geo, c]); },
+    T = (x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
+  const classic = style === 'boots', UPPER = classic ? 0x141414 : 0x2a3d66, FLASH = classic ? 0xf2f2ee : 0xc6e83a, SOLE = classic ? 0x2a2a2a : 0xe9e6dc,
+    STUD = classic ? 0x9a9a9a : 0x2b2b2b, SOCK = classic ? 0x141414 : 0xf1efe9, HOOP = classic ? 0xf2f2ee : 0x6B3F73, SKIN = 0xd9a07c;
+  // lower leg: skin above the sock, sock with two hoops, shin-pad bulge at the front
+  // the shin runs back from the ankle (an instep-kick "pointed foot") so in first person it leads out of the bottom of the screen
+  const LEG = new THREE.Matrix4().makeTranslation(0, 0.07, 0.02).multiply(new THREE.Matrix4().makeRotationX(1.65)).multiply(new THREE.Matrix4().makeTranslation(0, -0.07, -0.02)), L = (m) => LEG.clone().multiply(m);
+  add(new THREE.CylinderGeometry(0.066, 0.047, 0.62, 10), SOCK, L(T(0, 0.38, 0.01)));
+  add(new THREE.CylinderGeometry(0.07, 0.068, 0.5, 10), SKIN, L(T(0, 0.93, 0.01)));
+  for (const y of [0.58, 0.63]) add(new THREE.CylinderGeometry(0.068, 0.067, 0.024, 10), HOOP, L(T(0, y, 0.01)));
+  add(new THREE.SphereGeometry(1, 8, 6), SOCK, L(T(0, 0.36, -0.035, 0.05, 0.2, 0.032)));
+  add(new THREE.CylinderGeometry(0.054, 0.058, 0.07, 10), UPPER, T(0, 0.095, 0.015)); // ankle collar
+  // boot upper: an ellipsoid foot with a rounded toe and a heel counter
+  add(new THREE.SphereGeometry(1, 12, 8), UPPER, T(0, 0.04, -0.08, 0.064, 0.052, 0.165));
+  add(new THREE.SphereGeometry(1, 10, 6), UPPER, T(0, 0.05, 0.02, 0.06, 0.06, 0.065));
+  // sole plate + studs
+  add(new THREE.BoxGeometry(0.118, 0.018, 0.31), SOLE, T(0, -0.006, -0.075));
+  add(new THREE.SphereGeometry(1, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2), SOLE, T(0, -0.006, -0.225, 0.059, 0.012, 0.03, Math.PI));
+  for (const [x, z] of [[-0.035, -0.19], [0.035, -0.19], [-0.04, -0.12], [0.04, -0.12], [-0.035, 0.0], [0.035, 0.0], [0, -0.06]]) add(new THREE.CylinderGeometry(0.011, 0.014, 0.022, 6), STUD, T(x, -0.026, z));
+  // tongue + laces
+  add(new THREE.BoxGeometry(0.05, 0.014, 0.1), UPPER === 0x141414 ? 0x222222 : 0x26345a, T(0, 0.088, -0.035, 1, 1, 1, -0.35));
+  for (let k = 0; k < 4; k++) add(new THREE.BoxGeometry(0.052, 0.008, 0.009), 0xf4f4f0, T(0, 0.092 - k * 0.011, -0.01 - k * 0.028, 1, 1, 1, -0.35));
+  // fictional flash: a swept stripe down each side (not any brand's mark)
+  for (const sx of [-1, 1]) { add(new THREE.BoxGeometry(0.004, 0.016, 0.15), FLASH, T(sx * 0.061, 0.035, -0.07, 1, 1, 1, 0.32, 0, 0));
+    add(new THREE.BoxGeometry(0.004, 0.012, 0.07), FLASH, T(sx * 0.058, 0.06, -0.01, 1, 1, 1, 0.75, 0, 0)); }
+  add(new THREE.BoxGeometry(0.03, 0.03, 0.006), FLASH, T(0, 0.06, 0.084)); // heel tab
   const g = new THREE.BufferGeometry(), cols = [];
   for (const [p, c] of parts) { const k = new THREE.Color(c), n = p.attributes.position.count, arr = new Float32Array(n * 3); for (let q = 0; q < n; q++) arr.set([k.r, k.g, k.b], q * 3); p.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
   for (const k of ['position', 'normal', 'uv', 'color']) { const tot = parts.reduce((a, [p]) => a + p.attributes[k].array.length, 0), arr = new Float32Array(tot); let o = 0;
@@ -158,8 +172,8 @@ function footGeo(style) {
   return g;
 }
 const bootGeo = footGeo(unlocks.boots);
-const boot = new THREE.Mesh(bootGeo, materials.flat);
-boot.position.set(0.18, -1.05, -0.35); camera.add(boot);
+const boot = new THREE.Mesh(bootGeo, new THREE.MeshLambertMaterial({ vertexColors: true })); // v3.1.1: own untextured material (no atlas mottling)
+boot.position.set(0.18, -1.05, -0.35); boot.scale.setScalar(1.2); camera.add(boot);
 let kickAnim = 1;
 
 // ---------- UI ----------
@@ -190,7 +204,7 @@ function updateWallet(pop = false) {
     return;
   }
   $('goalFill').style.width = `${f * 100}%`;
-  $('goalTxt').innerHTML = f >= 1 ? (built.counter ? '🍟 <b>Chippy unlocked!</b> Visit the counter' : '🍟 <b>Chippy unlocked!</b> Back tae Pilton') : `🍟 Supper: <b>${n}/${CHIPPY_TARGETS}</b> Pilton targets · <b>${fmt(Math.min(wallet.pence, GOAL.pence))}/${fmt(GOAL.pence)}</b>`;
+  $('goalTxt').innerHTML = f >= 1 ? (built.counter ? '🍟 <b>Chippy unlocked!</b> Visit the counter' : '🍟 <b>Chippy unlocked!</b> Back tae Pilton') : `🍟 Supper: <b>${n}/${CHIPPY_TARGETS}</b> needed (any ${CHIPPY_TARGETS} of ${targets.length}) · <b>${fmt(Math.min(wallet.pence, GOAL.pence))}/${fmt(GOAL.pence)}</b>`;
   $('wallet').classList.toggle('full', f >= 1);
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
@@ -508,6 +522,7 @@ function checkZones(now) {
         // (plus a small lip allowance) and not rising - it has dropped in, even if it then bounces on the floor.
         const z = t.zone, inside = z.containsPoint(tmpV) || (t.openTop && tmpV.x > z.min.x && tmpV.x < z.max.x && tmpV.z > z.min.z && tmpV.z < z.max.z && tmpV.y > z.min.y && tmpV.y < z.max.y + 0.12 && b.body.velocity.y < 1.5);
         if (!inside || now - b.lastKick > 8000) continue;
+        if (t.kickOnly && (b.pushed === b.lastKick || Math.hypot(p.x - player.position.x, p.z - player.position.z) < 2.2)) continue; // v3.1.1: must arrive from a kick, not carried
         if (t.minRange && (!b.kickFrom || Math.hypot(b.kickFrom.x - t.rangeFrom.x, b.kickFrom.z - t.rangeFrom.z) < t.minRange)) continue;
         const sp = b.body.velocity.length();
         if (t.minSpeed && sp < t.minSpeed) continue;
@@ -564,6 +579,7 @@ function fixedUpdate(h) {
     const p = b.body.position; rayRes.reset(); rayTo.set(p.x, p.y - BALL_R - 0.06, p.z);
     world.raycastClosest(p, rayTo, { collisionFilterMask: G_STATIC }, rayRes);
     if (rayRes.hasHit) { const d = 1 - 0.9 * h; b.body.velocity.x *= d; b.body.velocity.z *= d; }
+    if (Math.hypot(p.x - player.position.x, p.z - player.position.z) < 0.8 && simTime - (b.kickSim ?? -1e9) > 0.25) b.pushed = b.lastKick; // v3.1.1: walked/dribbled since its last kick
     if (LEVEL.sea && p.y < LEVEL.sea.y) { // v2.9: lost to the sea (Granton) -> splash, and the ball is back at its spot
       sfx.splash?.(p.x, p.z); seaLost++; splashFx(p.x, LEVEL.sea.water ?? LEVEL.sea.y + 0.4, p.z); release?.(b);
       if (LEVEL.sea.lostForGood) loseToRiver(b, p.x, p.z); /* v3.1 Leith: the old ball floats off for good; a fresh one is handed over */
@@ -602,9 +618,9 @@ function render(dt, t) {
   for (const d of dynamics) { d.mesh.position.copy(d.body.position); d.mesh.quaternion.copy(d.body.quaternion); }
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
-  boot.position.set(0.18, -1.05 + s * 0.35, -0.35 - s * 0.5); boot.rotation.x = -s * 1.1;
+  boot.position.set(0.2, -0.98 + s * 0.5, -0.45 - s * 0.45); boot.rotation.x = 0.25 + s * 0.35; // v3.1.1: same timing, path raised so the boot is seen
   const rest = kickAnim >= 1 && pitch < -0.6; // resting foot: tucked into view when you look down
-  if (rest) { boot.position.set(0.2, -0.5, -0.72); boot.rotation.x = 0.35; }
+  if (rest) { const th = -pitch, c = Math.cos(th), sn = Math.sin(th); boot.position.set(0.22, -1.5 * c + 0.8 * sn, -1.5 * sn - 0.8 * c); boot.rotation.x = th + 0.3; } // v3.1.1: resting foot sits flat on the ground, toe forward
   boot.visible = kickAnim < 1 || pitch < -0.6;
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
@@ -703,7 +719,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.1';
+const BUILD = 'v3.1.1';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

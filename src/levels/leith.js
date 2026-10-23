@@ -36,6 +36,7 @@ function build(scene, world, mats, P) {
   const sign = (text, x, y, z, w, h, ry, bg, fg, font, border) => quad('atlas', x, y, z, w, h, ry, atlas.sign(text, bg, fg, w / h, font, border));
   const cellUV = (i) => { const c = i % 4, r = Math.floor(i / 4), e = 0.004; return [c / 4 + e, 1 - (r + 1) / 4 + e, (c + 1) / 4 - e, 1 - r / 4 - e]; };
   const RS = LT.RS, RN = LT.RN, WY = LT.WATER, F = LT.FRONT, NF = LT.NFRONT, IRON = 0x1e2124, ACC = 0x6B3F73;
+  const vt = (base = 0xf0e6d4) => { const c = new THREE.Color(base), k = 0.86 + rand() * 0.18; return c.setRGB(c.r * k, c.g * (k + (rand() - 0.5) * 0.04), c.b * (k + (rand() - 0.5) * 0.06)).getHex(); }; // v3.1.1: per-window tint jitter (less obvious repetition)
   const SAND = [0xcfccc4, 0xc4c0b6, 0xcac6bc, 0xbdb8ad, 0xd6d2c8, 0xb8b3a8]; // dressed sandstone, grey-buff
 
   // ---------- land, river, quay walls ----------
@@ -43,6 +44,8 @@ function build(scene, world, mats, P) {
   boxBody(0, -2, (RN + 32) / 2, 100, 4, 32 - RN, { surface: 'setts' }); // north bank
   B.add('flat', QUAD, M4(0, WY, (RS + RN) / 2, 260, RN - RS, 1, -Math.PI / 2), 0x3f4e48, {}); // the Water of Leith (dark, peaty)
   for (let i = 0; i < 40; i++) { const x = -110 + rand() * 220, z = RS + 0.6 + rand() * (RN - RS - 1.2); B.add('flat', QUAD, M4(x, WY + 0.01, z, 1.5 + rand() * 4, 0.08, 1, -Math.PI / 2, rand() * 0.2), 0x6e7f78, {}); }
+  for (let i = 0; i < 26; i++) { const x0 = -110 + i * 8.5 + rand() * 2; B.add('flat', QUAD, M4(x0, WY + 0.006, RN - 1.4 - rand() * 0.8, 5 + rand() * 4, 1.4 + rand() * 1.6, 1, -Math.PI / 2), pick([0x6b6450, 0x5e5848, 0x726a55]), {}); } // v3.1.1: soft reflection of the sandstone frontage
+  for (let i = 0; i < 60; i++) { const x = -110 + rand() * 220, z = RS + 0.4 + rand() * (RN - RS - 0.8); B.add('flat', QUAD, M4(x, WY + 0.012, z, 0.6 + rand() * 2.2, 0.05, 1, -Math.PI / 2, (rand() - 0.5) * 0.15), pick([0x8a9a93, 0x56665f, 0x9aa8a0]), {}); } // ripple glints
   B.add('cobble', QUAD, M4(0, 0.005, (F + RS) / 2 + 1.2, 100, RS - F - 2.4, 1, -Math.PI / 2), 0xb4ada2, { tile: 1.4 }); // quayside setts
   B.add('slab', QUAD, M4(0, 0.007, F + 1.2, 100, 2.4, 1, -Math.PI / 2), 0xffffff, { tile: 1.8 }); // pavement at the frontages
   B.add('cobble', QUAD, M4(0, 0.005, (RN + NF) / 2, 100, NF - RN, 1, -Math.PI / 2), 0xb4ada2, { tile: 1.4 });
@@ -72,15 +75,15 @@ function build(scene, world, mats, P) {
     boxBody(lx, 1.9, lz, 0.25, 1.9, 0.25, { target: 'bridgelamp', surface: 'metal' });
     cyl('flat', lx, 0 + 1.6, lz, 0.16, 0.16, 0.25, 0xf7c325, { phys: false, seg: 8 });
     addTarget({ id: 'bridgelamp', name: 'Bridge Lamp', hint: 'ping the lamp post at the bridge end', points: 100, kind: 'hit', pos: V(lx, 0, lz), ringR: 0.8, stand: V(lx + 0.3, 0, lz - 6.5), aim: V(lx, 0 + 1.6, lz), lines: ['DING! Lamplighter says ta.', "Lit it up. That's the Shore's brightest moment since 1820.", 'Clanged the lamp. The bridge is pure buzzin\'.'] });
-    addTarget({ id: 'bridgetop', name: 'Up on the Bridge', hint: 'run it up the bridge ramp so it stops on the deck', points: 100, kind: 'zone', pos: V(x, 0, RS - 2), ringR: 1.2, stand: V(x, 0, RS - 9), aim: V(x, 0.4, (RS + RN) / 2),
+    addTarget({ id: 'bridgetop', name: 'Up on the Bridge', hint: 'kick it up the bridge ramp so it stops on the deck', points: 100, kind: 'zone', kickOnly: true, pos: V(x, 0, RS - 2), ringR: 1.2, stand: V(x, 0, RS - 9), aim: V(x, 0.4, (RS + RN) / 2),
       zone: new THREE.Box3(V(x - W / 2, H - 0.05, zB), V(x + W / 2, H + 1.0, zC)), lines: ['Up and ower! Well, up.', 'King o\' the bridge.', 'That ball\'s got a better view than you.'] });
     sign('SHORE BRIDGE', x - W / 2 - 0.33, H + 0.55, RS + 0.3, 1.6, 0.3, -Math.PI / 2, '#2a2d31', '#f1d98a', 'bold 48px Georgia'); }
 
   // ---------- The Shore frontage: dressed sandstone tenements, recessed timber shopfronts between stone pilasters ----------
   function tenement(x0, x1, floors, tone, shop) { const xc = (x0 + x1) / 2, w = x1 - x0, D = 11, h = 1 + floors * 3.3, bays = Math.max(2, Math.round(w / 3));
-    solid('stone', xc, h / 2, F - D / 2, w, h, D, tone, { tile: 4 });
+    solid('stone', xc, h / 2, F - D / 2, w, h, D, tone, { tile: 3.4 + rand() * 1.2 });
     solid('stone', xc, 4.15, F + 0.12, w, 0.3, 0.24, 0xe2d6be, { phys: false }); solid('stone', xc, h - 0.25, F + 0.2, w + 0.2, 0.5, 0.4, 0xe2d6be, { phys: false }); // cornice over the shops + eaves cornice
-    for (let i = 0; i < bays; i++) for (let j = 1; j < floors; j++) { const bx = x0 + (i + 0.5) * w / bays; quad('facade', bx, 4.3 + (j - 0.5) * 3.3, F + 0.01, w / bays * 0.85, 3.1, 0, cellUV(j === floors - 1 ? FACADE.small : pick([FACADE.sashA, FACADE.sashB, FACADE.sashA, FACADE.lit])), 0xf0e6d4); }
+    for (let i = 0; i < bays; i++) for (let j = 1; j < floors; j++) { const bx = x0 + (i + 0.5) * w / bays; quad('facade', bx + (rand() - 0.5) * 0.12, 4.3 + (j - 0.5) * 3.3 + (rand() - 0.5) * 0.08, F + 0.01, w / bays * (0.8 + rand() * 0.08), 3.1, 0, cellUV(j === floors - 1 ? pick([FACADE.small, FACADE.sashB]) : pick([FACADE.sashA, FACADE.sashB, FACADE.triple, FACADE.lit, FACADE.sashA])), vt()); }
     B.add('roof', ROOF, M4(xc, h, F - D / 2, D + 0.3, 3.0, w + 0.05, 0, Math.PI / 2), 0x5c6168, { tile: 2.2 });
     for (let x = x0 + 2; x < x1 - 1; x += 6) { solid('stone', x, h + 2.2, F - D / 2, 1.0, 2.6, 2.8, tone, { phys: false, tile: 2.6 }); for (let k = -1; k <= 1; k++) cyl('flat', x, h + 3.7, F - D / 2 + k * 0.8, 0.13, 0.16, 0.5, 0xa65a3a, { phys: false, seg: 6 }); }
     if (shop !== false) { // ground floor: stone pilasters, recessed timber shopfronts with stallrisers, fascias
@@ -169,11 +172,31 @@ function build(scene, world, mats, P) {
   // ---------- north bank (across the river): tall Shore frontages, the river's signature view ----------
   for (const [x0, x1, fl, tone, roof] of [[-44, -30, 5, SAND[4], 0x5c6168], [-30, -16, 4, SAND[5], 0xb5523b], [-16, -2, 5, SAND[0], 0x5c6168], [-2, 12, 6, SAND[2], 0x5c6168], [12, 26, 4, 0xece6da, 0xb5523b], [26, 44, 5, SAND[1], 0x5c6168]]) { const xc = (x0 + x1) / 2, w = x1 - x0, h = 1 + fl * 3.3, D = 10;
     solid('stone', xc, h / 2, NF + D / 2, w, h, D, tone, { tile: 2.6, phys: false }); B.add('roof', ROOF, M4(xc, h, NF + D / 2, D + 0.3, 3, w, 0, Math.PI / 2), roof, { tile: 2.2 });
-    const bays = Math.round(w / 3); for (let i = 0; i < bays; i++) for (let j = 0; j < fl; j++) quad('facade', x0 + (i + 0.5) * w / bays, 1.9 + j * 3.3, NF - 0.01, w / bays * 0.85, 3.1, Math.PI, cellUV(j === 0 ? pick([FACADE.shopUpper, FACADE.door, FACADE.sashA]) : pick([FACADE.sashA, FACADE.sashB, FACADE.lit, FACADE.triple])), 0xf0e6d4);
+    const bays = Math.round(w / 3); for (let i = 0; i < bays; i++) for (let j = 0; j < fl; j++) quad('facade', x0 + (i + 0.5) * w / bays, 1.9 + j * 3.3, NF - 0.01, w / bays * 0.85, 3.1, Math.PI, cellUV(j === 0 ? pick([FACADE.shopUpper, FACADE.door, FACADE.sashA]) : pick([FACADE.sashA, FACADE.sashB, FACADE.lit, FACADE.triple])), vt());
     if (roof === 0xb5523b) for (let x = x0 + 3; x < x1 - 2; x += 5) { solid('stone', x, h + 1.6, NF + 0.6, 2.2, 2.0, 1.2, tone, { phys: false }); B.add('roof', ROOF, M4(x, h + 2.6, NF + 0.6, 2.4, 1.1, 1.4), roof, {}); } } // dormers on the red-roofed ones
   boxBody(0, 4, NF + 5, 100, 8, 10); // north frontage body
+  // v3.1.1: seal the north horizon - a taller back row of tenements/warehouses, side wings and trees (scenery only)
+  for (let x = -96; x < 96; x += 12 + rand() * 6) { const w = 10 + rand() * 6, h = 20 + rand() * 12, z0 = NF + 12 + rand() * 6, tone = pick(SAND), xc = x + w / 2;
+    solid('stone', xc, h / 2, z0 + 6, w, h, 12, tone, { tile: 3 + rand(), phys: false }); B.add('roof', ROOF, M4(xc, h, z0 + 6, 12.3, 2.6, w, 0, Math.PI / 2), pick([0x5c6168, 0x5c6168, 0xb5523b]), { tile: 2.2 });
+    const bays = Math.round(w / 3); for (let i = 0; i < bays; i++) for (let j = 2; j < Math.floor(h / 3.3); j++) quad('facade', x + (i + 0.5) * w / bays, 1.9 + j * 3.3, z0 - 0.01, w / bays * 0.8, 3.0, Math.PI, cellUV(pick([FACADE.sashA, FACADE.sashB, FACADE.small, FACADE.lit])), vt(0xd8cfbf));
+    for (let k = 0; k < 2; k++) cyl('flat', xc - w / 4 + k * w / 2, h + 1.6, z0 + 6, 0.5, 0.55, 2.2, tone, { phys: false, seg: 6 }); }
+  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) { const x = sx * (50 + k * 12), h = 16 + rand() * 8; solid('stone', x, h / 2, NF + 6 + k * 3, 11, h, 14, pick(SAND), { tile: 3, phys: false }); B.add('roof', ROOF, M4(x, h, NF + 6 + k * 3, 14.3, 2.6, 11, 0, Math.PI / 2), 0x5c6168, { tile: 2.2 }); }
+  for (let i = 0; i < 16; i++) { const x = -90 + rand() * 180, z = NF + 10.5 + rand() * 1.5, s2 = 0.8 + rand() * 0.6; cyl('wood', x, 2.5 * s2, z, 0.2, 0.28, 5 * s2, 0x4a3a2a, { phys: false, seg: 5 }); B.add('flat', new THREE.IcosahedronGeometry(2.8, 1), M4(x, 6.2 * s2, z, s2, s2 * 0.95, s2), pick([0x4f6a32, 0x5f7a3a, 0x46602c]), {}); }
+  for (let i = 0; i < 6; i++) { const x = -38 + i * 15 + rand() * 4; cyl('wood', x, 2.2, RN + 2.4, 0.16, 0.22, 4.4, 0x4a3a2a, { seg: 5 }); B.add('flat', new THREE.IcosahedronGeometry(2.2, 1), M4(x, 5.4, RN + 2.4, 1, 1.05, 1), pick([0x4f6a32, 0x5f7a3a]), {}); } // quayside trees on the far bank
   // moored boats and a pontoon in the river
-  for (const [x, col] of [[-30, 0x2E6E8E], [24, 0xf4f1ea]]) { solid('flat', x, WY + 0.3, RN - 2, 6, 0.8, 2.0, col, { phys: false }); solid('flat', x - 1, WY + 1.0, RN - 2, 2, 0.8, 1.6, 0xe8e2d4, { phys: false }); }
+  { // v3.1.1: proper moored boats - pointed hull (extruded plan), rubbing strake, cabin with windows, mast
+    const plan = (L, Wd) => { const sh = new THREE.Shape(); sh.moveTo(-L / 2, -Wd / 2 + 0.25); sh.quadraticCurveTo(-L / 2, -Wd / 2, -L / 2 + 0.4, -Wd / 2); sh.lineTo(L / 2 - 1.6, -Wd / 2); sh.quadraticCurveTo(L / 2 - 0.3, -Wd / 2 + 0.1, L / 2, 0); sh.quadraticCurveTo(L / 2 - 0.3, Wd / 2 - 0.1, L / 2 - 1.6, Wd / 2); sh.lineTo(-L / 2 + 0.4, Wd / 2); sh.quadraticCurveTo(-L / 2, Wd / 2, -L / 2, Wd / 2 - 0.25); sh.closePath(); return sh; };
+    for (const [x, z, L, Wd, hull, strake, cab] of [[-30, RN - 2.1, 7, 2.3, 0x1f3a5f, 0xc8402e, 0xefe6d2], [24, RN - 2.0, 6, 2.1, 0x2f5a3c, 0xefe6d2, 0xe8d9b0], [-8, RN - 1.7, 4.2, 1.6, 0x8a2a2a, 0xefe6d2, null]]) {
+      const hg = new THREE.ExtrudeGeometry(plan(L, Wd), { depth: 0.8, bevelEnabled: false, curveSegments: 5 }); hg.rotateX(-Math.PI / 2);
+      B.add('flat', hg, M4(x, WY - 0.25, z, 1, 1, 1), hull, {});
+      const sg = new THREE.ExtrudeGeometry(plan(L + 0.12, Wd + 0.12), { depth: 0.12, bevelEnabled: false, curveSegments: 5 }); sg.rotateX(-Math.PI / 2);
+      B.add('flat', sg, M4(x, WY + 0.47, z, 1, 1, 1), strake, {});
+      solid('wood', x, WY + 0.56, z, L - 0.6, 0.04, Wd - 0.3, 0x8a6a46, { phys: false }); // deck
+      if (cab) { solid('flat', x - L * 0.12, WY + 1.05, z, L * 0.36, 0.95, Wd * 0.66, cab, { phys: false }); solid('flat', x - L * 0.12, WY + 1.56, z, L * 0.4, 0.08, Wd * 0.72, hull, { phys: false });
+        for (const s2 of [-1, 1]) solid('glass', x - L * 0.12, WY + 1.2, z + s2 * Wd * 0.335, L * 0.28, 0.3, 0.02, 0x2a3640, { phys: false });
+        solid('glass', x - L * 0.12 + L * 0.181, WY + 1.2, z, 0.02, 0.3, Wd * 0.5, 0x2a3640, { phys: false });
+        cyl('flat', x - L * 0.12, WY + 2.6, z, 0.04, 0.05, 2.2, 0xd8d4c8, { phys: false, seg: 5 }); }
+      else for (const k of [-1, 1]) solid('wood', x + k * 0.6, WY + 0.75, z, 0.25, 0.08, Wd - 0.4, 0x8a6a46, { phys: false }); } }
   // lamps along the Shore
   for (const x of [-36, -20, -2, 22, 36]) { cyl('metal', x, 2.8, F + 2.3, 0.07, 0.1, 5.6, IRON, { seg: 6 }); solid('flat', x, 5.5, F + 2.0, 0.08, 0.08, 0.7, IRON, { phys: false }); solid('glass', x, 5.25, F + 1.7, 0.4, 0.55, 0.4, 0xffffff, { phys: false }); B.add('lamp', BOX, M4(x, 5.25, F + 1.7, 0.26, 0.4, 0.26), 0xffffff, {}); }
   // far ends: the road bridge to the east and trees/buildings west (closes both river vistas)
