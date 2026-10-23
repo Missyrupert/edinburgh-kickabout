@@ -35,7 +35,7 @@ function build(scene, world, mats, P) {
   const sign = (text, x, y, z, w, h, ry, bg, fg, font, border) => quad('atlas', x, y, z, w, h, ry, atlas.sign(text, bg, fg, w / h, font, border));
   const cellUV = (i) => { const c = i % 4, r = Math.floor(i / 4), e = 0.004; return [c / 4 + e, 1 - (r + 1) / 4 + e, (c + 1) / 4 - e, 1 - r / 4 - e]; };
   const Q = NH.QUAY, WY = NH.WATER, [WX0, WX1, WZ1] = NH.WPIER, [EX0, EX1, EZ1] = NH.EQUAY, F = NH.FRONT, IRON = 0x1e2124, ACC = 0xB8405E;
-  const HARL = [0xf4f1ea, 0xefe8da, 0xf2ecd8, 0xe9e4da, 0xf6f2e6, 0xeae2cc];
+  const HARL = [0xffffff, 0xfbfaf6, 0xffffff, 0xf8f8f4, 0xffffff, 0xfaf8f2]; // v3.0.1: lime-wash white (was cream)
 
   // ---------- land, quays, pier, water ----------
   boxBody(0, -2, (-30 + Q) / 2, 80, 4, Q + 30, { surface: 'paving' }); // the land
@@ -72,12 +72,14 @@ function build(scene, world, mats, P) {
     if (ci === 0 || ci === cottages.length - 1) { const gx = ci === 0 ? x0 : x1; solid('harl', gx, h + 1.5, F - D / 2, 0.6, 3, D - 1, col, { phys: false }); } // crowstep-ish gable ends
     solid('harl', x1 - 0.3, h + 3.0, F - D / 2, 0.9, 1.6, 2.2, col, { phys: false }); for (const k of [-0.6, 0, 0.6]) cyl('flat', x1 - 0.3, h + 4.0, F - D / 2 + k, 0.12, 0.15, 0.45, 0xa65a3a, { phys: false, seg: 6 }); // chimney stacks + cans
     // forestair: rising westward along the front wall to a first-floor landing and door
-    const xs = x1 - 0.6, N = 9, rise = 0.31, tread = 0.3, deep = ci === 1 ? 1.45 : 1.0, zc = F + deep / 2, lx1 = xs - N * tread, lx0 = lx1 - (ci === 1 ? 1.9 : 1.3), LH = N * rise;
+    const xs = x1 - 0.6, N = ci === 1 || ci === 3 ? 7 : 9, rise = 0.31, tread = 0.3, deep = ci === 1 || ci === 3 ? 1.45 : 1.0, zc = F + deep / 2, lx1 = xs - N * tread, lx0 = lx1 - (ci === 1 || ci === 3 ? 1.9 : 1.3), LH = N * rise;
     for (let k = 0; k < N; k++) solid('stone', xs - (k + 0.5) * tread, (k + 1) * rise / 2, zc, tread, (k + 1) * rise, deep, 0xb9b4aa, { tile: 1.2, surface: 'setts' });
     solid('stone', (lx0 + lx1) / 2, LH / 2, zc, lx1 - lx0, LH, deep, 0xb9b4aa, { tile: 1.2, surface: 'setts' }); // landing on a solid stone base
     for (let k = 0; k < N; k++) cyl('metal', xs - (k + 0.5) * tread, (k + 1) * rise + 0.45, F + deep - 0.05, 0.02, 0.02, 0.9, IRON, { phys: false, seg: 4 });
     { const L = Math.hypot(N * tread, LH), ry = 0; solid('metal', xs - N * tread / 2, LH / 2 + 0.95, F + deep - 0.05, L, 0.05, 0.05, IRON, { phys: false, rz: -Math.atan2(LH, N * tread) }); }
     solid('metal', (lx0 + lx1) / 2, LH + 0.95, F + deep - 0.05, lx1 - lx0, 0.05, 0.05, IRON, { phys: false }); cyl('metal', lx0 + 0.05, LH + 0.45, F + deep - 0.05, 0.02, 0.02, 0.9, IRON, { phys: false, seg: 4 });
+    if (ci === 1 || ci === 3) { const run = N * tread, L = Math.hypot(run, LH), th = Math.atan2(LH, run); // v3.0.1: worn stone ramp line over the steps: run a ball up the stair
+      body(new CANNON.Box(new CANNON.Vec3(L / 2, 0.05, deep / 2 - 0.05)), xs - run / 2 + Math.sin(th) * 0.05, LH / 2 + Math.cos(th) * 0.05 - 0.04, zc, { rz: -th, surface: 'setts' }); }
     stairs.push({ ci, xs, lx0, lx1, LH, deep, zc });
     // windows + doors: ground-floor door under the landing, windows either side; upper floor door on the landing
     quad('facade', (lx0 + lx1) / 2 + 0.15, 1.15, F + deep + 0.01, 1.0, 2.2, 0, cellUV(FACADE.door), 0xffffff); // close door under the stair
@@ -106,13 +108,18 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'fishdoor', name: 'Fishmarket Door', hint: 'strike the marked fishmarket door', points: 75, kind: 'hit', pos: V(x0 - 0.8, 0, -1.6), ringR: 0.9, stand: V(x0 - 5, 0, -1.6), aim: V(x0, 1.0, -1.6), lines: ["Market's shut. Your fitba's no' for sale.", "Fresh in! Haddie, herring, and wan muddy ba'.", 'The fishwives would\'ve had you selling by noon.'] }); }
 
   // ---------- the west pier and its white lighthouse ----------
-  { const x = (WX0 + WX1) / 2, z = WZ1 - 3, R = 1.6;
-    cyl('flat', x, 0.4, z, R + 0.5, R + 0.6, 0.8, 0x9a958c, { seg: 8 });
-    cyl('flat', x, 4.6, z, R * 0.8, R, 7.6, 0xf6f4ee, { seg: 8 });
-    cyl('flat', x, 8.5, z, R + 0.35, R + 0.35, 0.18, 0xf6f4ee, { phys: false, seg: 8 }); // gallery
-    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; cyl('metal', x + Math.cos(a) * (R + 0.3), 9.0, z + Math.sin(a) * (R + 0.3), 0.02, 0.02, 0.9, 0xf6f4ee, { phys: false, seg: 4 }); }
-    cyl('glass', x, 9.4, z, 0.85, 0.85, 1.4, 0xffffff, { phys: false, seg: 8 }); B.add('lamp', CYL(0.4, 0.4, 8), M4(x, 9.4, z, 1, 0.9, 1), 0xffffff, {});
-    B.add('flat', new THREE.SphereGeometry(0.95, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), M4(x, 10.1, z, 1, 0.7, 1), 0xf6f4ee, {}); cyl('metal', x, 10.9, z, 0.04, 0.04, 0.8, IRON, { phys: false, seg: 4 });
+  { const x = (WX0 + WX1) / 2, z = WZ1 - 3, R = 1.5, W = 0xf6f4ee; // v3.0.1: proportions after the close-up ref
+    cyl('flat', x, 0.4, z, R + 0.45, R + 0.55, 0.8, 0x9a958c, { seg: 8 }); // stone plinth
+    cyl('flat', x, 3.9, z, 1.25, R, 6.2, W, { seg: 8 }); // tapering octagonal shaft
+    cyl('flat', x, 7.15, z, 1.75, 1.25, 0.3, W, { phys: false, seg: 8 }); cyl('flat', x, 7.45, z, 1.8, 1.8, 0.3, W, { phys: false, seg: 8 }); // heavy cornice
+    cyl('flat', x, 8.6, z, 0.95, 1.0, 2.0, W, { phys: false, seg: 8 }); // upper stage
+    B.add('flat', new THREE.CircleGeometry(0.22, 12), M4(x, 8.7, z - 0.93, 1, 1, 1, 0, Math.PI), 0x2a3440, {}); // porthole
+    cyl('flat', x, 9.62, z, 1.55, 1.0, 0.12, W, { phys: false, seg: 8 }); // gallery deck
+    for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2, r = 1.62; B.add('flat', CYL(0.018, 0.018, 4), M4(x + Math.cos(a) * r, 10.05, z + Math.sin(a) * r, 1, 0.85, 1, -0.18 * Math.sin(a), 0, 0.18 * Math.cos(a)), W, {}); } // flared railing
+    for (const y of [10.45, 9.75]) { const r = y > 10 ? 1.72 : 1.58; for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * Math.PI * 2, L = 2 * r * Math.sin(Math.PI / 8); solid('flat', x + Math.cos(a) * r * Math.cos(Math.PI / 8), y, z + Math.sin(a) * r * Math.cos(Math.PI / 8), L, 0.06, 0.06, W, { phys: false, ry: -a + Math.PI / 2 }); } }
+    cyl('glass', x, 10.3, z, 0.75, 0.75, 1.2, 0xffffff, { phys: false, seg: 8 }); B.add('lamp', CYL(0.35, 0.35, 8), M4(x, 10.3, z, 1, 0.8, 1), 0xffffff, {});
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; cyl('metal', x + Math.cos(a) * 0.76, 10.3, z + Math.sin(a) * 0.76, 0.03, 0.03, 1.2, W, { phys: false, seg: 4 }); }
+    B.add('flat', new THREE.ConeGeometry(0.95, 0.65, 8), M4(x, 11.22, z, 1, 1, 1), W, {}); cyl('metal', x, 11.75, z, 0.04, 0.04, 0.5, IRON, { phys: false, seg: 4 }); B.add('flat', new THREE.SphereGeometry(0.09, 6, 4), M4(x, 12.0, z, 1, 1, 1), IRON, {});
     solid('wood', x, 1.2, z - R + 0.05, 0.9, 2.0, 0.12, 0x1d3b6b, { target: 'lighthouse', surface: 'board' }); quad('atlas', x, 1.2, z - R - 0.02, 0.9, 2.0, Math.PI, atlas.draw(128, 256, drawTargetDoor));
     addTarget({ id: 'lighthouse', name: 'Lighthouse Door', hint: 'hit the door of the wee lighthouse', points: 100, kind: 'hit', pos: V(x, 0, z - R - 0.8), ringR: 1.0, stand: V(x, 0, z - R - 5), aim: V(x, 0.9, z - R), lines: ['Ding-dong! The keeper says he\'s no\' in.', 'Lit up! Ships fae Burntisland saw that.', 'Light. House. Ball. In that order.'] }); }
   // the "private pier" gate across the east quay end (target)
@@ -127,7 +134,10 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'piergate', name: 'Private Pier Sign', hint: 'hit the sign on the pier gate', points: 75, kind: 'hit', pos: V(xc, 0, z - 1), ringR: 1.0, stand: V(xc, 0, z - 5.5), aim: V(xc, 1.4, z), lines: ["Sign says nae fitba'. Sign got fitba'.", 'Out of bounds? Not for the ball.', 'Private pier. Public goal.'] }); }
 
   // ---------- quayside: planters with cabbage palms, benches, lamps, tide board, fish boxes, rowing boat, bell ----------
-  const palm = (x, z, y0) => { for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; solid('flat', x + Math.cos(a) * 0.18, y0 + 0.45, z + Math.sin(a) * 0.18, 0.06, 0.9, 0.04, 0x5f7a3a, { phys: false, ry: -a, rz: 0.5 * Math.cos(a), rx: 0.5 * Math.sin(a) }); } };
+  const LEAF = new THREE.ConeGeometry(0.035, 1, 3), TRUNK = CYL(0.06, 0.09, 6);
+  const palm = (x, z, y0) => { B.add('flat', TRUNK, M4(x, y0 + 0.35, z, 1, 0.7, 1), 0x6a5a40, {}); // v3.0.1: cabbage palm - a short trunk and a rosette of thin tapering leaves
+    for (let i = 0; i < 22; i++) { const a = rand() * Math.PI * 2, t = 0.15 + rand() * 1.05, L = 0.7 + rand() * 0.45, yb = y0 + 0.7;
+      B.add('flat', LEAF, M4(x + Math.sin(t) * Math.sin(a) * L / 2, yb + Math.cos(t) * L / 2, z + Math.sin(t) * Math.cos(a) * L / 2, 1, L, 1, t, a, 0), pick([0x5f7a3a, 0x6f8a42, 0x4f6a32, 0x8a8a4a]), {}); } };
   for (const x of [-18, 0, 12]) { solid('flat', x, 0.4, 4, 1.3, 0.8, 1.3, 0x4a4d50); palm(x, 4, 0.8); }
   { const x = -8, z = 4, w = 1.3, h = 0.8, th = 0.08, c = 0x4a4d50; // the target planter: hollow, soil, palm off to one side
     solid('flat', x, 0.3, z, w, 0.6, w, 0x3a2a1e); for (const [cx, cz, ww, dd] of [[x - w / 2, z, th, w], [x + w / 2, z, th, w], [x, z - w / 2, w, th], [x, z + w / 2, w, th]]) solid('flat', cx, h / 2, cz, ww, h, dd, c);
@@ -162,11 +172,12 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'bell', name: 'Harbour Bell', hint: 'ring the bell on the post', points: 50, kind: 'hit', pos: V(x, 0, z), ringR: 1.0, stand: V(x + 3, 0, z - 3.2), aim: V(x, 2.0, z + 0.6), lines: ['DONG! Ferry tae Fife? Missed it by 200 years.', 'Bell rung. Dinner\'s ready somewhere.', 'Ring-a-ding. The gulls are complaining.'] }); }
   // forestair targets: a ball landed on a landing (zone), and a first-floor door (hit)
   { const s = stairs.find((t) => t.ci === 1);
-    addTarget({ id: 'landing', name: "Granny's Landing", hint: 'chip it up onto the forestair landing (or bounce it up the steps)', points: 150, kind: 'zone', openTop: true, pos: V((s.lx0 + s.lx1) / 2, 0, F + s.deep + 1.2), ringR: 1.1, stand: V((s.lx0 + s.lx1) / 2, 0, F + 5.5), aim: V((s.lx0 + s.lx1) / 2, s.LH + 0.3, s.zc),
-      zone: new THREE.Box3(V(s.lx0 - 0.25, s.LH + 0.02, F - 0.05), V(s.lx1 + 0.25, s.LH + 0.95, F + s.deep + 0.3)), lines: ['On the landing! Granny says wipe yer feet.', 'Up the stair! Doon the stair! Stayed up the stair.', '"Is that you, son? Come in for yer tea."'] }); }
+    addTarget({ id: 'landing', name: "Granny's Landing", hint: 'chip it up onto the forestair landing (or bounce it up the steps)', points: 150, kind: 'zone', openTop: true, pos: V((s.lx0 + s.lx1) / 2, 0, F + s.deep + 1.2), ringR: 1.1, stand: V(s.xs + 4.5, 0, s.zc + 0.1), aim: V((s.lx0 + s.lx1) / 2, s.LH + 0.3, s.zc),
+      zone: new THREE.Box3(V(s.lx0 - 0.35, s.LH + 0.02, F - 0.05), V(s.lx1 + 0.35, s.LH + 1.2, F + s.deep + 0.45)) /* v3.0.1: lower landing (7 steps) + bigger catch zone */, lines: ['On the landing! Granny says wipe yer feet.', 'Up the stair! Doon the stair! Stayed up the stair.', '"Is that you, son? Come in for yer tea."'] }); }
   { const s = stairs.find((t) => t.ci === 3), dx = (s.lx0 + s.lx1) / 2;
     solid('wood', dx, s.LH + 1.05, F + 0.06, 1.25, 2.1, 0.1, 0x8a2a22, { target: 'stairdoor', surface: 'board' }); quad('atlas', dx, s.LH + 1.05, F + 0.12, 1.25, 2.1, 0, atlas.draw(128, 256, drawTargetDoor));
-    addTarget({ id: 'stairdoor', name: 'Up-the-Stair Door', hint: 'ping the first-floor door at the top of the forestair', points: 125, kind: 'hit', pos: V(dx, 0, F + s.deep + 1.2), ringR: 1.0, stand: V(dx, 0, F + 6), aim: V(dx, s.LH + 0.9, F), lines: ['Chap chap! Up-the-stair door delivered.', "Second-floor service! Well, first. We're in Scotland.", 'Postie couldnae have done it better.'] }); }
+    addTarget({ id: 'stairdoor', name: 'Up-the-Stair Door', hint: 'get it up to the first-floor door: run it up the forestair or chip it', points: 125, kind: 'zone', pos: V(dx, 0, F + s.deep + 1.2), ringR: 1.0, stand: V(s.xs + 4.5, 0, s.zc + 0.1), aim: V(dx, s.LH + 0.5, s.zc),
+      zone: new THREE.Box3(V(s.lx0 - 0.3, s.LH + 0.02, F - 0.05), V(s.lx1 + 0.3, s.LH + 2.3, F + s.deep + 0.3)), lines: ['Chap chap! Up-the-stair door delivered.', "Second-floor service! Well, first. We're in Scotland.", 'Postie couldnae have done it better.'] }); }
   // distance: the Forth, Fife, Leith flats to the east, a breakwater with a light
   for (let i = 0; i < 9; i++) B.add('flat', new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), M4(-260 + i * 70 + rand() * 30, WY, 300 + rand() * 40, 60 + rand() * 50, 10 + rand() * 18, 30), 0x7f8c98, {});
   for (let i = 0; i < 6; i++) { const x = 46 + i * 9, z = -20 + rand() * 40, h = 12 + rand() * 10; solid('flat', x, h / 2, z, 8, h, 12, pick([0xd8cbb0, 0xcfc2a6, 0xe2d6bc]), { phys: false }); for (let j = 1; j < h / 3; j++) solid('glass', x - 4.01, j * 3, z, 0.02, 1.0, 10, 0xffffff, { phys: false }); B.add('roof', ROOF, M4(x, h, z, 8.2, 2, 12.2), 0x6a6e74, {}); }
@@ -183,7 +194,7 @@ function build(scene, world, mats, P) {
   groups.forEach((c) => { for (let i = 0; i < 4; i++) { const home = V(c.x + (rand() - 0.5) * 2, 0.08, c.z + (rand() - 0.5) * 2); pig.list.push({ home, pos: home.clone(), rot: rand() * 6.28, state: 'idle', t: rand() * 3, vel: V(0, 0, 0) }); } });
   const materials = makeMaterials(P, facadeTex, atlas.tex);
   const tm = (t) => { const m = materials.flat.clone(); m.map = t; return m; };
-  materials.slab = tm(slabTexture()); materials.harl = tm(limewashTexture()); materials.pantile = tm(pantileTexture());
+  materials.slab = tm(slabTexture()); materials.harl = tm(limewashTexture()); materials.harl.color.setRGB(1.12, 1.16, 1.24); materials.harl.emissive?.setRGB(0.16, 0.165, 0.18); /* v3.0.1: cool lift + a little self-light so lime-wash reads white under the warm sun, not beige */ materials.pantile = tm(pantileTexture());
   pig.body.material = materials.pigeon; pig.head.material = materials.pigeonHead; scene.add(pig.body, pig.head);
   for (const d of dynamics) { d.mesh = new THREE.Mesh(d.geo, materials.flat); d.mesh.castShadow = P.shadows; scene.add(d.mesh); }
   const batches = B.build(scene, materials, { shadows: P.shadows });

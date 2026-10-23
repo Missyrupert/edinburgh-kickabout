@@ -14,6 +14,8 @@ ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join
 ok(g0.levels.join() === 'pilton,grassmarket,granton,newhaven', 'level order ' + g0.levels);
 ok(/Newhaven: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Newhaven goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=newhaven]')), 'level-select button');
+{ const L = await pg.evaluate(() => Object.fromEntries(['btnKick', 'btnJump', 'btnBall'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [id, { x: r.left + r.width / 2, y: r.top + r.height / 2 }]; })));
+  ok(L.btnJump.y < L.btnKick.y - 40 && Math.abs(L.btnJump.x - L.btnKick.x) < 40 && L.btnBall.x < L.btnKick.x - 60, 'v3.0.1 layout: JUMP above KICK, BALL left of KICK ' + JSON.stringify(L)); }
 const S = await pg.evaluate(() => [[0, 5], [0, -14], [-27, 20], [30, 20], [0, 20]].map(([x, z]) => __game.surfaceAt(x, z)));
 ok(JSON.stringify(S) === JSON.stringify(['paving', 'setts', 'concrete', 'concrete', 'water']), 'surfaces ' + JSON.stringify(S));
 // the player can't walk into the harbour, nor off the pier end

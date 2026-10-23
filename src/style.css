@@ -29,8 +29,9 @@ body.touch #crosshair{width:8px;height:8px}
 #lookZone{position:fixed;right:0;top:0;width:55vw;height:100vh;z-index:4}
 #touch button{position:fixed;z-index:6;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,40,70,.55);color:#fff;font-weight:800;touch-action:none}
 #btnKick{right:calc(26px + env(safe-area-inset-right));bottom:calc(36px + env(safe-area-inset-bottom));width:96px;height:96px;font-size:20px;background:rgba(200,60,40,.6)!important}
-#btnJump{right:calc(134px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:66px;height:66px;font-size:13px}
-#btnBall{right:calc(40px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:13px}
+/* v3.0.1: JUMP sits just above KICK, BALL moved left of KICK (further from the thumb) so free balls aren't wasted by accident */
+#btnJump{right:calc(40px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:13px}
+#btnBall{right:calc(134px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:66px;height:66px;font-size:13px}
 #btnPause{right:calc(12px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));width:44px;height:44px;font-size:14px}
 #perf{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:30;background:rgba(0,0,0,.65);color:#9f9;font:12px/1.35 ui-monospace,Menlo,monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;text-align:left}
 #perf.hidden{display:none}
