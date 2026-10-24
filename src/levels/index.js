@@ -8,8 +8,9 @@ import pennywell from './pennywell.js';
 import easterroad from './easterroad.js';
 import portobello from './portobello.js';
 import londonroad from './londonroad.js';
-export const LEVELS = { pennywell, pilton, grassmarket, granton, newhaven, leith, easterroad, portobello, londonroad };
-export const LEVEL_ORDER = ['pennywell', 'pilton', 'granton', 'newhaven', 'leith', 'easterroad', 'portobello', 'londonroad', 'grassmarket']; // v3.7: London Road between Portobello and the Grassmarket
+import royalmile from './royalmile.js';
+export const LEVELS = { pennywell, pilton, grassmarket, granton, newhaven, leith, easterroad, portobello, londonroad, royalmile };
+export const LEVEL_ORDER = ['pennywell', 'pilton', 'granton', 'newhaven', 'leith', 'easterroad', 'portobello', 'londonroad', 'grassmarket', 'royalmile']; // v3.8/v3.9: the Royal Mile, then the Castle Esplanade finale // v3.7: London Road between Portobello and the Grassmarket
 const q = new URLSearchParams(location.search);
 let saved = null; try { saved = localStorage.getItem('ek-level'); } catch {}
 const fromUrl = q.get('level');

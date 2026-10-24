@@ -214,6 +214,12 @@ function updateWallet(pop = false) {
   $('wallet').classList.toggle('full', f >= 1);
   if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
+function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
+  $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
+  $('goalLine').innerHTML = `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
+  $('goalOk').textContent = 'Pure magic'; $('goalCard').classList.remove('hidden'); $('goalCard').dataset.finale = '1'; sfx.success(true);
+  if (document.pointerLockElement) document.exitPointerLock();
+}
 function showGoal(bought = false) {
   $('goalBig').textContent = '🍟 🥤'; $('goalTitle').textContent = bought ? 'One fish supper an\' an Irn-Bru!' : 'Chippy unlocked!';
   $('goalLine').innerHTML = bought
@@ -476,6 +482,8 @@ let lastRepeat = 0;
 function scoreTarget(t, bonus = null) {
   const now = performance.now();
   if (t.done) { if (now - lastRepeat > 2500) { lastRepeat = now; toast(`Already bagged the ${t.name}.`, 1200); } return; }
+  if (t.final && targets.some((x) => x !== t && !x.done)) { // v3.9: the finale's crown only counts once the rest are bagged
+    if (now - lastRepeat > 2500) { lastRepeat = now; const n = targets.filter((x) => x !== t && !x.done).length; toast(`<b>${t.name}</b> - no' yet!<br><small>Bag the other ${n} first, then crown it.</small>`, 2200); } return; }
   const rec = recordDone(LEVEL.id, t, allTargets); announce(rec.news);
   if (t.challenge) return scoreChallenge(t, rec.first);
   if (!rec.first) { // already paid for this one (e.g. after Restart level): no double pay
@@ -491,7 +499,8 @@ function scoreTarget(t, bonus = null) {
   sfx.success(all);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
   toast(`<b>${t.name} +${fmt(pence)}</b>${bonus ? ` <small>(${bonus}! +${fmt(BONUS)})</small>` : ''}<br>${line}`);
-  if (all) setTimeout(() => toast(`<b>Pure dead brilliant!</b><br>All ${targets.length} targets done in ${LEVEL.name}.<br><small>Pause to restart, or travel to ${LEVELS[LEVEL.next].name}.</small>`, 7000), 2600);
+  if (all && LEVEL.finale) setTimeout(showFinale, 2600);
+  else if (all) setTimeout(() => toast(`<b>Pure dead brilliant!</b><br>All ${targets.length} targets done in ${LEVEL.name}.<br><small>Pause to restart, or travel to ${LEVELS[LEVEL.next].name}.</small>`, 7000), 2600);
   updateHud();
 }
 function announce(news) { // each unlock fires once ever: short sound + toast
@@ -724,7 +733,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.7';
+const BUILD = 'v3.8';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

@@ -95,7 +95,7 @@ body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}
 #ballArrow small { display: block; font-size: 12px; }
 
 /* ================= v2.0 design pass: "Nostalgic Street Realism" (style sheet signed off 18 Oct 2026) ================= */
-:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--granton:#3D6F8E;--newhaven:#B8405E;--leith:#6B3F73;--pennywell:#4E8A3A;--easterroad:#0F8A5F;--portobello:#E07A5F;--londonroad:#5B6C8F;--target:#FFD93D;--bagged:#47D16C}
+:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--granton:#3D6F8E;--newhaven:#B8405E;--leith:#6B3F73;--pennywell:#4E8A3A;--easterroad:#0F8A5F;--portobello:#E07A5F;--londonroad:#5B6C8F;--royalmile:#7A3B5E;--esplanade:#C9A227;--target:#FFD93D;--bagged:#47D16C}
 html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sans-serif}
 #hud{font-size:17px;font-weight:700;gap:5px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
 #hud>#score,#hud>#targets,#hud>#chal{background:rgba(46,47,44,.72);border-left:5px solid var(--yellow);padding:1px 10px 1px 8px;border-radius:4px;align-self:flex-start;letter-spacing:.5px;text-transform:uppercase;font-size:14px}
@@ -138,6 +138,8 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 .card .levels button.on[data-level=easterroad]{background:var(--easterroad);color:#fff} /* v3.5 accent: 'Matchday Emerald' */
 .card .levels button.on[data-level=portobello]{background:var(--portobello);color:#fff} /* v3.6 accent: 'Prom Coral' */
 .card .levels button.on[data-level=londonroad]{background:var(--londonroad);color:#fff} /* v3.7 accent: 'Spire Slate' */
+.card .levels button.on[data-level=royalmile]{background:var(--royalmile);color:#fff} /* v3.8 accent: 'Old Town Plum' */
+.card .levels button.on[data-level=esplanade]{background:var(--esplanade);color:#222} /* v3.9 accent: 'Tattoo Gold' */
 .card .gfx button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;background:#fff8e8;color:var(--charcoal);border:2px solid var(--charcoal);box-shadow:none}
 .card .gfx button.on{background:var(--yellow)}
 .card.goal{border-color:var(--charcoal)}
@@ -196,3 +198,4 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 .card.menu .levels .sr{position:absolute}
 .card.menu .levels button{min-height:44px;margin:0;padding:5px 8px;align-items:flex-start}
 @media (max-height:460px){.card.menu .levels{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.card.menu .levels button small{display:none}.card.menu .levels button{min-height:34px;padding:3px 8px;font-size:15px;white-space:nowrap;justify-content:center}}
+@media (max-width:380px){.card.menu .levels button small{display:none}.card.menu .levels button{min-height:40px;justify-content:center}}
