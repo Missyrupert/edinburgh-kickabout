@@ -354,7 +354,7 @@ export function surfaceAt(x, z) {
 export default {
   id: 'pilton', surfaceAt,
   sounds: { fryer: { x: -9, z: 33.6 }, birds: [[19, -4], [-1, -24], [2, 20], [-20, -10], [22, 10]], gulls: [[0, 60], [30, 40], [-30, 50]], far: [[-60, -30], [55, 60], [40, -60], [-50, 40]], roadX: 45 }, name: 'West Pilton', short: 'Pilton',
-  blurb: 'Level 1: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
+  blurb: 'Level 2: a kickabout round the back o\' the flats in West Pilton. 8 targets, from easy to pure gallus.',
   intro: "Welcome tae West Pilton!<br><small>Ba' at your feet. Easy first one: the auld trolley just up the street on your right.</small>",
   build, spawn: [0, 0.5, -38], spawnYaw: 180,
   ballHomes: () => [[0.3, 0.4, -35.6], [14.8, 1.6, -2], [-2, 0.4, 26]],

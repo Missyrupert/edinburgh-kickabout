@@ -386,3 +386,46 @@ export function limewashTexture() {
   g.strokeStyle = 'rgba(150,145,130,.18)'; for (let k = 0; k < 10; k++) { const x = r() * S; g.lineWidth = 1 + r() * 2; g.beginPath(); g.moveTo(x, r() * 40); g.lineTo(x + (r() - 0.5) * 6, 60 + r() * 120); g.stroke(); } // drips
   return (v2Cache.limewash = canvasTex(c, true));
 }
+
+// v3.2 Pennywell: light roughcast harling on post-war flats - coarse grey-white chips, damp line at the base, rain streaks under sills
+export function roughcastTexture() {
+  if (v2Cache.roughcast) return v2Cache.roughcast;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1960);
+  g.fillStyle = '#e9e7e1'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 11000; i++) { const x = r() * S, y = r() * S, s = 0.5 + r() * 1.4, v = r();
+    g.fillStyle = v < 0.35 ? `rgba(110,108,102,${0.18 + r() * 0.25})` : v < 0.8 ? `rgba(255,255,253,${0.45 + r() * 0.4})` : `rgba(168,160,146,${0.3 + r() * 0.3})`;
+    g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
+  for (let k = 0; k < 8; k++) { const x = r() * S, y = r() * S, w = 30 + r() * 60, h = 20 + r() * 50; g.fillStyle = `rgba(${215 + r() * 25 | 0},${212 + r() * 25 | 0},${200 + r() * 25 | 0},.22)`; g.fillRect(x, y, w, h); } // patch repairs
+  for (let i = 0; i < 26; i++) { const x = r() * S, len = 30 + r() * 150, gr = g.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, `rgba(70,66,58,${0.08 + r() * 0.1})`); gr.addColorStop(1, 'rgba(70,66,58,0)'); g.fillStyle = gr; g.fillRect(x, r() * S * 0.5, 1 + r() * 3, len); }
+  return (v2Cache.roughcast = canvasTex(c, true));
+}
+// v3.2: 1960s precast concrete panels - exposed aggregate, panel joints, rust bleeds from fixings, soot
+export function concretePanelTexture() {
+  if (v2Cache.cpanel) return v2Cache.cpanel;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1966), n = 2, s = S / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 176 + r() * 22 | 0; g.fillStyle = `rgb(${v},${v - 2},${v - 8})`; g.fillRect(i * s, j * s, s, s); }
+  for (let k = 0; k < 9000; k++) { const v = 100 + r() * 130 | 0; g.fillStyle = `rgba(${v},${v - 4},${v - 10},.5)`; g.beginPath(); g.arc(r() * S, r() * S, 0.6 + r() * 1.2, 0, 7); g.fill(); } // aggregate
+  g.fillStyle = 'rgba(60,58,54,.8)'; for (let i = 0; i <= n; i++) { g.fillRect(i * s - 2, 0, 4, S); g.fillRect(0, i * s - 2, S, 4); }
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (const fx of [0.15, 0.85]) { const x = i * s + fx * s, y = j * s + 8, gr = g.createLinearGradient(0, y, 0, y + 60); gr.addColorStop(0, 'rgba(120,64,30,.35)'); gr.addColorStop(1, 'rgba(120,64,30,0)'); g.fillStyle = gr; g.fillRect(x - 1.5, y, 3, 60); } // rust bleeds
+  for (let i = 0; i < 20; i++) { const x = r() * S, len = 40 + r() * 120, gr = g.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, `rgba(40,38,34,${0.08 + r() * 0.12})`); gr.addColorStop(1, 'rgba(40,38,34,0)'); g.fillStyle = gr; g.fillRect(x, r() * S * 0.4, 2 + r() * 6, len); }
+  return (v2Cache.cpanel = canvasTex(c, true));
+}
+// v3.2: weathered copper roofing - standing seams with verdigris drift (St Paul's wedge roof)
+export function copperTexture() {
+  if (v2Cache.copper) return v2Cache.copper;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1969), w = 32;
+  g.fillStyle = '#6fa591'; g.fillRect(0, 0, S, S);
+  for (let k = 0; k < 40; k++) { const x = r() * S, y = r() * S, rr = 20 + r() * 50, gr = g.createRadialGradient(x, y, 0, x, y, rr); const t = r(); gr.addColorStop(0, t < 0.5 ? 'rgba(80,130,112,.5)' : t < 0.8 ? 'rgba(150,196,176,.4)' : 'rgba(120,88,58,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, S, S); }
+  for (let x = 0; x < S; x += w) { g.fillStyle = 'rgba(40,70,60,.55)'; g.fillRect(x, 0, 3, S); g.fillStyle = 'rgba(210,235,225,.35)'; g.fillRect(x + 3, 0, 2, S); }
+  for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(50,80,70,${0.08 + r() * 0.1})`; g.fillRect(r() * S, r() * S, 1 + r() * 3, 20 + r() * 80); }
+  return (v2Cache.copper = canvasTex(c, true));
+}
+// v3.2: council-verge grass - mown blades, clover and bare patches (cheap 256px tile)
+export function grassTexture() {
+  if (v2Cache.grass) return v2Cache.grass;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1971);
+  g.fillStyle = '#c9d4b0'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 9000; i++) { const x = r() * S, y = r() * S, v = r(); g.strokeStyle = v < 0.5 ? `rgba(70,96,40,${0.3 + r() * 0.3})` : v < 0.85 ? `rgba(150,176,96,${0.3 + r() * 0.3})` : `rgba(196,190,140,.35)`; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 3, y - 2 - r() * 4); g.stroke(); }
+  for (let k = 0; k < 6; k++) { const x = r() * S, y = r() * S, rr = 8 + r() * 22, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(140,120,80,.35)'); gr.addColorStop(1, 'rgba(140,120,80,0)'); g.fillStyle = gr; g.fillRect(0, 0, S, S); } // bare patches
+  return (v2Cache.grass = canvasTex(c, true));
+}

@@ -12,12 +12,12 @@ export function surfaceAt(x, z) {
 export default {
   id: 'grassmarket', name: 'The Grassmarket', short: 'Grassmarket', surfaceAt,
   sounds: { oldtown: true, birds: [[-42, -11], [-46, 10], [45, -11], [54, 9], [12, 12]], gulls: [[0, 120], [-40, 60]], far: [[-80, 40], [80, 0], [0, -70], [-30, 60], [40, -50]], roadX: 95 },
-  blurb: 'Level 2: the Grassmarket, the old market square under the Castle. 11 targets round the square, the close and the back court.',
+  blurb: 'Level 6: the Grassmarket, the old market square under the Castle. 11 targets round the square, the close and the back court.',
   intro: "Welcome tae the Grassmarket!<br><small>Ba' at your feet. Look up: that's the Castle. Easy first one: the traffic cone just ahead.</small>",
   build: buildSquare,
   tiers: { bench: 'easy', cone: 'easy', lamp: 'easy', door: 'easy', post: 'easy', tardis: 'easy', bin: 'tricky', close: 'tricky', dug: 'tricky', case: 'tricky', skip: 'tricky' },
   spawn: [3, 0.5, -10], spawnYaw: 180,
   ballHomes: () => [[3.3, 0.4, -7.6], [30, 0.4, -38], [-2, 0.4, 0]],
   bounds: { x: 66, zMin: -52, zMax: 34 },
-  next: 'pilton',
+  next: 'pennywell',
 };

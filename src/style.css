@@ -95,7 +95,7 @@ body.touch #power{bottom:calc(230px + env(safe-area-inset-bottom))}
 #ballArrow small { display: block; font-size: 12px; }
 
 /* ================= v2.0 design pass: "Nostalgic Street Realism" (style sheet signed off 18 Oct 2026) ================= */
-:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--granton:#3D6F8E;--newhaven:#B8405E;--leith:#6B3F73;--target:#FFD93D;--bagged:#47D16C}
+:root{--cream:#EFE3C8;--charcoal:#2E2F2C;--brick:#9A4E3C;--yellow:#F7C325;--tarmac:#5C5E5B;--harl:#B9B3A6;--pilton:#2E9C8F;--oldtown:#C77B2E;--granton:#3D6F8E;--newhaven:#B8405E;--leith:#6B3F73;--pennywell:#4E8A3A;--target:#FFD93D;--bagged:#47D16C}
 html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sans-serif}
 #hud{font-size:17px;font-weight:700;gap:5px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
 #hud>#score,#hud>#targets,#hud>#chal{background:rgba(46,47,44,.72);border-left:5px solid var(--yellow);padding:1px 10px 1px 8px;border-radius:4px;align-self:flex-start;letter-spacing:.5px;text-transform:uppercase;font-size:14px}
@@ -134,6 +134,7 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 .card .levels button.on[data-level=granton]{background:var(--granton);color:#fff}
 .card .levels button.on[data-level=newhaven]{background:var(--newhaven);color:#fff}
 .card .levels button.on[data-level=leith]{background:var(--leith);color:#fff}
+.card .levels button.on[data-level=pennywell]{background:var(--pennywell);color:#fff}
 .card .gfx button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;background:#fff8e8;color:var(--charcoal);border:2px solid var(--charcoal);box-shadow:none}
 .card .gfx button.on{background:var(--yellow)}
 .card.goal{border-color:var(--charcoal)}
