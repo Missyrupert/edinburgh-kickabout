@@ -8,7 +8,7 @@ await open();
 // simulate an old v2.0 save: £6.30 carried over, no targets done
 await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-wallet', JSON.stringify({ pence: 630, goalSeen: false, suppers: 0, total: 900 })); localStorage.setItem('ek-level', 'pilton'); });
 await open();
-ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.0.1'), 'label v2.0.1');
+ok(await pg.evaluate(async () => (await (await fetch('version.json', { cache: 'no-store' })).json()).v === document.getElementById('verTag').textContent), 'label matches version.json');
 const w0 = await pg.evaluate(() => __game.wallet.pence); ok(w0 <= 200, 'old wallet capped: ' + w0);
 const ids = await pg.evaluate(() => __game.targets.map(t => t.id)); console.log(ids);
 const card = () => pg.evaluate(() => !document.getElementById('goalCard').classList.contains('hidden'));

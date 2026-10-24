@@ -7,7 +7,7 @@ const open = async (lv) => { await pg.goto(`http://localhost:4199/?level=${lv}&p
 await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.waitForTimeout(1500);
 await pg.screenshot({ path: '/workspace/ek-design/v2-welcome.png' });
 ok(await pg.evaluate(() => document.fonts.check('40px "Alfa Slab One"')), 'Alfa Slab One loaded');
-ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v2.0'), 'HUD label v2.0');
+ok(await pg.evaluate(async () => (await (await fetch('version.json', { cache: 'no-store' })).json()).v === document.getElementById('verTag').textContent), 'HUD label matches version.json');
 await open('pilton'); await pg.evaluate(() => { localStorage.clear(); __game.resetProgress(); }); await open('pilton');
 const near = await pg.evaluate(() => { const P = __game.player.position; return __game.targets.map(t => ({ id: t.id, tier: t.tier, diff: t.diff, d: Math.hypot(t.pos.x - P.x, t.pos.z - P.z) })).sort((a, b) => a.d - b.d).slice(0, 3); });
 console.log(JSON.stringify(near)); ok(near[0].id === 'trolley' && near[0].diff === 'easy', 'nearest target to spawn is the easy trolley');
