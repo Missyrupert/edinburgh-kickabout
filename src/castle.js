@@ -43,6 +43,7 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
     const yy = BASE + (tp + UP - BASE) * s + crag * (s < 0.995 ? 1 : 0.12) * Math.min(1, (tp + UP - BASE) / 20);
     return RUG > 1 && s < 0.97 ? THREE.MathUtils.lerp(yy, Math.round(yy / 5) * 5, 0.35) : yy; // stepped ledges
   };
+  if (opt.crag) buildCrag(); else {
   const g = new THREE.PlaneGeometry(LX1 - LX0, 2 * W, NX, NZ); g.rotateX(-Math.PI / 2);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
@@ -66,6 +67,47 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
     }
     return triCol[tri];
   } });
+  }
+  // v3.4: a rough, irregular volcanic crag (Grassmarket). Value-noise heightfield with a noisy cliff edge, stepped ledges and
+  // gullies, coloured by slope (dark basalt on the faces, scrub and grass on the ledges, trees at the foot), plus big faceted
+  // buttress boulders bolted onto the south face to break up the silhouette. One draw call ('castleRock'), ~10k triangles.
+  function buildCrag() {
+    const hash = (x, y) => { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); };
+    const vn = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+      return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(xi, yi), hash(xi + 1, yi), u), THREE.MathUtils.lerp(hash(xi, yi + 1), hash(xi + 1, yi + 1), u), v) * 2 - 1; };
+    const fbm = (x, y) => vn(x, y) * 0.6 + vn(x * 2.1 + 5, y * 2.1 + 9) * 0.3 + vn(x * 4.3 + 1, y * 4.3 + 3) * 0.15;
+    const cliff = (lx, lz) => { // 0 at the summit plateau .. 1 at the foot
+      const edge = W * (1.3 + 0.25 * fbm(lx * 0.035, 3.1)), plat = W * (0.42 + 0.06 * fbm(lx * 0.05, 7.7)), d = Math.abs(lz);
+      return THREE.MathUtils.clamp((d - plat) / (edge - plat), 0, 1); };
+    const hgt2 = (lx, lz) => { const tp = top(lx) + UP, t = cliff(lx, lz);
+      let s = 1 - Math.pow(t, 0.75); // steep at the top, easing to scree at the bottom
+      s = THREE.MathUtils.lerp(s, Math.round(s * 7) / 7, 0.55); // ledges
+      const ends = THREE.MathUtils.smoothstep(lx, LX0, LX0 + 26) * THREE.MathUtils.smoothstep(-lx, -LX1, -LX1 + 26); s *= ends;
+      const n = fbm(lx * 0.09, lz * 0.09) * 5 + fbm(lx * 0.23 + 4, lz * 0.23) * 2.2, gully = Math.max(0, vn(lx * 0.06 + 11, 2) - 0.35) * 9;
+      return BASE + (tp - BASE) * s + (t > 0.02 ? n - gully * (1 - t) : n * 0.15); };
+    const NXc = Math.round((LX1 - LX0) / 3.2), NZc = 40, g2 = new THREE.PlaneGeometry(LX1 - LX0, 3.4 * W, NXc, NZc); g2.rotateX(-Math.PI / 2);
+    const p2 = g2.attributes.position;
+    for (let i = 0; i < p2.count; i++) { const lx = p2.getX(i) + (LX0 + LX1) / 2 + (rand() - 0.5) * 2.4, lz = p2.getZ(i) + (rand() - 0.5) * 2.4; p2.setXYZ(i, E(lx), hgt2(lx, lz), CZ + lz); }
+    const rk = g2.toNonIndexed(); rk.computeVertexNormals();
+    const BAS = [0x26282a, 0x303235, 0x3a3c3f, 0x46474b, 0x1e1f21].map((c) => new THREE.Color(c)), GRN = [0x3f5a2c, 0x4d6b31, 0x5a7838, 0x344a26].map((c) => new THREE.Color(c)), tcol = [], c2 = new THREE.Color();
+    B.add('castleRock', rk, null, 0xffffff, { vcol: (i, x, y, z, nx, ny) => { const tri = Math.floor(i / 3); if (!tcol[tri]) {
+      const sh = (fbm(x * 0.05, y * 0.11) + 1) / 2, r = rand();
+      if (y < 12 + UP * 0.35) c2.copy(GRN[Math.floor(r * 4)]).lerp(BAS[2], 0.15); // wooded/grassy foot
+      else if (ny > 0.62) c2.copy(GRN[Math.floor(r * 4)]).lerp(BAS[3], 0.3); // grassy ledges
+      else if (ny > 0.5 && r < 0.45) c2.copy(GRN[3]).lerp(BAS[2], 0.45);
+      else c2.copy(BAS[Math.min(4, Math.floor(sh * 4.2))]).lerp(BAS[3], r * 0.25); // basalt, shaded in irregular patches
+      tcol[tri] = c2.clone(); } return tcol[tri]; } });
+    // buttress boulders on the south face
+    const bould = [0, 1, 2].map((k) => { const gg = new THREE.IcosahedronGeometry(1, 1).toNonIndexed(), pp = gg.attributes.position, J = {};
+      for (let i = 0; i < pp.count; i++) { const key = pp.getX(i).toFixed(3) + pp.getY(i).toFixed(3) + pp.getZ(i).toFixed(3), j = (J[key] ||= 0.75 + hash(i % 97 + k * 13, k) * 0.45); pp.setXYZ(i, pp.getX(i) * j, pp.getY(i) * j, pp.getZ(i) * j); }
+      gg.computeVertexNormals(); return gg; });
+    for (let i = 0; i < 34; i++) { const lx = LX0 + 22 + rand() * (LX1 - LX0 - 44), t = 0.25 + rand() * 0.55, edge = W * (1.3 + 0.25 * fbm(lx * 0.035, 3.1)), plat = W * 0.42, lz = -(plat + t * (edge - plat)), y = hgt2(lx, lz), r = 4 + rand() * 5;
+      B.add('castleRock', bould[i % 3], new THREE.Matrix4().compose(V(E(lx), y - r * 0.2, CZ + lz), new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 3, rand() * 3, rand() * 3)), V(r * (0.8 + rand() * 0.6), r * (1.1 + rand() * 0.8), r * 0.8)), 0xffffff, { vcol: ((c) => () => c)(BAS[Math.floor(rand() * 5)]) }); }
+    // trees and scrub on the lower slopes
+    const TREE = new THREE.IcosahedronGeometry(1, 0);
+    for (let i = 0; i < 70; i++) { const lx = LX0 + 16 + rand() * (LX1 - LX0 - 32), t = 0.8 + rand() * 0.25, edge = W * (1.3 + 0.25 * fbm(lx * 0.035, 3.1)), lz = -edge * (0.55 + t * 0.45), y = hgt2(lx, lz), r = 2.2 + rand() * 2.4;
+      B.add('castleRock', TREE, new THREE.Matrix4().compose(V(E(lx), y + r * 0.6, CZ + lz), new THREE.Quaternion().setFromEuler(new THREE.Euler(rand(), rand() * 3, 0)), V(r, r * 1.2, r)), 0xffffff, { vcol: ((c) => () => c)(GRN[Math.floor(rand() * 4)]) }); }
+  }
 
   // ---- West: New Barracks (big, plain, angular, lower terrace) + hospital block ----
   box(37, 34, -13, 30, 18, 11); face(37, 34, -18.5, 30, 18, 'barracks'); face(22, 34, -13, 11, 18, 'plain', -Math.PI / 2);

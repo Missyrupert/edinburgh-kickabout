@@ -161,35 +161,45 @@ function build(scene, world, mats, P) {
   cyl('metal', 8.4, 0.5, 8, 0.04, 0.04, 1.0, IRON, { seg: 5, phys: false }); solid('flat', 8.4, 1.05, 8, 0.36, 0.42, 0.3, 0xb8202a, { phys: false });
   for (const [x, z, r] of [[VG - 0.2, -13, -Math.PI / 2], [-VG + 0.2, 33, Math.PI / 2]]) sign('PENNYWELL ROAD', x, 2.1, z, 1.7, 0.36, r, '#ffffff', '#1d1d1d', 'bold 50px Arial', '#1d1d1d');
 
-  // ---------- the Old Kirk (left, +x): rustic rubble-stone porch tower, white harled nave, low wall + railings ----------
-  { const x0 = 13.5;
-    solid('rubble', x0 + 2.2, 5.2, 4, 4.4, 10.4, 6.2, 0xf0e6d2, { tile: 2.2 }); // stone porch tower
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) solid('glass', x0 - 0.01, 5.0 + j * 1.25, 2.4 + i * 1.6, 0.04, 0.85, 0.9, 0x55606a, { phys: false });
-    for (const dz of [-0.55, 0.55]) solid('wood', x0 - 0.02, 1.4, 4 + dz, 0.06, 2.8, 1.0, 0x6a2a1e, { phys: false }); solid('rubble', x0 - 0.05, 3.0, 4, 0.16, 0.4, 2.6, 0xb8ab94, { phys: false });
-    solid('roof', x0 + 2.2, 10.55, 4, 4.8, 0.3, 6.6, 0x3a3e44, { phys: false });
-    solid('harl', x0 + 10, 3.6, 4, 11.5, 7.2, 13, HARL[0], { tile: 2.5, grime: 0.12 }); B.add('roof', ROOF, M4(x0 + 10, 7.2, 4, 13.4, 2.6, 11.7, 0, Math.PI / 2), 0x4a4e54, { tile: 2.2 });
-    for (let i = 0; i < 4; i++) quad('glass', x0 + 6 + i * 2.6, 3.8, -2.51, 1.0, 2.6, Math.PI, null, 0x9fb0b8);
-    solid('harl', x0 + 6, 2.6, 12.5, 6, 5.2, 4, HARL[2], { tile: 2.5 }); B.add('roof', ROOF, M4(x0 + 6, 5.2, 12.5, 4.4, 1.6, 6.2, 0, Math.PI / 2), 0x4a4e54, {}); // hall
-    sign('THE OLD KIRK', x0 - 0.03, 8.1, 4, 3.0, 0.5, -Math.PI / 2, '#2E2F2C', '#efe3c8', 'bold 52px Georgia');
-    solid('rubble', VG + 0.45, 0.45, 4, 0.5, 0.9, 16, 0xe6dcc8, { tile: 1.5 }); // low rubble boundary wall behind the railings
+  // ---------- the Old Kirk (left, +x) - 'the white church': white harled front block with a grey window grid over brown doors,
+  // a long low nave with blue fascias, hall behind; low brick-and-stone wall behind the railings (stone kept only as trim) ----------
+  { const x0 = 13.5, W = HARL[0], BLUE = 0x2a4f8a;
+    solid('harl', x0 + 2.4, 4.6, 4, 4.8, 9.2, 6.0, W, { tile: 2.5, grime: 0.08 }); // front block
+    solid('flat', x0 + 2.4, 9.3, 4, 5.1, 0.25, 6.3, BLUE, { phys: false }); solid('flat', x0 - 0.02, 9.1, 4, 0.08, 0.2, 6.3, BLUE, { phys: false }); // blue fascia
+    solid('flat', x0 - 0.02, 6.2, 4, 0.06, 4.0, 2.9, 0x8e9196, { phys: false }); // grey panel round the window grid
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++) { solid('flat', x0 - 0.05, 4.9 + j * 1.3, 3.35 + i * 1.3, 0.04, 1.0, 1.0, 0xd8dade, { phys: false }); solid('glass', x0 - 0.07, 4.9 + j * 1.3, 3.35 + i * 1.3, 0.04, 0.62, 0.62, 0x55606a, { phys: false }); }
+    for (const dz of [-0.62, 0.62]) solid('wood', x0 - 0.02, 1.45, 4 + dz, 0.06, 2.9, 1.15, 0x5a2e1e, { phys: false }); solid('flat', x0 - 0.03, 2.95, 4, 0.06, 0.12, 2.6, 0x8e9196, { phys: false });
+    solid('harl', x0 + 10, 3.3, 4, 11.5, 6.6, 13, W, { tile: 2.5, grime: 0.1 }); B.add('roof', ROOF, M4(x0 + 10, 6.6, 4, 13.4, 1.8, 11.7, 0, Math.PI / 2), 0x4a4e54, { tile: 2.2 }); // nave, low pitch
+    solid('flat', x0 + 10, 6.62, -2.56, 11.7, 0.22, 0.08, BLUE, { phys: false }); solid('flat', x0 + 10, 6.62, 10.56, 11.7, 0.22, 0.08, BLUE, { phys: false }); // blue fascias
+    for (let i = 0; i < 4; i++) { solid('glass', x0 + 6 + i * 2.6, 3.2, -2.53, 1.0, 1.4, 0.04, 0x55606a, { phys: false }); solid('flat', x0 + 6 + i * 2.6, 2.45, -2.56, 1.2, 0.1, 0.1, 0xd8dade, { phys: false }); }
+    for (const dz of [-0.6, 0.6]) solid('glass', x0 + 4.79, 3.6, 4 + dz + 6, 0.04, 3.6, 0.5, 0x3a4048, { phys: false }); // tall gable windows on the nave
+    sign('THE OLD KIRK', x0 + 4.75, 3.0, 8.2, 2.4, 0.9, -Math.PI / 2, '#2a4f8a', '#ffffff', 'bold 46px Arial', '#ffffff');
+    cyl('flat', x0 + 4.9, 3.3, 1.2, 0.06, 0.06, 6.6, 0xd8dade, { seg: 5, phys: false }); // downpipe
+    solid('harl', x0 + 6, 2.4, 12.5, 6, 4.8, 4, HARL[2], { tile: 2.5 }); B.add('roof', ROOF, M4(x0 + 6, 4.8, 12.5, 4.4, 1.4, 6.2, 0, Math.PI / 2), 0x4a4e54, {}); // hall
+    solid('brick', VG + 0.45, 0.35, 4, 0.5, 0.7, 16, 0x9a8a80, { tile: 1.5 }); solid('rubble', VG + 0.45, 0.75, 4, 0.6, 0.1, 16.1, 0xe6dcc8, { phys: false }); // low brick wall, stone cope (trim)
     // noticeboard at the gate (target)
     const nx = VG - 0.3, nz = 1.0; solid('wood', nx, 1.35, nz, 0.12, 1.1, 1.5, 0x2a3f6b, { target: 'kirknotice', surface: 'board' }); quad('flat', nx - 0.07, 1.4, nz, 1.3, 0.9, -Math.PI / 2, null, 0xf4f2ea);
     sign('ALL WELCOME', nx - 0.08, 1.75, nz, 1.2, 0.22, -Math.PI / 2, '#2a3f6b', '#ffffff', 'bold 44px Arial'); for (const dz of [-0.6, 0.6]) cyl('wood', nx, 0.4, nz + dz, 0.05, 0.05, 0.8, 0x2a3f6b, { seg: 5, phys: false });
     addTarget({ id: 'kirknotice', name: 'Old Kirk Noticeboard', hint: 'ping the kirk noticeboard at the railings', points: 100, kind: 'hit', pos: V(nx - 1.2, 0, nz), ringR: 0.9, stand: V(8.3, 0, nz), aim: V(nx, 1.35, nz), lines: ['Notice: fitba practice, Tuesdays.', "The minister says that'll be a fiver for the roof fund.", 'Pinged it. Hallelujah.'] }); }
 
-  // ---------- St Paul's (right, -x): white walls under a weathered copper wedge roof, tall belfry gable to the road ----------
-  { const xf = -14, xb = -28, z0 = 8, z1 = 24, Hlo = 3.4, Hhi = 18, zc = (z0 + z1) / 2;
-    solid('harl', (xf + xb) / 2, Hlo / 2, zc, xf - xb, Hlo, z1 - z0, HARL[0], { tile: 2.5, grime: 0.15 });
-    { const sh = new THREE.Shape(); sh.moveTo(xb - 0.3, Hlo - 0.1); sh.lineTo(xf + 0.4, Hlo - 0.1); sh.lineTo(xb - 0.3, Hhi - 2.5); sh.closePath(); // copper slope faces the road
-      const g = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0 + 0.6, bevelEnabled: false }); g.translate(0, 0, z0 - 0.3); B.add('copper', g, null, 0xffffff, { tile: 3 });
-      const w = new THREE.ExtrudeGeometry(sh, { depth: 0.3, bevelEnabled: false }); w.translate(0, 0, z0 - 0.3); B.add('harl', w, null, HARL[3], { tile: 2.5 }); const w2 = w.clone(); w2.translate(0, 0, z1 - z0 + 0.3); B.add('harl', w2, null, HARL[3], { tile: 2.5 });
+  // ---------- St Paul's (right, -x): the distinctive slanted roof - steep grey slate wedge between sharp white gables with dark copes,
+  // a clerestory band along the top, tall glazed slot, blue door, dark brick plinth (shown intact; no fire damage) ----------
+  { const xf = -14, xb = -28, z0 = 8, z1 = 24, Hlo = 3.6, Hhi = 21, zc = (z0 + z1) / 2, W = HARL[0];
+    solid('harl', (xf + xb) / 2, Hlo / 2, zc, xf - xb, Hlo, z1 - z0, W, { tile: 2.5, grime: 0.1 });
+    solid('brick', (xf + xb) / 2, 0.45, zc, xf - xb + 0.1, 0.9, z1 - z0 + 0.1, 0x6a6460, { phys: false, tile: 1.5 }); // dark brick plinth
+    const top = Hhi - 2.6; { const sh = new THREE.Shape(); sh.moveTo(xb - 0.3, Hlo - 0.1); sh.lineTo(xf + 0.4, Hlo - 0.1); sh.lineTo(xb - 0.3, top); sh.closePath(); // slate slope faces the road
+      const g = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0 - 0.2, bevelEnabled: false }); g.translate(0, 0, z0 + 0.1); B.add('cpanel', g, null, 0x6a7078, { tile: 1.2 });
+      const w = new THREE.ExtrudeGeometry(sh, { depth: 0.45, bevelEnabled: false }); w.translate(0, 0, z0 - 0.35); B.add('harl', w, null, W, { tile: 2.5 }); const w2 = w.clone(); w2.translate(0, 0, z1 - z0 + 0.25); B.add('harl', w2, null, W, { tile: 2.5 }); // sharp white gables
       body(new CANNON.Box(new CANNON.Vec3((xf - xb) / 2, (Hhi - Hlo) / 2, (z1 - z0) / 2)), (xf + xb) / 2, Hlo + 1.5, zc); }
-    solid('harl', xf + 0.35, 7.25, zc - 3, 0.7, 14.5, 6.5, HARL[0], { tile: 2.5, grime: 0.12 }); // tall belfry wall to the road
-    for (let k = 0; k < 4; k++) solid('flat', xf + 0.72, 12.9, zc - 5.2 + k * 1.45, 0.05, 0.9, 0.7, 0x2a2c30, { phys: false }); // belfry slots
-    solid('glass', xf + 0.72, 6.5, zc - 1.0, 0.05, 6.0, 0.9, 0x3a5a7a, { phys: false }); // tall slot window
-    solid('flat', xf + 0.72, 1.2, zc - 4.6, 0.06, 2.4, 1.3, 0x2a5aa0, { phys: false }); solid('flat', xf + 0.73, 2.55, zc - 4.6, 0.06, 0.25, 1.6, 0x2a5aa0, { phys: false }); // blue door + band
-    solid('harl', xf + 3, 2.3, zc + 4.5, 5, 4.6, 6, HARL[2], { tile: 2.5, grime: 0.15 }); B.add('roof', ROOF, M4(xf + 3, 4.6, zc + 4.5, 5.4, 1.8, 6.4), 0x4a4e54, {}); // porch wing
-    for (let i = 0; i < 4; i++) quad('grime', xf + 0.73, 12.5 - (i % 2) * 3, zc - 5.6 + i * 1.6, 0.6, 3, Math.PI / 2, GRIME_UV[2]); // age streaks (no fire damage shown)
+    { const L = Math.hypot(xf + 0.4 - xb + 0.3, top - Hlo + 0.1), th = Math.atan2(top - Hlo, xf - xb + 0.7); for (const zz of [z0 - 0.15, z1 + 0.15]) solid('flat', (xf + xb) / 2 + 0.05, (Hlo + top) / 2 + 0.12, zz, L + 0.3, 0.22, 0.55, 0x3e3a36, { phys: false, rz: -th }); } // dark gable copes
+    solid('harl', xb + 1.2, top + 1.1, zc, 2.6, 2.6, z1 - z0 - 1.2, W, { tile: 2.5, phys: false }); // clerestory band at the top of the slope
+    for (let k = 0; k < 6; k++) solid('glass', xb + 2.52, top + 1.2, z0 + 2 + k * 2.4, 0.04, 1.2, 1.4, 0x55606a, { phys: false });
+    solid('flat', xb + 1.2, top + 2.45, zc, 2.9, 0.15, z1 - z0 - 1.0, 0x3e3a36, { phys: false });
+    solid('harl', xf + 0.35, 6.4, zc - 5.4, 0.7, 12.8, 3.2, W, { tile: 2.5, grime: 0.08 }); // tall entrance wing with the glazed slot
+    solid('glass', xf + 0.72, 7.0, zc - 5.4, 0.05, 7.5, 0.9, 0x9fb0b8, { phys: false }); for (let k = 1; k < 6; k++) solid('flat', xf + 0.74, 3.25 + k * 1.25, zc - 5.4, 0.04, 0.06, 0.95, 0xd8dade, { phys: false });
+    solid('flat', xf + 0.72, 1.2, zc - 2.6, 0.06, 2.4, 1.3, 0x2a5aa0, { phys: false }); solid('flat', xf + 0.73, 2.55, zc - 2.6, 0.06, 0.25, 1.6, 0x2a5aa0, { phys: false }); // blue door + band
+    solid('harl', xf + 3, 2.3, zc + 4.5, 5, 4.6, 6, HARL[2], { tile: 2.5, grime: 0.12 }); B.add('roof', ROOF, M4(xf + 3, 4.6, zc + 4.5, 5.4, 1.8, 6.4), 0x4a4e54, {}); // porch wing
+    solid('flat', xf + 3, 4.55, zc + 1.45, 5.2, 0.25, 0.08, 0x2a5aa0, { phys: false }); // blue fascia
     sign("ST PAUL'S", xf + 5.53, 3.7, zc + 4.5, 2.0, 0.4, Math.PI / 2, '#ffffff', '#2a5aa0', 'bold 50px Georgia', '#2a5aa0');
     // the church gate in the railings (target)
     const gx = -VG + 0.12, gz = 15; for (const dz of [-1.15, 1.15]) solid('cpanel', gx, 0.95, gz + dz, 0.3, 1.9, 0.3, 0xcfccc4); solid('metal', gx, 0.95, gz, 0.06, 1.7, 2.0, 0x2a2c30, { target: 'stpaulsgate', surface: 'metal' });

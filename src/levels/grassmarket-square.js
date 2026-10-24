@@ -176,14 +176,14 @@ export function buildSquare(scene, world, mats, P) {
   sign('VICTORIA STREET', -55.2, 3.6, F - 0.2, 2.6, 0.36, Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial', '#111');
 
   // ---------- the Castle on its crag, behind and above the north terrace ----------
-  buildCastle(B, 4, 112, mulberry32(1544), 46, { lx0: -104, lx1: 82, rug: 1.8, warm: true });
+  buildCastle(B, 4, 104, mulberry32(1544), 60, { lx0: -104, lx1: 82, rug: 1.8, warm: true, crag: true }); // v3.4: nearer + higher, rough crag
   { // v2.7: the green slope below the crag (Castle Terrace gardens): grass, scrub and trees between the north terrace and the rock
-    const SX0 = -44, SX1 = 80, SZ0 = F + GM.DEPTH + 6, SZ1 = 100, g = new THREE.PlaneGeometry(SX1 - SX0, SZ1 - SZ0, 30, 12); g.rotateX(-Math.PI / 2);
+    const SX0 = -44, SX1 = 80, SZ0 = F + GM.DEPTH + 6, SZ1 = 84, g = new THREE.PlaneGeometry(SX1 - SX0, SZ1 - SZ0, 30, 12); g.rotateX(-Math.PI / 2);
     const pp = g.attributes.position; for (let i = 0; i < pp.count; i++) { const x = pp.getX(i) + (SX0 + SX1) / 2, z = pp.getZ(i) + (SZ0 + SZ1) / 2, t = (z - SZ0) / (SZ1 - SZ0);
-      pp.setXYZ(i, x, 14 + t * 42 + Math.sin(x * 0.3) * 1.5 + Math.sin(x * 0.11 + z * 0.2) * 3, z); }
+      pp.setXYZ(i, x, 14 + Math.pow(t, 0.8) * 40 + Math.sin(x * 0.3) * 1.5 + Math.sin(x * 0.11 + z * 0.2) * 3, z); } // v3.4: steeper, higher wooded bank, visible over the terrace
     const sg = g.toNonIndexed(); sg.computeVertexNormals(); const GR = [0x5a7a36, 0x4e6e30, 0x66863c, 0x41602a].map((c) => new THREE.Color(c)); const tcs = [];
     B.add('flat', sg, null, 0xffffff, { vcol: (i) => (tcs[Math.floor(i / 3)] ||= GR[Math.floor(rand() * GR.length)]) });
-    for (let i = 0; i < 110; i++) { const x = SX0 + 6 + rand() * (SX1 - SX0 - 12), z = SZ0 + 4 + rand() * (SZ1 - SZ0 - 14), t = (z - SZ0) / (SZ1 - SZ0), y = 14 + t * 42, r = 2 + rand() * 2.6;
+    for (let i = 0; i < 120; i++) { const x = SX0 + 6 + rand() * (SX1 - SX0 - 12), z = SZ0 + 4 + rand() * (SZ1 - SZ0) * 0.55, t = (z - SZ0) / (SZ1 - SZ0), y = 14 + Math.pow(t, 0.8) * 40, r = 2.2 + rand() * 2.4;
       B.add('flat', new THREE.IcosahedronGeometry(r, 0), M4(x, y + r * 0.8, z, 1, 1.15, 1, rand(), rand()), pick([0x3e5a28, 0x4a6a2e, 0x35502a, 0x6a8a48, 0x8a9a7a]), {}); }
   }
   for (let i = 0; i < 40; i++) { // Old Town roofs between the terrace and the slope
