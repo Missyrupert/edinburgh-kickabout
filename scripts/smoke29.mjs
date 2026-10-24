@@ -11,7 +11,7 @@ await pg.evaluate(() => localStorage.clear()); await pg.reload(); await pg.waitF
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, amb: __game.sfx.ambience }));
 ok(g0.lv === 'granton' && Math.hypot(g0.p.x, g0.p.z + 28) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on Granton Square ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,grassmarket', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,grassmarket', 'level order ' + g0.levels);
 ok(/Granton: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Granton goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=granton]')), 'level-select button');
 const S = await pg.evaluate(() => [[0, -30], [0, 5], [-20, 15], [16, 40], [-38, -22], [-27, 26], [-50, 40]].map(([x, z]) => __game.surfaceAt(x, z)));

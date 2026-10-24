@@ -267,6 +267,6 @@ export default {
   ballHomes: () => [[23.6, 0.4, -3.0], [-2, 0.4, -4], [-20, 0.4, -4]],
   bounds: { x: 44, zMin: -26, zMax: RNX() },
   sea: { y: -1.35, water: -0.85, lostForGood: true, drift: [1, 0], lines: ["That's away doon the Water of Leith. Nae chance you're diving in after it.", "Gone. The river's got it now - it'll be in Fife by teatime.", "Plop. That ball's emigrated. Here's a new one, try no' tae lose it."] },
-  next: 'grassmarket',
+  next: 'easterroad',
 };
 function RNX() { return LT.RN + 6; }
