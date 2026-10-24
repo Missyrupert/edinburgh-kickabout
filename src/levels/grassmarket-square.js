@@ -176,7 +176,7 @@ export function buildSquare(scene, world, mats, P) {
   sign('VICTORIA STREET', -55.2, 3.6, F - 0.2, 2.6, 0.36, Math.PI / 2, '#f4f1ea', '#111', 'bold 60px Arial', '#111');
 
   // ---------- the Castle on its crag, behind and above the north terrace ----------
-  buildCastle(B, 4, 112, mulberry32(1544), 46, { lx0: -104, lx1: 82, rug: 1.8 });
+  buildCastle(B, 4, 112, mulberry32(1544), 46, { lx0: -104, lx1: 82, rug: 1.8, warm: true });
   { // v2.7: the green slope below the crag (Castle Terrace gardens): grass, scrub and trees between the north terrace and the rock
     const SX0 = -44, SX1 = 80, SZ0 = F + GM.DEPTH + 6, SZ1 = 100, g = new THREE.PlaneGeometry(SX1 - SX0, SZ1 - SZ0, 30, 12); g.rotateX(-Math.PI / 2);
     const pp = g.attributes.position; for (let i = 0; i < pp.count; i++) { const x = pp.getX(i) + (SX0 + SX1) / 2, z = pp.getZ(i) + (SZ0 + SZ1) / 2, t = (z - SZ0) / (SZ1 - SZ0);

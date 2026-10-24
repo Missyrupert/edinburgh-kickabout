@@ -168,8 +168,20 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'dinghy', name: 'Dinghy on the Slip', hint: 'roll it doon the slipway into the dinghy', points: 125, kind: 'zone', pos: V(cx, 0, Q - 0.5), ringR: 1.0, stand: V(cx, 0, Q - 4.5), aim: V(cx, yb, zc),
       zone: new THREE.Box3(V(cx - 1.0, yb + 0.05, zc - 0.9), V(cx + 1.0, yb + 0.8, zc + 0.9)), lines: ['Doon the slip and in the boat. Skipper material.', 'Launched! The Wee Maggie has a new crew.', 'Roll on, roll in. Tidy seamanship.'] }); }
   // ---------- distance: breakwaters, Fife across the Forth, waterfront flats ----------
-  for (const [x0, x1, z] of [[-90, -10, 96], [26, 90, 90]]) solid('stone', (x0 + x1) / 2, WY + 0.6, z, x1 - x0, 1.4, 4, 0x8a867e, { phys: false, tile: 2 });
-  solid('flat', 30, WY + 1.5, 92, 1.2, 4, 1.2, 0xf4f1ea, { phys: false }); B.add('lamp', BOX, M4(30, WY + 3.8, 92, 0.8, 0.6, 0.8), 0xffffff, {}); // breakwater light
+  solid('stone', -50, WY + 0.6, 96, 80, 1.4, 4, 0x8a867e, { phys: false, tile: 2 }); // western breakwater (far)
+  { // v3.3: the Eastern Breakwater (AG's photo): a long low curve of rubble with a concrete-coped parapet running out into the Forth,
+    // a concrete lookout hut on legs with a rail, and a light at the head. Scenery only.
+    const P0 = [62, 24], P1 = [46, 70], P2 = [6, 92], pt = (t) => [(1 - t) * (1 - t) * P0[0] + 2 * (1 - t) * t * P1[0] + t * t * P2[0], (1 - t) * (1 - t) * P0[1] + 2 * (1 - t) * t * P1[1] + t * t * P2[1]], N = 26;
+    for (let i = 0; i < N; i++) { const [xa, za] = pt(i / N), [xb, zb] = pt((i + 1) / N), L = Math.hypot(xb - xa, zb - za) + 0.3, ry = -Math.atan2(zb - za, xb - xa), mx = (xa + xb) / 2, mz = (za + zb) / 2, nx = Math.sin(-ry), nz = Math.cos(-ry);
+      solid('stone', mx, WY + 0.5, mz, L, 2.4, 6, pick([0x8a867e, 0x7e7a72, 0x928e84]), { phys: false, ry, tile: 1.2 }); // rubble mound
+      solid('stone', mx - nx * 3.6, WY + 0.1, mz - nz * 3.6, L, 1.6, 2.6, 0x6e6a62, { phys: false, ry, rx: 0.5, tile: 1.2 }); // sloping armour stones on the harbour side
+      solid('flat', mx + nx * 2.4, WY + 2.3, mz + nz * 2.4, L, 1.4, 1.0, pick([0xb8b2a2, 0xc2bcac]), { phys: false, ry }); // concrete parapet (seaward)
+      solid('flat', mx, WY + 1.74, mz, L, 0.08, 4.6, 0xa8a496, { phys: false, ry }); } // walkway
+    const [hx, hz] = pt(0.3); for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) solid('flat', hx + dx * 1.2, WY + 2.8, hz + dz * 1.2, 0.35, 2.2, 0.35, 0xb0ab9c, { phys: false }); // lookout hut on legs
+    solid('flat', hx, WY + 5.1, hz, 3.2, 2.4, 3.2, 0xc4bfae, { phys: false }); solid('flat', hx, WY + 6.35, hz, 3.5, 0.12, 3.5, 0xa8a496, { phys: false }); solid('glass', hx - 1.61, WY + 5.3, hz, 0.03, 0.8, 1.6, 0x55606a, { phys: false });
+    for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl('metal', hx + dx * 1.6, WY + 6.9, hz + dz * 1.6, 0.04, 0.04, 1.1, IRON, { phys: false, seg: 4 }); for (const s of [-1, 1]) { solid('metal', hx, WY + 7.4, hz + s * 1.6, 3.2, 0.05, 0.05, IRON, { phys: false }); solid('metal', hx + s * 1.6, WY + 7.4, hz, 0.05, 0.05, 3.2, IRON, { phys: false }); }
+    const [lx, lz] = pt(1); solid('flat', lx, WY + 3.2, lz, 1.4, 4, 1.4, 0xf4f1ea, { phys: false }); B.add('lamp', BOX, M4(lx, WY + 5.5, lz, 0.8, 0.6, 0.8), 0xffffff, {}); // breakwater light
+    for (let i = 0; i < 5; i++) { const [fx, fz] = pt(0.45 + i * 0.1); cyl('flat', fx, WY + 2.6, fz, 0.22, 0.22, 1.7, pick([0x2a3a5a, 0x5a2a2a, 0x3a4a3a]), { phys: false, seg: 6 }); } } // anglers on the wall
   for (let i = 0; i < 9; i++) B.add('flat', new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), M4(-260 + i * 70 + rand() * 30, WY, 330 + rand() * 40, 60 + rand() * 50, 10 + rand() * 18, 30), 0x7f8c98, {}); // Fife hills
   for (let i = 0; i < 7; i++) { const x = -70 - i * 9, z = 40 + rand() * 30, h = 10 + rand() * 12; solid('flat', x, h / 2, z, 8, h, 10, pick([0xe8e4dc, 0xcfc9bf, 0xb8b2a8]), { phys: false }); for (let j = 1; j < h / 3; j++) solid('glass', x + 4.01, j * 3, z, 0.02, 0.9, 7, 0xffffff, { phys: false }); }
   for (const [x, z] of [[-6, -5], [6, -5], [-6, -20], [6, -20], [-30, 8], [20, 8]]) { cyl('metal', x, 2.6, z, 0.07, 0.11, 5.2, IRON, { seg: 6 }); solid('flat', x + 0.5, 5.2, z, 1.0, 0.08, 0.12, IRON, { phys: false }); solid('lamp', x + 0.95, 5.12, z, 0.35, 0.1, 0.2, 0xffffff, { phys: false }); } // lamp posts
@@ -206,6 +218,14 @@ function build(scene, world, mats, P) {
   // east boundary: a corrugated industrial shed
   solid('flat', 52, 3, 10, 10, 6, 14, 0x8a9a9e, { tile: 2 }); for (let k = 3.5; k < 16.6; k += 0.5) solid('flat', 47 - 0.03, 3, k, 0.06, 6, 0.08, 0x76868a, { phys: false }); B.add('roof', ROOF, M4(52, 6, 10, 10.4, 1.4, 14.4), 0x6a7478, {});
   quad('atlas', 46.9, 4.6, 10, 7, 0.7, -Math.PI / 2, atlas.fascia('LOTHIAN NET & ROPE CO.', null, '#2E2F2C', '#EFE3C8', 10));
+  { // v3.3: the modern gas company headquarters behind the frame (AG's photo): a long glass curtain-wall office with a set-back glazed top storey (fictional "Forth Energy House")
+    const x0 = -98, x1 = -62, z0 = -40, z1 = -10, h = 17, xc = (x0 + x1) / 2, zc = (z0 + z1) / 2;
+    solid('flat', xc, h / 2, zc, x1 - x0, h, z1 - z0, 0x7f9fb8, { phys: false }); solid('flat', xc, h + 0.2, zc, x1 - x0 + 0.4, 0.4, z1 - z0 + 0.4, 0x8a9096, { phys: false });
+    solid('flat', xc - 4, h + 2.2, zc, x1 - x0 - 14, 3.6, z1 - z0 - 8, 0xb4c4ce, { phys: false }); solid('flat', xc - 4, h + 4.1, zc, x1 - x0 - 13, 0.3, z1 - z0 - 7, 0x8a9096, { phys: false });
+    for (let x = x0 + 1.5; x < x1; x += 1.5) solid('flat', x, h / 2, z1 + 0.05, 0.1, h, 0.1, 0x6a7076, { phys: false }); for (let z = z0 + 1.5; z < z1; z += 1.5) solid('flat', x1 + 0.05, h / 2, z, 0.1, h, 0.1, 0x6a7076, { phys: false }); // mullions
+    for (let y = 3.4; y < h; y += 3.4) { solid('flat', xc, y, z1 + 0.06, x1 - x0, 0.3, 0.1, 0x7a8086, { phys: false }); solid('flat', x1 + 0.06, y, zc, 0.1, 0.3, z1 - z0, 0x7a8086, { phys: false }); } // floor bands
+    quad('atlas', x1 + 0.12, h - 4.2, zc + 4, 12, 1.6, Math.PI / 2, atlas.fascia('FORTH ENERGY HOUSE', null, '#33506a', '#ffffff', 12 / 1.6));
+    for (const [x, z] of [[-60, -6], [-60, -24], [-60, -42]]) { cyl('metal', x, 6, z, 0.12, 0.16, 12, 0x9a9ea2, { phys: false, seg: 6 }); solid('lamp', x, 12.1, z, 0.9, 0.3, 0.4, 0xffffff, { phys: false }); } } // tall car-park floodlights
   // ---------- v2.9.3: the gas works office (fictional "Forth Gas Board"), red brick with stone dressings, beside the frame ----------
   { const x0 = -26, x1 = -17, z0 = -34, z1 = -27, h = 7.6, xc = (x0 + x1) / 2, zc = (z0 + z1) / 2, BR = 0xffffff, ST = 0xd8cfbe;
     solid('brick', xc, h / 2, zc, x1 - x0, h, z1 - z0, BR, { tile: 2.2 });

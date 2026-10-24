@@ -14,7 +14,8 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
   const UP = up; // lift: the rock must dominate the view from the square below
   const M4 = (x, y0, z, sx, sy, sz, ry = 0, rx = 0, rz = 0) => new THREE.Matrix4().compose(V(x, y0 + UP, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, 'YXZ')), V(sx, sy, sz));
   const BOX = new THREE.BoxGeometry(1, 1, 1), ROOF = roofPrism();
-  const STONE = [0xe8e6e2, 0xdcdad6, 0xf0ece4, 0xd2d0cc] /* v2.7: greyer, browner */, SLATE = 0x5c6066, DARK = 0x6e6252;
+  const WARM = !!opt.warm; // v3.3: honey sandstone + browner crag + more green, after AG's Vennel-steps photo
+  const STONE = WARM ? [0xf2dcae, 0xe6cf9c, 0xf6e4bc, 0xdcc292] : [0xe8e6e2, 0xdcdad6, 0xf0ece4, 0xd2d0cc] /* v2.7: greyer, browner */, SLATE = 0x5c6066, DARK = 0x6e6252;
   const tint = () => STONE[Math.floor(rand() * STONE.length)];
   const box = (lx, y0, lz, w, h, d, c = tint()) => B.add('castleStone', BOX, M4(E(lx), y0 + h / 2, CZ + lz, w, h, d), c, { tile: 7 });
   const roof = (lx, y0, lz, len, wid, h, c = SLATE) => B.add('castleStone', ROOF, M4(E(lx), y0, CZ + lz, wid, h, len, Math.PI / 2), c, { tile: 7 });
@@ -50,16 +51,17 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
     p.setXYZ(i, E(lx + jx), hgt(lx + jx, lz + jz), CZ + lz + jz);
   }
   const rock = g.toNonIndexed(); rock.computeVertexNormals(); // flat facets
-  const ROCK = RUG > 1 ? [0x2a2928, 0x3a3734, 0x4a453f, 0x232322, 0x55504a].map((c) => new THREE.Color(c)) : [new THREE.Color(0x2c2c2d), new THREE.Color(0x38373a), new THREE.Color(0x45423f), new THREE.Color(0x242426)];
+  const ROCK = WARM ? [0x4c4a47, 0x5b5853, 0x68645d, 0x403e3c, 0x736d64].map((c) => new THREE.Color(c)) : RUG > 1 ? [0x2a2928, 0x3a3734, 0x4a453f, 0x232322, 0x55504a].map((c) => new THREE.Color(c)) : [new THREE.Color(0x2c2c2d), new THREE.Color(0x38373a), new THREE.Color(0x45423f), new THREE.Color(0x242426)];
   const SCRUB = [new THREE.Color(0x3f5a2c), new THREE.Color(0x4d6b31), new THREE.Color(0x344a26)];
   const triCol = []; const tc = new THREE.Color();
   B.add('castleRock', rock, null, 0xffffff, { vcol: (i, x, y, z, nx, ny) => {
     const tri = Math.floor(i / 3); if (!triCol[tri]) {
       const r = rand();
       if (ny > 0.82 && y > 20 + UP) tc.copy(SCRUB[Math.floor(r * 3)]).lerp(ROCK[1], 0.25);
-      else if (ny > 0.62 || (ny > 0.38 && r < 0.22)) tc.copy(r < 0.6 ? SCRUB[Math.floor(r * 5) % 3] : ROCK[2]);
+      else if (ny > (WARM ? 0.5 : 0.62) || (ny > 0.3 && r < (WARM ? 0.4 : 0.22))) tc.copy(r < 0.6 ? SCRUB[Math.floor(r * 5) % 3] : ROCK[2]);
+      else if (WARM && y > UP && Math.floor(y / 3.5) % 3 === 0 && r < 0.55) tc.copy(SCRUB[Math.floor(r * 5) % 3]).lerp(ROCK[2], 0.3); // ledges of scrub break the vertical stripes
       else tc.copy(ROCK[Math.floor(r * ROCK.length)]);
-      if (y < 6) tc.lerp(SCRUB[2], 0.45); // trees / gardens at the foot
+      if (y < (WARM ? 30 + UP * 0.5 : 6)) tc.lerp(SCRUB[2], WARM ? 0.55 : 0.45); // trees / gardens at the foot
       triCol[tri] = tc.clone();
     }
     return triCol[tri];
@@ -72,7 +74,7 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
   box(14, 44, 2, 16, 10, 12); roof(14, 54, 2, 16, 12, 5); face(14, 44, -4, 16, 10, 'hall'); chims(8, 20, 55, 2, 2);
   // ---- Crown Square: Great Hall on the south cliff edge, Palace with tower (SE), War Memorial (N) ----
   box(-4, 44, -12, 28, 9, 9); roof(-4, 53, -12, 28, 9.2, 6.5, 0x575a60); face(-4, 44, -16.5, 28, 9, 'hall');
-  box(-22, 44, -7, 17, 17, 14); roof(-22, 61, -7, 17, 14.2, 4); face(-22, 44, -14, 17, 17, 'palace'); face(-30.5, 44, -7, 14, 17, 'palace', -Math.PI / 2); chims(-29, -15, 62, -7, 4); // the Palace: bigger bulk, chimney clusters
+  box(-22, 44, -7, 17, 17, 14); roof(-22, 61, -7, 17, 14.2, 4); if (WARM) wall(-30, -14, -14.2, 60, 61.2, 0.8); face(-22, 44, -14, 17, 17, 'palace'); face(-30.5, 44, -7, 14, 17, 'palace', -Math.PI / 2); chims(-29, -15, 62, -7, 4); // the Palace: bigger bulk, chimney clusters
   box(-22, 30, -12, 19, 14, 6); face(-22, 30, -15, 19, 14, 'plain'); // its rubble substructure down to the rock
   box(-6, 44, 7, 24, 12, 11); roof(-6, 56, 7, 24, 11.2, 5);
   // Palace tower (the clock tower) with corner turrets and a small cap
@@ -83,8 +85,10 @@ export function buildCastle(B, CX, CZ, rand, up = 30, opt = {}) {
   }
   B.add('castleStone', new THREE.ConeGeometry(3.3, 4.5, 4), M4(E(-29.5), 71.4, CZ - 13.5, 1, 1, 1, Math.PI / 4), SLATE, {});
   // ---- East: Half Moon Battery (the big low curved drum), forewall, gatehouse, Esplanade ----
-  B.add('castleStone', new THREE.CylinderGeometry(12, 12.6, 15, 20, 1, false, Math.PI * 0.05, Math.PI * 1.25), M4(E(-38), 29, CZ - 4, 1, 1, 1, Math.PI * 0.62), tint(), { tile: 7 });
-  B.add('castleStone', new THREE.CylinderGeometry(12.4, 12.4, 1.4, 20, 1, false, Math.PI * 0.05, Math.PI * 1.25), M4(E(-38), 37.2, CZ - 4, 1, 1, 1, Math.PI * 0.62), 0xb2a284, {});
+  const HM = WARM ? 4 : 0; // v3.3: the Half Moon Battery stands taller over the crag, with a parapet of merlons
+  B.add('castleStone', new THREE.CylinderGeometry(12, 12.6, 15 + HM * 2, 20, 1, false, Math.PI * 0.05, Math.PI * 1.25), M4(E(-38), 29 + HM, CZ - 4, 1, 1, 1, Math.PI * 0.62), tint(), { tile: 7 });
+  B.add('castleStone', new THREE.CylinderGeometry(12.4, 12.4, 1.4, 20, 1, false, Math.PI * 0.05, Math.PI * 1.25), M4(E(-38), 37.2 + HM * 2, CZ - 4, 1, 1, 1, Math.PI * 0.62), 0xb2a284, {});
+  if (WARM) for (let k = 0; k < 14; k++) { const a = Math.PI * 0.62 + Math.PI * 0.05 + (k + 0.5) / 14 * Math.PI * 1.25; B.add('castleStone', BOX, M4(E(-38) + Math.sin(a) * 12.3, 38.6 + HM * 2, CZ - 4 + Math.cos(a) * 12.3, 1.4, 1.3, 1.2, a), tint(), {}); }
   box(-38, 26, 2, 16, 11, 14); // drum core (fills the open side)
   wall(-46, -52, -6, 30, 37.5, 2.5);
   box(-52, 32, 0, 9, 11, 9); face(-52, 32, -4.5, 9, 11, 'plain'); // gatehouse
