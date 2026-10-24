@@ -429,3 +429,14 @@ export function grassTexture() {
   for (let k = 0; k < 6; k++) { const x = r() * S, y = r() * S, rr = 8 + r() * 22, gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(140,120,80,.35)'); gr.addColorStop(1, 'rgba(140,120,80,0)'); g.fillStyle = gr; g.fillRect(0, 0, S, S); } // bare patches
   return (v2Cache.grass = canvasTex(c, true));
 }
+// v3.6 Portobello: fine beach sand (speckle + soft wind ripples), tiles seamlessly
+export function sandTexture() {
+  if (v2Cache.sand) return v2Cache.sand;
+  const S = 256, [c, g] = canvas(S, S), r = rng(1846);
+  g.fillStyle = 'rgb(222,206,172)'; g.fillRect(0, 0, S, S);
+  for (let k = 0; k < 14; k++) { const y0 = r() * S, a = 4 + r() * 5; g.strokeStyle = `rgba(150,128,92,${0.08 + r() * 0.08})`; g.lineWidth = 3 + r() * 3; g.beginPath(); for (let x = -8; x <= S + 8; x += 8) { const y = y0 + Math.sin((x / S) * Math.PI * 4 + k) * a; x < 0 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke();
+    for (const dy of [-S, S]) { g.beginPath(); for (let x = -8; x <= S + 8; x += 8) { const y = y0 + dy + Math.sin((x / S) * Math.PI * 4 + k) * a; x < 0 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); } }
+  for (let k = 0; k < 16000; k++) { const v = 150 + r() * 100 | 0; g.fillStyle = `rgba(${v},${v - 14},${v - 40},.5)`; g.fillRect(r() * S, r() * S, 1, 1); }
+  for (let k = 0; k < 400; k++) { g.fillStyle = r() < 0.5 ? 'rgba(90,80,64,.35)' : 'rgba(250,244,230,.5)'; g.fillRect(r() * S, r() * S, 1.5, 1.5); }
+  return (v2Cache.sand = canvasTex(c, true));
+}

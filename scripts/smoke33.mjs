@@ -10,7 +10,7 @@ await pg.goto(URL + '?level=easterroad&preset=low'); await pg.waitForFunction(()
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'easterroad' && Math.hypot(g0.p.x + 24, g0.p.z + 36) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on Easter Road ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,grassmarket', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,grassmarket', 'level order ' + g0.levels);
 ok(/Easter Road: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Easter Road goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=easterroad]')), 'level-select button');
 const S = await pg.evaluate(() => [[-24, -36], [-30, -36], [0, 0], [0, 5], [28, 0], [36, -5]].map(([x, z]) => __game.surfaceAt(x, z)));
@@ -27,6 +27,6 @@ ok(Object.values(k).every(Boolean), 'every Easter Road target scores with real k
 ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(k.fanzine === 1, 'easy first target (fanzine board by the spawn) in one kick');
 ok(k.crossbar <= 4, 'crossbar challenge in <=4 tries');
-ok(/Grassmarket/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Easter Road travels on to the Grassmarket');
+ok(/Portobello/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Easter Road travels on to Portobello');
 await pg.goto(URL + '?level=leith&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Easter Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Leith travels on to Easter Road');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

@@ -63,7 +63,7 @@ export class Sfx {
   step(surf, run) {
     if (!this.ok) return; const t = this.ctx.currentTime + Math.random() * 0.015, j = 0.88 + Math.random() * 0.24, k = run ? 1.3 : 1;
     switch (surf) {
-      case 'grass': this.noise(t, 0.07 * k, 2400 * j, 0.6, 0.06 * k, 'highpass'); this.tone(t, 70, 45, 0.05, 0.03 * k); break; // soft swish
+      case 'sand': case 'grass': this.noise(t, 0.07 * k, 2400 * j, 0.6, 0.06 * k, 'highpass'); this.tone(t, 70, 45, 0.05, 0.03 * k); break; // soft swish
       case 'puddle': this.noise(t, 0.12, 1800 * j, 0.8, 0.12 * k); this.noise(t + 0.03, 0.08, 3500 * j, 1.5, 0.06 * k); break; // splash
       case 'setts': this.noise(t, 0.035, 1700 * j, 1.6, 0.1 * k); this.noise(t + 0.03 + Math.random() * 0.02, 0.025, 2300 * j, 2, 0.05 * k); this.tone(t, 140 * j, 80, 0.035, 0.05 * k); break; // knocky double tap on granite setts
       case 'concrete': this.noise(t, 0.04, 1100 * j, 0.9, 0.1 * k); this.tone(t, 105 * j, 65, 0.04, 0.045 * k); break; // pier concrete: flat, dry
@@ -81,7 +81,7 @@ export class Sfx {
   bounce(v, hard, surf = hard ? 'wall' : 'tarmac', x, z) {
     if (!this.ok) return; const t = this.ctx.currentTime, a = Math.min(1, v / 12), j = 0.92 + Math.random() * 0.16, { node, g } = this.spot(x, z, 8), A = a * g;
     switch (surf) {
-      case 'grass': this.tone(t, 110 * j, 55, 0.12, 0.04 + A * 0.3, 'sine', node); this.noise(t, 0.05, 500, 0.8, A * 0.12, 'lowpass', node); return;
+      case 'sand': case 'grass': this.tone(t, 110 * j, 55, 0.12, 0.04 + A * 0.3, 'sine', node); this.noise(t, 0.05, 500, 0.8, A * 0.12, 'lowpass', node); return;
       case 'puddle': this.tone(t, 150 * j, 70, 0.08, 0.04 + A * 0.25, 'sine', node); this.noise(t, 0.18, 2200 * j, 0.7, A * 0.3, 'bandpass', node); return;
       case 'board': this.tone(t, 130 * j, 70, 0.07, 0.05 + A * 0.35, 'sine', node); this.noise(t, 0.04, 700, 1.2, A * 0.3, 'bandpass', node); return;
       case 'plastic': this.tone(t, 95 * j, 50, 0.14, 0.06 + A * 0.45, 'sine', node); this.noise(t, 0.06, 450, 1.0, A * 0.25, 'lowpass', node); return; // wheelie-bin thunk
