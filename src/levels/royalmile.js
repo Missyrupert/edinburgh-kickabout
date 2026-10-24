@@ -131,7 +131,7 @@ function build(scene, world, mats, P_) {
     for (const s of [-1, 1]) for (let j = 0; j < 3; j++) quad('facade', tx, 10 + j * 5, tz + s * (T / 2 + 0.01), 1.2, 2.6, s > 0 ? 0 : Math.PI, cellUV(FACADE.small));
   }
   // the heart in the setts (a heart picked out in red and grey setts) - zone target
-  { quad('atlas', 9, 0.02, -7.6, 2.2, 2.2, 0, atlas.draw(160, 160, (g, w, h) => { g.fillStyle = '#9a9890'; g.fillRect(0, 0, w, h); for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const x = (i + 0.5) / 16 * 2 - 1, y = -((j + 0.5) / 16 * 2 - 1) * 1.1 + 0.25, r = (x * x + y * y - 0.45) ** 3 - x * x * y ** 3; g.fillStyle = r < 0 ? ((i + j) % 2 ? '#a8443a' : '#8a3a32') : ((i + j) % 3 ? '#8e8c86' : '#a6a49e'); g.fillRect(i * 10 + 1, j * 10 + 1, 8, 8); } }), 0xffffff, { rx: -Math.PI / 2 });
+  { quad('atlas', 9, 0.045, -7.6, 2.2, 2.2, 0, atlas.draw(160, 160, (g, w, h) => { g.fillStyle = '#9a9890'; g.fillRect(0, 0, w, h); for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const x = (i + 0.5) / 16 * 2 - 1, y = -((j + 0.5) / 16 * 2 - 1) * 1.1 + 0.25, r = (x * x + y * y - 0.45) ** 3 - x * x * y ** 3; g.fillStyle = r < 0 ? ((i + j) % 2 ? '#a8443a' : '#8a3a32') : ((i + j) % 3 ? '#8e8c86' : '#a6a49e'); g.fillRect(i * 10 + 1, j * 10 + 1, 8, 8); } }), 0xffffff, { rx: -Math.PI / 2 });
     addTarget({ id: 'heart', name: 'Heart in the Setts', hint: 'roll it ower the heart in the setts', points: 75, kind: 'zone', kickOnly: true, pos: V(9, 0, -4.5), ringR: 0.9, stand: V(9, 0, -2.4), aim: V(9, 0.2, -7.6), zone: new THREE.Box3(V(8.1, -0.1, -8.5), V(9.9, 0.7, -6.7)),
       lines: ["Ye're meant tae spit on it, no' kick it!", 'Heart o\' the toon - bang on.', 'Lucky heart. Lucky ba\'.'] }); }
 
@@ -200,5 +200,5 @@ export default {
   spawn: RM.SPAWN, spawnYaw: RM.SPAWNYAW,
   ballHomes: () => [[-48, 0.4, 1.5], [0, 0.4, 0], [40, 0.4, 2]],
   bounds: { x: 62, zMin: -30, zMax: 36 },
-  next: 'pennywell',
+  next: 'esplanade',
 };

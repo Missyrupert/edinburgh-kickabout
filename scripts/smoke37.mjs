@@ -1,0 +1,35 @@
+// v3.9 Castle Esplanade (level 11, the finale): spawn, 10 targets each in 1-6 tries, the crown only counts last, clearing it shows
+// the game-complete card with the credits, wiring, travel Royal Mile -> Esplanade -> Pennywell.
+import { chromium } from 'playwright-core';
+const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
+const URL = process.argv[2] || 'http://localhost:4199/';
+const pg = await (await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true })).newPage();
+pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
+await pg.goto(URL + '?level=esplanade&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
+const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, sp: __game.views.spawn }));
+ok(g0.lv === 'esplanade' && Math.hypot(g0.p.x - g0.sp[0], g0.p.z - g0.sp[1]) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the Esplanade ' + JSON.stringify(g0.p));
+ok(g0.ids.length === 10 && new Set(g0.ids).size === 10 && g0.ids[9] === 'crown', 'targets (crown last) ' + g0.ids.join(','));
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket,royalmile,esplanade', 'level order ' + g0.levels);
+ok(/Esplanade: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Esplanade goals');
+ok(await pg.evaluate(() => !!document.querySelector('[data-level=esplanade]')), 'level-select button');
+const S = await pg.evaluate(() => [[0, 0], [50, 0]].map(([x, z]) => __game.surfaceAt(x, z)));
+ok(JSON.stringify(S) === JSON.stringify(['tarmac', 'setts']), 'surfaces ' + JSON.stringify(S));
+const kickAll = (only) => pg.evaluate((only) => { const g = __game, res = {}; for (const t of g.targets) { if (only && !only.includes(t.id)) continue; let n = 0;
+  for (const pitch of (t.aim.y - (t.stand.y || 0) > 2.5 ? [0.25, 0.35, 0.12, 0.5, 0.0] : [0.0, 0.12, -0.15, 0.25, -0.3, 0.35, -0.45, 0.5])) for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0, -15, (t.stand.y || 0) + 0.47); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);
+    g.placeBall(0, P.x - Math.sin(y) * 0.8, P.y - 0.2, P.z - Math.cos(y) * 0.8); g.simulate(0.2); g.kick(p); g.simulate(4); n++; } res[t.id] = t.done ? n : 0; } return res; }, only);
+await pg.evaluate(() => { window.__toasts = []; const el = document.getElementById('toast'); new MutationObserver(() => __toasts.push(el.innerHTML)).observe(el, { childList: true, subtree: true, characterData: true }); });
+const c0 = await kickAll(['crown']);
+ok(c0.crown === 0, 'the crown does not count while other targets are left ' + JSON.stringify(c0));
+ok(await pg.evaluate(() => __toasts.some((t) => /no' yet/.test(t))), 'and says "no\' yet"');
+const k = await kickAll();
+ok(Object.values(k).every(Boolean), 'every Esplanade target scores with real kicks (tries) ' + JSON.stringify(k));
+ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
+ok(k.infoboard === 1, 'easy first target (the board by the spawn) in one kick');
+await pg.waitForTimeout(3500);
+const fin = await pg.evaluate(() => ({ shown: !document.getElementById('goalCard').classList.contains('hidden'), t: document.getElementById('goalCard').textContent }));
+ok(fin.shown && /Ye've done it/.test(fin.t), 'crowning it shows the game-complete card ' + fin.t.slice(0, 80));
+ok(['Chris', 'Fiona', 'AG', 'The Gamekeeper'].every(n => fin.t.includes(n)), 'credits name Chris, Fiona, AG and The Gamekeeper');
+ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'the Esplanade travels back to Pennywell');
+await pg.goto(URL + '?level=royalmile&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Esplanade/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels on to the Esplanade');
+console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

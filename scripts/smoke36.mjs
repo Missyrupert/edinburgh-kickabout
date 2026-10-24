@@ -10,7 +10,7 @@ await pg.goto(URL + '?level=royalmile&preset=low'); await pg.waitForFunction(() 
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, sp: __game.views.spawn }));
 ok(g0.lv === 'royalmile' && Math.hypot(g0.p.x - g0.sp[0], g0.p.z - g0.sp[1]) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the High Street ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket,royalmile', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket,royalmile,esplanade', 'level order ' + g0.levels);
 ok(/Royal Mile: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Royal Mile goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=royalmile]')), 'level-select button');
 const S = await pg.evaluate(() => [[0, 0], [-30, 7], [20, -10]].map(([x, z]) => __game.surfaceAt(x, z)));
@@ -24,6 +24,6 @@ const k = await kickAll();
 ok(Object.values(k).every(Boolean), 'every Royal Mile target scores with real kicks (tries) ' + JSON.stringify(k));
 ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(k.busker === 1, 'easy first target (the performers\' pitch by the spawn) in one kick');
-ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels back to Pennywell (v3.8)');
+ok(/Esplanade/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels on to the Esplanade');
 await pg.goto(URL + '?level=grassmarket&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Royal Mile/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Grassmarket travels on to the Royal Mile');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

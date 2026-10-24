@@ -9,6 +9,7 @@ import * as CANNON from 'cannon-es';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
 import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
+import { makeLeg } from './leg.js';
 import { unlocks, recordDone, levelDone, tierCount, TIERS, selectBall, selectBoots, BOOTS, resetProgress, BALLS, ITEMS, saveUnlocks } from './unlocks.js';
 import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor, CHIPPY_TARGETS } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
@@ -177,9 +178,9 @@ function footGeo(style) { // v3.1.2: first-person kicking leg - boot seen from a
     for (const [p] of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; } g.setAttribute(k, new THREE.BufferAttribute(arr, parts[0][0].attributes[k].itemSize)); }
   return g;
 }
-const bootGeo = footGeo(unlocks.boots);
-const boot = new THREE.Mesh(bootGeo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })); boot.renderOrder = 10; // v3.1.1: own untextured material (no atlas mottling)
-boot.position.set(0.2, -0.6, -0.75); camera.add(boot);
+const leg = makeLeg(unlocks.boots, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })); // v3.9: rigged leg (knee + ankle pose on the kick)
+const boot = leg.root;
+boot.position.set(0.2, -0.6, -0.75); camera.add(boot); let legDebugK = null;
 let kickAnim = 1;
 
 // ---------- UI ----------
@@ -262,7 +263,7 @@ function openCounterRefresh() { const l = $('cntLine').innerHTML; openCounter();
 $('cntClose').addEventListener('click', () => { $('counterCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
 // ---------- ball selector (cosmetic only: same body, mass, size) ----------
 function applyBall(id) { if (!selectBall(id)) return false; ballMat.map = ballTexture(id); ballMat.needsUpdate = true; buildBallMenu(); return true; }
-function applyBoots(id) { if (!selectBoots(id)) return false; boot.geometry.dispose(); boot.geometry = footGeo(id); buildBallMenu(); return true; }
+function applyBoots(id) { if (!selectBoots(id)) return false; leg.setStyle(id); buildBallMenu(); return true; }
 function buildBallMenu() {
   const el = $('ballSel'); el.innerHTML = '';
   const row = document.createElement('div'); row.textContent = 'Feet: ';
@@ -634,8 +635,8 @@ function render(dt, t) {
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
   { // v3.1.2: the leg sits low in the bottom-right of whatever the screen shape is (portrait or landscape) and swings through on the kick (same timing)
-    const d = 0.75, hh = d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), hw = hh * camera.aspect, x0 = camera.aspect < 1 ? hw * 0.08 : Math.min(hw * 0.32, 0.26), y0 = camera.aspect < 1 ? 0.84 : 0.9, e = s * s * (3 - 2 * s);
-    boot.position.set(x0 * (1 - 0.6 * e), -hh * (y0 - 0.4 * e), -d - 0.22 * e); boot.rotation.set(-0.35 - 0.25 * e, 0.5 - 0.2 * e, 0); boot.visible = true; }
+    const d = 0.75, hh = d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), hw = hh * camera.aspect, x0 = camera.aspect < 1 ? hw * 0.04 : Math.min(hw * 0.32, 0.26), y0 = camera.aspect < 1 ? 0.56 : 0.9, /* v3.9: portrait - up above the button band */ e = s * s * (3 - 2 * s);
+    boot.position.set(x0 * (1 - 0.6 * e), -hh * (y0 - 0.4 * e), -d - 0.22 * e); boot.rotation.set(-0.35 - 0.25 * e, 0.5 - 0.2 * e, 0); boot.visible = true; leg.pose(legDebugK ?? kickAnim); }
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
   for (const tg of allTargets) {
@@ -718,7 +719,7 @@ window.__game = {
   get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
-  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return boot.geometry.attributes.position.count / 3; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
+  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return leg.tris(); }, legDebug(k) { legDebugK = k; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   pause, showPanel,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
@@ -733,7 +734,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.8';
+const BUILD = 'v3.9';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }

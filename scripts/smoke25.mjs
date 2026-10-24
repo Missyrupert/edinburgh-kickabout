@@ -8,7 +8,7 @@ const check = async (want, how) => { await pg.waitForFunction(() => window.__gam
   const r = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position } })); const [ex, ez] = EXP[want];
   ok(r.lv === want && Math.hypot(r.p.x - ex, r.p.z - ez) < 0.5 && r.p.y > 0.3 && r.p.y < 0.6, `${how}: ${want} spawn on the ground ${JSON.stringify(r.p)}`); };
 await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await check('pilton', 'start');
-for (let i = 0; i < 1; i++) for (const to of ['granton', 'newhaven', 'leith', 'easterroad', 'portobello', 'londonroad', 'grassmarket', 'royalmile', 'pennywell', 'pilton']) { await pg.evaluate(() => __game.pause()); await pg.click('#travelBtn'); await check(to, `travel #${i + 1}`); }
+for (let i = 0; i < 1; i++) for (const to of ['granton', 'newhaven', 'leith', 'easterroad', 'portobello', 'londonroad', 'grassmarket', 'royalmile', 'esplanade', 'pennywell', 'pilton']) { await pg.evaluate(() => __game.pause()); await pg.click('#travelBtn'); await check(to, `travel #${i + 1}`); }
 // via the welcome-screen level buttons, and after a reload
 await pg.reload(); await pg.waitForFunction(() => window.__game); await pg.click('[data-level=pilton]'); await check('pilton', 'level button');
 await pg.reload(); await check('pilton', 'reload');
