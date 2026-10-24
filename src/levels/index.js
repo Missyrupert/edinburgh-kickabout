@@ -5,7 +5,7 @@ import granton from './granton.js';
 import newhaven from './newhaven.js';
 import leith from './leith.js';
 export const LEVELS = { pilton, grassmarket, granton, newhaven, leith };
-export const LEVEL_ORDER = ['pilton', 'grassmarket', 'granton', 'newhaven', 'leith'];
+export const LEVEL_ORDER = ['pilton', 'granton', 'newhaven', 'leith', 'grassmarket'] // v3.1.2: Chris's route order (Pennywell will slot in first later);
 const q = new URLSearchParams(location.search);
 let saved = null; try { saved = localStorage.getItem('ek-level'); } catch {}
 const fromUrl = q.get('level');

@@ -359,5 +359,5 @@ export default {
   build, spawn: [0, 0.5, -38], spawnYaw: 180,
   ballHomes: () => [[0.3, 0.4, -35.6], [14.8, 1.6, -2], [-2, 0.4, 26]],
   bounds: { x: 30, zMin: -50, zMax: 46 },
-  next: 'grassmarket',
+  next: 'granton',
 };

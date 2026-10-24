@@ -138,42 +138,48 @@ const balls = BALL_HOMES.map(([x, y, z]) => {
 
 // boot (kick animation), attached to the camera: one mesh
 // a scuffed trainer (default) or unlockable classic black boots, with shin; cosmetic only (no physics)
-function footGeo(style) { // v3.1.1: a proper first-person football boot + sock + shin (low-poly, one merged mesh, fictional "flash" panel)
+function footGeo(style) { // v3.1.2: first-person kicking leg - boot seen from above/behind, ankle + knee bend, baked lighting (no dark blob), no pole
   const parts = [], add = (geo, c, m) => { if (m) geo.applyMatrix4(m); parts.push([geo.index ? geo.toNonIndexed() : geo, c]); },
     T = (x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
-  const classic = style === 'boots', UPPER = classic ? 0x141414 : 0x2a3d66, FLASH = classic ? 0xf2f2ee : 0xc6e83a, SOLE = classic ? 0x2a2a2a : 0xe9e6dc,
-    STUD = classic ? 0x9a9a9a : 0x2b2b2b, SOCK = classic ? 0x141414 : 0xf1efe9, HOOP = classic ? 0xf2f2ee : 0x6B3F73, SKIN = 0xd9a07c;
-  // lower leg: skin above the sock, sock with two hoops, shin-pad bulge at the front
-  // the shin runs back from the ankle (an instep-kick "pointed foot") so in first person it leads out of the bottom of the screen
-  const LEG = new THREE.Matrix4().makeTranslation(0, 0.07, 0.02).multiply(new THREE.Matrix4().makeRotationX(1.65)).multiply(new THREE.Matrix4().makeTranslation(0, -0.07, -0.02)), L = (m) => LEG.clone().multiply(m);
-  add(new THREE.CylinderGeometry(0.066, 0.047, 0.62, 10), SOCK, L(T(0, 0.38, 0.01)));
-  add(new THREE.CylinderGeometry(0.07, 0.068, 0.5, 10), SKIN, L(T(0, 0.93, 0.01)));
-  for (const y of [0.58, 0.63]) add(new THREE.CylinderGeometry(0.068, 0.067, 0.024, 10), HOOP, L(T(0, y, 0.01)));
-  add(new THREE.SphereGeometry(1, 8, 6), SOCK, L(T(0, 0.36, -0.035, 0.05, 0.2, 0.032)));
-  add(new THREE.CylinderGeometry(0.054, 0.058, 0.07, 10), UPPER, T(0, 0.095, 0.015)); // ankle collar
-  // boot upper: an ellipsoid foot with a rounded toe and a heel counter
-  add(new THREE.SphereGeometry(1, 12, 8), UPPER, T(0, 0.04, -0.08, 0.064, 0.052, 0.165));
-  add(new THREE.SphereGeometry(1, 10, 6), UPPER, T(0, 0.05, 0.02, 0.06, 0.06, 0.065));
-  // sole plate + studs
-  add(new THREE.BoxGeometry(0.118, 0.018, 0.31), SOLE, T(0, -0.006, -0.075));
-  add(new THREE.SphereGeometry(1, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2), SOLE, T(0, -0.006, -0.225, 0.059, 0.012, 0.03, Math.PI));
-  for (const [x, z] of [[-0.035, -0.19], [0.035, -0.19], [-0.04, -0.12], [0.04, -0.12], [-0.035, 0.0], [0.035, 0.0], [0, -0.06]]) add(new THREE.CylinderGeometry(0.011, 0.014, 0.022, 6), STUD, T(x, -0.026, z));
-  // tongue + laces
-  add(new THREE.BoxGeometry(0.05, 0.014, 0.1), UPPER === 0x141414 ? 0x222222 : 0x26345a, T(0, 0.088, -0.035, 1, 1, 1, -0.35));
-  for (let k = 0; k < 4; k++) add(new THREE.BoxGeometry(0.052, 0.008, 0.009), 0xf4f4f0, T(0, 0.092 - k * 0.011, -0.01 - k * 0.028, 1, 1, 1, -0.35));
-  // fictional flash: a swept stripe down each side (not any brand's mark)
-  for (const sx of [-1, 1]) { add(new THREE.BoxGeometry(0.004, 0.016, 0.15), FLASH, T(sx * 0.061, 0.035, -0.07, 1, 1, 1, 0.32, 0, 0));
-    add(new THREE.BoxGeometry(0.004, 0.012, 0.07), FLASH, T(sx * 0.058, 0.06, -0.01, 1, 1, 1, 0.75, 0, 0)); }
-  add(new THREE.BoxGeometry(0.03, 0.03, 0.006), FLASH, T(0, 0.06, 0.084)); // heel tab
+  // a tapered limb segment from point a along unit dir d, length L (radius r0 at a, r1 at the far end)
+  const seg = (a, d, L, r0, r1, c, n = 10) => { const g = new THREE.CylinderGeometry(r1, r0, L, n); g.translate(0, L / 2, 0);
+    add(g, c, new THREE.Matrix4().compose(a, new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d), new THREE.Vector3(1, 1, 1))); };
+  const classic = style === 'boots', UPPER = classic ? 0x1c1c1c : 0x30478a, TOE = classic ? 0x262626 : 0x3a55a0, FLASH = classic ? 0xf2f2ee : 0xc8ec3c, SOLE = classic ? 0x3a3a3a : 0xf0ede4,
+    STUD = classic ? 0xa0a0a0 : 0x3a3a3a, SOCK = classic ? 0x1c1c1c : 0xf3f1ea, HOOP = classic ? 0xf2f2ee : 0x6B3F73, SKIN = 0xe0a882, SHORTS = 0x23304f;
+  // --- boot (toe toward -z, sole at y=0) ---
+  add(new THREE.SphereGeometry(1, 14, 9), UPPER, T(0, 0.045, -0.06, 0.055, 0.05, 0.15)); // vamp/upper
+  add(new THREE.SphereGeometry(1, 12, 8), TOE, T(0, 0.034, -0.165, 0.05, 0.036, 0.07)); // rounded toe box
+  add(new THREE.SphereGeometry(1, 12, 8), UPPER, T(0, 0.058, 0.035, 0.052, 0.062, 0.06)); // heel counter
+  add(new THREE.BoxGeometry(0.106, 0.018, 0.27), SOLE, T(0, 0.004, -0.07));
+  add(new THREE.CylinderGeometry(0.053, 0.053, 0.018, 12, 1, false, 0, Math.PI), SOLE, T(0, 0.004, -0.205, 1, 1, 1, 0, -Math.PI / 2, 0)); // toe of the sole plate
+  for (const [x, z] of [[-0.033, -0.18], [0.033, -0.18], [-0.038, -0.11], [0.038, -0.11], [0, -0.145], [-0.032, 0.02], [0.032, 0.02]]) add(new THREE.CylinderGeometry(0.009, 0.012, 0.018, 6), STUD, T(x, -0.012, z));
+  add(new THREE.BoxGeometry(0.046, 0.012, 0.11), classic ? 0x2a2a2a : 0x3d5596, T(0, 0.092, -0.045, 1, 1, 1, -0.28)); // tongue
+  for (let k = 0; k < 5; k++) add(new THREE.BoxGeometry(0.05, 0.007, 0.008), 0xfafaf6, T(0, 0.094 - k * 0.0075, -0.005 - k * 0.024, 1, 1, 1, -0.28)); // laces
+  for (const sx of [-1, 1]) { add(new THREE.BoxGeometry(0.005, 0.014, 0.16), FLASH, T(sx * 0.053, 0.03, -0.075, 1, 1, 1, 0.22)); add(new THREE.BoxGeometry(0.005, 0.01, 0.07), FLASH, T(sx * 0.051, 0.058, -0.005, 1, 1, 1, 0.7)); } // fictional side flash
+  add(new THREE.BoxGeometry(0.028, 0.034, 0.006), FLASH, T(0, 0.075, 0.093)); // heel tab
+  // --- leg: ankle bend, shin back-and-down toward you, knee bend, thigh dropping out of the frame ---
+  const ankle = new THREE.Vector3(0, 0.1, 0.03), dS = new THREE.Vector3(0.32, -0.78, 0.54).normalize(), Ls = 0.4, knee = ankle.clone().addScaledVector(dS, Ls), dT = new THREE.Vector3(0.3, -0.92, 0.25).normalize();
+  add(new THREE.CylinderGeometry(0.05, 0.054, 0.05, 12), UPPER, T(0, 0.098, 0.03)); // boot collar
+  seg(ankle, dS, Ls * 0.62, 0.044, 0.06, SOCK, 12); // sock over the shin pad
+  for (const f of [0.5, 0.56]) seg(ankle.clone().addScaledVector(dS, Ls * f), dS, 0.016, 0.0585, 0.0595, HOOP, 12);
+  seg(ankle.clone().addScaledVector(dS, Ls * 0.62), dS, Ls * 0.38, 0.06, 0.052, SKIN, 12); // bare shin up to the knee
+  add(new THREE.SphereGeometry(1, 10, 8), SOCK, T(ankle.x, ankle.y, ankle.z, 0.047, 0.047, 0.047)); // ankle
+  { const c = ankle.clone().addScaledVector(dS, Ls * 0.4); add(new THREE.SphereGeometry(1, 10, 8), SOCK, T(c.x, c.y - 0.012, c.z + 0.02, 0.058, 0.06, 0.1, -1.05)); } // calf
+  add(new THREE.SphereGeometry(1, 10, 8), SKIN, T(knee.x, knee.y, knee.z, 0.06, 0.06, 0.06)); // knee
+  seg(knee, dT, 0.1, 0.06, 0.07, SKIN, 12); seg(knee.clone().addScaledVector(dT, 0.1), dT, 0.35, 0.075, 0.085, SHORTS, 12); // thigh into the shorts, out of frame
+  // bake simple lighting into the vertex colours (from above / slightly behind) so it never renders as a dark blob
+  const Lt = new THREE.Vector3(0.35, 0.85, 0.4).normalize();
   const g = new THREE.BufferGeometry(), cols = [];
-  for (const [p, c] of parts) { const k = new THREE.Color(c), n = p.attributes.position.count, arr = new Float32Array(n * 3); for (let q = 0; q < n; q++) arr.set([k.r, k.g, k.b], q * 3); p.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
+  for (const [p, c] of parts) { p.computeVertexNormals(); const k = new THREE.Color(c), nn = p.attributes.normal, n = p.attributes.position.count, arr = new Float32Array(n * 3);
+    for (let q = 0; q < n; q++) { const l = Math.min(1.12, 0.6 + 0.55 * Math.max(0, nn.getX(q) * Lt.x + nn.getY(q) * Lt.y + nn.getZ(q) * Lt.z)); arr.set([Math.min(1, k.r * l), Math.min(1, k.g * l), Math.min(1, k.b * l)], q * 3); }
+    p.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
   for (const k of ['position', 'normal', 'uv', 'color']) { const tot = parts.reduce((a, [p]) => a + p.attributes[k].array.length, 0), arr = new Float32Array(tot); let o = 0;
     for (const [p] of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; } g.setAttribute(k, new THREE.BufferAttribute(arr, parts[0][0].attributes[k].itemSize)); }
   return g;
 }
 const bootGeo = footGeo(unlocks.boots);
-const boot = new THREE.Mesh(bootGeo, new THREE.MeshLambertMaterial({ vertexColors: true })); // v3.1.1: own untextured material (no atlas mottling)
-boot.position.set(0.18, -1.05, -0.35); boot.scale.setScalar(1.2); camera.add(boot);
+const boot = new THREE.Mesh(bootGeo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })); boot.renderOrder = 10; // v3.1.1: own untextured material (no atlas mottling)
+boot.position.set(0.2, -0.6, -0.75); camera.add(boot);
 let kickAnim = 1;
 
 // ---------- UI ----------
@@ -618,10 +624,9 @@ function render(dt, t) {
   for (const d of dynamics) { d.mesh.position.copy(d.body.position); d.mesh.quaternion.copy(d.body.quaternion); }
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
-  boot.position.set(0.2, -0.98 + s * 0.5, -0.45 - s * 0.45); boot.rotation.x = 0.25 + s * 0.35; // v3.1.1: same timing, path raised so the boot is seen
-  const rest = kickAnim >= 1 && pitch < -0.6; // resting foot: tucked into view when you look down
-  if (rest) { const th = -pitch, c = Math.cos(th), sn = Math.sin(th); boot.position.set(0.22, -1.5 * c + 0.8 * sn, -1.5 * sn - 0.8 * c); boot.rotation.x = th + 0.3; } // v3.1.1: resting foot sits flat on the ground, toe forward
-  boot.visible = kickAnim < 1 || pitch < -0.6;
+  { // v3.1.2: the leg sits low in the bottom-right of whatever the screen shape is (portrait or landscape) and swings through on the kick (same timing)
+    const d = 0.75, hh = d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), hw = hh * camera.aspect, x0 = camera.aspect < 1 ? hw * 0.08 : Math.min(hw * 0.32, 0.26), y0 = camera.aspect < 1 ? 0.84 : 0.9, e = s * s * (3 - 2 * s);
+    boot.position.set(x0 * (1 - 0.6 * e), -hh * (y0 - 0.4 * e), -d - 0.22 * e); boot.rotation.set(-0.35 - 0.25 * e, 0.5 - 0.2 * e, 0); boot.visible = true; }
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
   for (const tg of allTargets) {
@@ -719,7 +724,7 @@ window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.1.1';
+const BUILD = 'v3.1.2';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
