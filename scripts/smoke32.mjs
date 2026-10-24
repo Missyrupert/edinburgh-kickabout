@@ -16,7 +16,7 @@ await pg.goto(URL + '?level=pennywell&preset=low'); await pg.waitForFunction(() 
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'pennywell' && Math.hypot(g0.p.x - 4.2, g0.p.z + 27) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn outside Haddon\'s ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,grassmarket', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket', 'level order ' + g0.levels);
 ok(/Pennywell: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Pennywell goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=pennywell]')), 'level-select button');
 const S = await pg.evaluate(() => [[0, -25], [0, 0], [5, 0], [9, 0]].map(([x, z]) => __game.surfaceAt(x, z)));

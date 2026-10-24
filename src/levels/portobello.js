@@ -210,5 +210,5 @@ export default {
   ballHomes: () => [[47.5, 0.4, -6], [0, 0.4, -5], [-30, 0.4, -5], [10, PB.SY + 0.4, 8]],
   bounds: { x: 60, zMin: -11, zMax: 60 },
   sea: { y: -2.4, water: -1.85, lines: ["Splash! Intae the Forth. Fife's no' gettin' it - here's your ball back.", "Washed oot! The tide's brought it back tae your feet.", "In the sea! A dug fetched it. Ball's back."] },
-  next: 'grassmarket',
+  next: 'londonroad',
 };

@@ -11,7 +11,7 @@ await pg.evaluate(() => localStorage.clear()); await pg.reload(); await pg.waitF
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'leith' && Math.hypot(g0.p.x - 26, g0.p.z + 4) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the Shore ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,grassmarket', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket', 'level order ' + g0.levels);
 ok(/Leith: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Leith goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=leith]')), 'level-select button');
 { const L = await pg.evaluate(() => Object.fromEntries(['btnKick', 'btnJump', 'btnBall'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [id, { x: r.left + r.width / 2, y: r.top + r.height / 2 }]; })));

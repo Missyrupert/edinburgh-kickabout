@@ -11,7 +11,7 @@ await pg.goto(URL + '?level=portobello&preset=low'); await pg.waitForFunction(()
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'portobello' && Math.hypot(g0.p.x - 50, g0.p.z + 6) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the prom ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,grassmarket', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,pilton,granton,newhaven,leith,easterroad,portobello,londonroad,grassmarket', 'level order ' + g0.levels);
 ok(/Portobello: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Portobello goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=portobello]')), 'level-select button');
 const S = await pg.evaluate(() => [[50, -6], [50, -12], [0, 10], [0, 40], [25, 2]].map(([x, z]) => __game.surfaceAt(x, z)));
@@ -35,6 +35,6 @@ const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of 
 ok(Object.values(k).every(Boolean), 'every Portobello target scores with real kicks (tries) ' + JSON.stringify(k));
 ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(k.kiosk === 1, 'easy first target (ice-cream kiosk by the spawn) in one kick');
-ok(/Grassmarket/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Portobello travels on to the Grassmarket');
+ok(/London Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Portobello travels on to London Road');
 await pg.goto(URL + '?level=easterroad&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Portobello/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Easter Road travels on to Portobello');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);
