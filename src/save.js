@@ -6,7 +6,8 @@ let listener = null, warnedWrite = false; const trusted = new Set(); // keys who
 export function onNotice(fn) { listener = fn; while (notices.length) fn(notices.shift()); }
 function notify(msg) { if (listener) listener(msg); else notices.push(msg); }
 const ls = () => { try { return window.localStorage; } catch { return null; } };
-function preserve(store, key, raw) { try { store.setItem(`${key}-corrupt-${Date.now()}`, raw); } catch {} }
+const locked = new Set(); // v3.9.2: keys whose damaged original couldn't be copied - never overwrite them this session
+function preserve(store, key, raw) { const k = `${key}-corrupt-${Date.now()}`; try { store.setItem(k, raw); return store.getItem(k) === raw; } catch { return false; } }
 // sanitise(parsed) -> { value, damaged } or null if unusable
 export function loadRecord(key, sanitise, fresh, label) {
   const store = ls(); if (!store) { notify(`Saves are switched off on this browser - ${label} won't be kept.`); return fresh(); }
@@ -15,14 +16,17 @@ export function loadRecord(key, sanitise, fresh, label) {
   if (raw == null) { trusted.add(key); return fresh(); }
   const r = tryParse(raw);
   if (r && !r.damaged) { trusted.add(key); return r.value; }
-  preserve(store, key, raw); // keep the damaged copy, whatever happens next
-  const bak = tryParse(store.getItem(key + '-bak'));
-  if (bak && !bak.damaged) { notify(`Some saved ${label} was damaged - restored yer last good copy.`); return bak.value; }
-  if (r) { notify(`Some saved ${label} was damaged - fixed what we could (a copy of the old save is kept).`); return r.value; }
-  notify(`Couldnae restore yer saved ${label} - starting fresh (a copy of the old save is kept).`); return fresh();
+  const kept = preserve(store, key, raw); // keep the damaged copy, whatever happens next
+  if (!kept) locked.add(key); // couldn't copy it: leave the damaged original untouched rather than lose it
+  const note = kept ? ' (a copy of the old save is kept)' : " (couldnae copy the old save, so it's left as it was and new progress won't be saved this time)";
+  let bakRaw = null; try { bakRaw = store.getItem(key + '-bak'); } catch {}
+  const bak = tryParse(bakRaw);
+  if (bak && !bak.damaged) { notify(`Some saved ${label} was damaged - restored yer last good copy${note}.`); return bak.value; }
+  if (r) { notify(`Some saved ${label} was damaged - fixed what we could${note}.`); return r.value; }
+  notify(`Couldnae restore yer saved ${label} - starting fresh${note}.`); return fresh();
 }
 export function saveRecord(key, value, label) {
-  const store = ls(); if (!store) return false;
+  const store = ls(); if (!store || locked.has(key)) return false;
   try { const prev = store.getItem(key), next = JSON.stringify(value); if (prev && prev !== next && trusted.has(key)) store.setItem(key + '-bak', prev); store.setItem(key, next); trusted.add(key); return true; }
   catch { if (!warnedWrite) { warnedWrite = true; notify(`Couldnae save yer ${label} on this device - progress might not be kept.`); } return false; }
 }

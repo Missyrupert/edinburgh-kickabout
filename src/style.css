@@ -204,3 +204,5 @@ html,body{background:var(--charcoal);font-family:'Barlow Condensed',system-ui,sa
 /* v3.9.1: landscape level menu - 4 columns, every button at least 44px tall; the card scrolls if the screen is very short */
 @media (max-height:460px){ .card.menu .levels{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
   .card.menu .levels button{min-height:44px;padding:3px 6px;font-size:14px;line-height:1.05;white-space:normal;justify-content:center;align-items:flex-start} }
+/* v3.9.2: portrait - the whole HUD column is capped at 176px so the toast (right of it) can never overlap any HUD text */
+@media (orientation:portrait){ #hud > *{max-width:176px;box-sizing:border-box} #goalTxt,#nearby{white-space:normal;overflow-wrap:anywhere} #toast{max-width:calc(100vw - 200px) !important} }

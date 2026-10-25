@@ -1,3 +1,4 @@
+import { streetsLeft } from './levels/required.js';
 import '@fontsource/alfa-slab-one/400.css';
 import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/700.css';
@@ -152,7 +153,10 @@ const surfaceAt = LEVEL.surfaceAt || (() => 'paving');
 const TARGET_SURF = { garage: 'garage', bin: 'plastic', wheelie: 'plastic', busstop: 'glass', trolley: 'metal', lamp: 'metal', gap: 'metal', noballs: 'metal', tardis: 'metal', post: 'metal', door: 'wall', bench: 'board', skip: 'metal', case: 'board', cone: 'plastic' };
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
-let noticeAt = 0; onNotice((m) => { const at = Math.max(performance.now() + 1500, noticeAt); noticeAt = at + 4200; setTimeout(() => toast(`<small>${m}</small>`, 4000), at - performance.now()); }); // v3.9.1: save problems, non-blocking
+const pendingNotices = []; let noticeBusy = 0; // v3.9.2: save notices wait until play starts, then show one by one (6s each); other toasts wait their turn
+function toastQ(text, ms) { if (noticeBusy > performance.now()) setTimeout(() => toastQ(text, ms), noticeBusy - performance.now() + 50); else toast(text, ms); }
+function flushNotices() { if (!started || paused || !pendingNotices.length) return; const m = pendingNotices.shift(); toast(`<small>⚠️ ${m}</small>`, 6000); noticeBusy = performance.now() + 6300; setTimeout(flushNotices, 6300); }
+onNotice((m) => { pendingNotices.push(m); window.__ekNotices = (window.__ekNotices || []).concat(m); flushNotices(); }); // v3.9.1: save problems, non-blocking
 function updateHud() { if (LEVEL.id !== "pilton") try { updateWallet(); } catch (e) { /* v2.9: keep the per-level goal bar in step (wallet not ready during boot) */ } $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
   const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
   // v2.3: compact challenge line for phones (full names live in Help)
@@ -180,7 +184,7 @@ function updateWallet(pop = false) {
 }
 function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
-  const left = LEVEL_ORDER.filter((id) => id !== LEVEL.id && !(Object.keys(LEVELS[id].tiers || {}).length && Object.keys(LEVELS[id].tiers).every((k) => levelDone(id)[k]))); // v3.9.1: only claim the whole journey if it's true
+  const left = streetsLeft(levelDone, LEVEL.id); // v3.9.2: explicit required-target list per street (Pilton had no tiers object)
   if (left.length) $('goalTitle').textContent = "The Esplanade's crowned!";
   $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae Pennywell tae the Castle - the full journey's waiting for ye.` : `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
   $('goalOk').textContent = 'Pure magic'; $('goalCard').classList.remove('hidden'); $('goalCard').dataset.finale = '1'; sfx.success(true);
@@ -270,11 +274,16 @@ function pause() { paused = true; showPanel('mainPanel'); $('overlay').classList
 function resume() {
   sfx.init(); started = true; paused = false; $('overlay').classList.add('hidden');
   if (!controls.touch) renderer.domElement.requestPointerLock?.();
-  if (!resume.once) { resume.once = 1; toast(LEVEL.intro, 4500);
+  if (!resume.once) { resume.once = 1;
     let seen = false; try { seen = localStorage.getItem('ek-tip'); localStorage.setItem('ek-tip', '1'); } catch {}
-    { let told = false; try { told = sessionStorage.getItem('ek-sideways'); sessionStorage.setItem('ek-sideways', '1'); } catch {} // v3.9.1: portrait-only hint (toast sits clear of the HUD)
-      if (!told && controls.touch && innerHeight > innerWidth) setTimeout(() => { if (innerHeight > innerWidth) toast('<small>Tip: turn yer phone sideways for a wider view.</small>', 3000); }, seen ? 2500 : 6000); }
-    if (!seen) setTimeout(() => toast(controls.touch ? '<b>Tip:</b> hold KICK and release. Look up to chip it.' : '<b>Tip:</b> hold the mouse button and release to kick. Look up to chip it.', 4000), 4800); }
+    let told = true; if (controls.touch && innerHeight > innerWidth) { told = false; try { told = sessionStorage.getItem('ek-sideways'); sessionStorage.setItem('ek-sideways', '1'); } catch {} }
+    // v3.9.2: one queue - save notices first, then intro, kick tip, sideways hint; each gets its full time
+    const seq = [[LEVEL.intro, 4500]];
+    if (!seen) seq.push([controls.touch ? '<b>Tip:</b> hold KICK and release. Look up to chip it.' : '<b>Tip:</b> hold the mouse button and release to kick. Look up to chip it.', 4000]);
+    if (!told) seq.push(['<small>Tip: turn yer phone sideways for a wider view.</small>', 3000]);
+    const step = () => { if (!seq.length) return; if (noticeBusy > performance.now()) return setTimeout(step, noticeBusy - performance.now() + 50); const [t, ms] = seq.shift(); toast(t, ms); noticeBusy = performance.now() + ms + 300; setTimeout(step, ms + 300); };
+    if (pendingNotices.length) flushNotices(); step(); }
+  else flushNotices();
 }
 $('startBtn').addEventListener('click', resume);
 function showPanel(id) { for (const p of ['mainPanel', 'lockerPanel', 'settingsPanel', 'helpPanel']) $(p).classList.toggle('hidden', p !== id); }
@@ -682,6 +691,7 @@ const DEBUG = new URLSearchParams(location.search).has('debug'); // v3.9.1: test
 if (DEBUG) window.__game = {
   get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
+  finale() { showFinale(); return { title: $('goalTitle').textContent, line: $('goalLine').textContent, left: streetsLeft(levelDone, LEVEL.id) }; },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
   get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return leg.tris(); }, legDebug(k) { legDebugK = k; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
