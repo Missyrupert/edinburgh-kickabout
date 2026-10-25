@@ -13,7 +13,7 @@ import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
 import { makeLeg } from './leg.js';
 import { onNotice } from './save.js';
 import { unlocks, recordDone, levelDone, tierCount, TIERS, selectBall, selectBoots, BOOTS, resetProgress, BALLS, ITEMS, saveUnlocks } from './unlocks.js';
-import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor, CHIPPY_TARGETS } from './wallet.js';
+import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
 import { Sfx } from './audio.js';
 import { Controls } from './controls.js';
@@ -157,7 +157,7 @@ const pendingNotices = []; let noticeBusy = 0; // v3.9.2: save notices wait unti
 function toastQ(text, ms) { if (noticeBusy > performance.now()) setTimeout(() => toastQ(text, ms), noticeBusy - performance.now() + 50); else toast(text, ms); }
 function flushNotices() { if (!started || paused || !pendingNotices.length) return; const m = pendingNotices.shift(); toast(`<small>⚠️ ${m}</small>`, 6000); noticeBusy = performance.now() + 6300; setTimeout(flushNotices, 6300); }
 onNotice((m) => { pendingNotices.push(m); window.__ekNotices = (window.__ekNotices || []).concat(m); flushNotices(); }); // v3.9.1: save problems, non-blocking
-function updateHud() { if (LEVEL.id !== "pilton") try { updateWallet(); } catch (e) { /* v2.9: keep the per-level goal bar in step (wallet not ready during boot) */ } $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
+function updateHud() { try { updateWallet(); } catch (e) { /* v2.9: keep the per-level goal bar in step (wallet not ready during boot) */ } $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
   const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
   // v2.3: compact challenge line for phones (full names live in Help)
   $('chal').classList.remove('hidden'); $('chalVal').textContent = `⭐ ${tc('easy')}  🔥 ${tc('tricky')}` + (challenges.length ? `  ✨ ${tc('legend')}` : '');
@@ -165,22 +165,16 @@ function updateHud() { if (LEVEL.id !== "pilton") try { updateWallet(); } catch 
 updateHud();
 // ---------- wallet (pocket money) ----------
 let lastEarn = null, stepDist = 0, stepLen = 1.25;
-const piltonBagged = () => Object.keys(levelDone('pilton') || {}).filter((k) => !k.startsWith('c_')).length;
-const chippyEarned = () => piltonBagged() >= CHIPPY_TARGETS;
+const chippyEarned = () => true; // v3.10: West Pilton (and its counter) is gone - the supper is a pocket-money goal, bought from the Locker's chippy
 function updateWallet(pop = false) {
   $('walletVal').textContent = fmt(wallet.pence);
-  const n = Math.min(piltonBagged(), CHIPPY_TARGETS), f = Math.min(1, wallet.pence / GOAL.pence, n / CHIPPY_TARGETS);
-  if (LEVEL.id !== 'pilton') { // v2.6: the supper is a Pilton goal; elsewhere show this level's own progress
+  { // v3.10: every street shows its own target progress (the supper goal lives in the Locker's chippy)
     const k = targets.filter((t) => t.done).length; $('goalFill').style.width = `${k / targets.length * 100}%`;
     $('goalTxt').innerHTML = k >= targets.length ? `🏆 <b>${LEVEL.short} cleared!</b> ${k}/${targets.length}` : `🎯 ${LEVEL.short}: <b>${k}/${targets.length}</b> targets`;
     $('wallet').classList.toggle('full', k >= targets.length);
     if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
     return;
   }
-  $('goalFill').style.width = `${f * 100}%`;
-  $('goalTxt').innerHTML = f >= 1 ? (built.counter ? '🍟 <b>Chippy unlocked!</b> Visit the counter' : '🍟 <b>Chippy unlocked!</b> Back tae Pilton') : `🍟 Supper: <b>${n}/${CHIPPY_TARGETS}</b> needed (any ${CHIPPY_TARGETS} of ${targets.length}) · <b>${fmt(Math.min(wallet.pence, GOAL.pence))}/${fmt(GOAL.pence)}</b>`;
-  $('wallet').classList.toggle('full', f >= 1);
-  if (pop) { $('wallet').classList.remove('pop'); void $('wallet').offsetWidth; $('wallet').classList.add('pop'); }
 }
 function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
@@ -194,7 +188,7 @@ function showGoal(bought = false) {
   $('goalBig').textContent = '🍟 🥤'; $('goalTitle').textContent = bought ? 'One fish supper an\' a can o\' ginger!' : 'Chippy unlocked!';
   $('goalLine').innerHTML = bought
     ? `"That's ${fmt(GOAL.pence)}, son. Salt an' vinegar? ...Course ye dae."<br><small>Suppers bought: ${wallet.suppers}. Wallet: ${fmt(wallet.pence)}</small>`
-    : `You've saved ${fmt(wallet.pence)} - enough for a chippy an' a can o' ginger.<br><small>${LEVEL.id === 'pilton' ? 'Head to the counter at The Pilton Plaice (top of the street).' : 'Get yersel tae West Pilton - The Pilton Plaice is open.'}</small>`;
+    : `You've saved ${fmt(wallet.pence)} - enough for a chippy an' a can o' ginger.<br><small>Pause, open the Locker and visit the chippy.</small>`;
   $('goalCard').classList.remove('hidden'); sfx.success(true);
   if (document.pointerLockElement) document.exitPointerLock();
 }
@@ -204,7 +198,7 @@ $('goalOk').addEventListener('click', () => { $('goalCard').classList.add('hidde
 $('walletReset').addEventListener('click', () => { if (confirm('Reset your pocket money to £0.00?')) { resetWallet(); updateWallet(); } });
 updateWallet();
 let counterCool = 0;
-function checkCounter() { // the chippy counter (West Pilton): buy a supper when you can afford one
+function checkCounter() { // a level may still define a walk-up chippy counter (none do since v3.10)
   if (!built.counter || simTime < counterCool) return;
   if (Math.hypot(player.position.x - built.counter.x, player.position.z - built.counter.z) > 1.8) return;
   counterCool = simTime + 4;
@@ -214,9 +208,9 @@ const MENU = ['wee', 'supper', 'munchie'];
 function openCounter() {
   $('cntWallet').textContent = fmt(wallet.pence);
   for (const id of MENU) { const b = $('cnt_' + id), m = ITEMS[id], on = unlocks.items.includes(id);
-    b.textContent = on ? `${m.name} ${fmt(m.pence)}` : `🔒 ${m.name} (${m.how})`; b.disabled = !on || wallet.pence < m.pence || (id === 'supper' && !chippyEarned()); if (on && id === 'supper' && !chippyEarned()) b.textContent = `🔒 ${m.name} (bag ${CHIPPY_TARGETS} Pilton targets)`; }
+    b.textContent = on ? `${m.name} ${fmt(m.pence)}` : `🔒 ${m.name} (${m.how})`; b.disabled = !on || wallet.pence < m.pence || (id === 'supper' && !chippyEarned()); if (on && id === 'supper' && !chippyEarned()) b.textContent = `🔒 ${m.name}`; }
   $('cntLine').innerHTML = '"What can I get ye, pal?"';
-  $('counterCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
+  $('counterCard').style.zIndex = 60; $('counterCard').classList.remove('hidden'); if (document.pointerLockElement) document.exitPointerLock();
 }
 function buyItem(id) {
   const m = ITEMS[id]; if (!m || !unlocks.items.includes(id) || wallet.pence < m.pence || (id === 'supper' && !chippyEarned())) return false;
@@ -229,6 +223,7 @@ for (const id of MENU) $('cnt_' + id).addEventListener('click', () => {
   $('cntLine').innerHTML = ITEMS[id].line; sfx.success(false); openCounterRefresh();
 });
 function openCounterRefresh() { const l = $('cntLine').innerHTML; openCounter(); $('cntLine').innerHTML = l; }
+$('lockerChippy').addEventListener('click', () => openCounter()); // v3.10
 $('cntClose').addEventListener('click', () => { $('counterCard').classList.add('hidden'); if (started && !paused && !controls.touch) renderer.domElement.requestPointerLock?.(); });
 // ---------- ball selector (cosmetic only: same body, mass, size) ----------
 function applyBall(id) { if (!selectBall(id)) return false; ballMat.map = ballTexture(id); ballMat.needsUpdate = true; buildBallMenu(); return true; }

@@ -3,7 +3,7 @@
 import { loadRecord, saveRecord, isObj, strArr, nat } from './save.js';
 const KEY = 'ek-unlocks';
 export const TIERS = { easy: 'The Wee Warm-Up', tricky: 'Cocky', legend: 'Away Ye Go!' };
-export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legend', how: 'Hit 3 Cocky targets' }, special: { name: 'The Pilton Special', how: 'All 3 Away Ye Go! shots' } };
+export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legend', how: 'Hit 3 Cocky targets' }, special: { name: 'The Northside Special', how: 'All 3 Away Ye Go! shots' } };
 export const BOOTS = { trainers: { name: 'Scuffed trainers' }, boots: { name: 'Classic black boots', how: 'All 3 Away Ye Go! shots' } };
 export const ITEMS = {
   wee: { name: 'The Wee Supper', pence: 200, line: '"Wee bag o\' chips an\' a can. Dinnae fill yersel up."' },
@@ -32,8 +32,8 @@ export function recordDone(lv, t, all) {
   const add = (list, id, text) => { if (!list.includes(id)) { list.push(id); news.push({ id, text }); } };
   const legends = all.filter((x) => x.tier === 'legend'), tricky = all.filter((x) => x.tier === 'tricky');
   if (tricky.filter((x) => d[x.id]).length >= 3) add(unlocks.balls, 'winter', 'Ball unlocked: Street Legend');
-  if (legends.some((x) => d[x.id])) add(unlocks.items, 'munchie', 'The Pilton Plaice now does The Legendary Munchie Box');
-  if (legends.length && legends.every((x) => d[x.id])) { add(unlocks.balls, 'special', 'Ball unlocked: The Pilton Special'); add(unlocks.bootsOwned, 'boots', 'Classic black boots unlocked'); }
+  if (legends.some((x) => d[x.id])) add(unlocks.items, 'munchie', 'The chippy now does The Legendary Munchie Box');
+  if (legends.length && legends.every((x) => d[x.id])) { add(unlocks.balls, 'special', 'Ball unlocked: The Northside Special'); add(unlocks.bootsOwned, 'boots', 'Classic black boots unlocked'); }
   saveUnlocks(); return { first, news };
 }
 export function selectBall(id) { if (!unlocks.balls.includes(id)) return false; unlocks.ball = id; saveUnlocks(); return true; }

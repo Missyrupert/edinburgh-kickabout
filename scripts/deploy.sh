@@ -15,7 +15,7 @@ WANT=$(node -p "require('./public/version.json').v")
 GOT=$(curl -sf "${URL}version.json" | node -p "JSON.parse(require('fs').readFileSync(0)).v") || { echo "preview not serving - not deploying"; exit 1; }
 [ "$GOT" = "$WANT" ] || { echo "preview serves $GOT, expected $WANT - not deploying"; exit 1; }
 echo "testing fresh dist at $URL ($GOT)"
-for s in smoke-freshstart smoke38 smoke39 smoke21; do
+for s in smoke-freshstart smoke38 smoke39 smoke40; do
   echo "deploy smoke: $s"; timeout 120 node "scripts/$s.mjs" "$URL" > "/tmp/ek-deploy-$s.log" 2>&1 || { echo "SMOKE FAILED: $s (see /tmp/ek-deploy-$s.log) - not deploying"; exit 1; }
 done
 cd dist && touch .nojekyll && rm -rf .git && git init -q -b gh-pages && git add -A && git commit -qm "Deploy $(date -u +%FT%TZ)"

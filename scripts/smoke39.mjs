@@ -11,7 +11,7 @@ const page = async (seed) => { const ctx = await b.newContext({ viewport: { widt
   const pg = await ctx.newPage(); pg.on('pageerror', e => { fail++; console.log('PAGEERR', e.message); }); return pg; };
 const levels = (ids) => Object.fromEntries(ids.map((id) => [id, Object.fromEntries(REQUIRED[id].map((k) => [k, true]))]));
 // 1: REQUIRED vs live IDs (two samples incl. Pilton)
-for (const l of ['pilton', 'grassmarket']) { const pg = await page({}); await pg.goto(URL + `?debug&preset=low&level=${l}`); await pg.waitForFunction(() => window.__game, null, { timeout: 40000 });
+for (const l of ['pennywell', 'grassmarket']) { const pg = await page({}); await pg.goto(URL + `?debug&preset=low&level=${l}`); await pg.waitForFunction(() => window.__game, null, { timeout: 40000 });
   const ids = await pg.evaluate(() => __game.targets.map((t) => t.id)); ok(JSON.stringify(ids.sort()) === JSON.stringify([...REQUIRED[l]].sort()), `REQUIRED.${l} matches live targets`); await pg.close(); }
 // 2: finale, all but Royal Mile done -> partial
 const all = Object.keys(REQUIRED).filter((x) => x !== 'esplanade');

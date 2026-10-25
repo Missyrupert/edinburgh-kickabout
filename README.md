@@ -1,6 +1,6 @@
 # Edinburgh Kickabout (v3.10)
 
-A first-person street-football game set in 11 Edinburgh streets (a 12th is on the way). It's built for phones, and works on desktop too.
+A first-person street-football game set in 10 playable Edinburgh streets, with Stockbridge and Princes Street on the way. It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
 
 Live: https://missyrupert.github.io/edinburgh-kickabout/
@@ -11,20 +11,21 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 | # | Level | URL param |
 |---|---|---|
 | 01 | Pennywell | `?level=pennywell` |
-| 02 | West Pilton | `?level=pilton` |
-| 03 | Granton | `?level=granton` |
-| 04 | Newhaven | `?level=newhaven` |
-| 05 | Leith | `?level=leith` |
+| 02 | Granton | `?level=granton` |
+| 03 | Newhaven | `?level=newhaven` |
+| 04 | Leith | `?level=leith` |
+| 05 | Portobello | `?level=portobello` |
 | 06 | Easter Road | `?level=easterroad` |
-| 07 | Portobello | `?level=portobello` |
-| 08 | London Road | `?level=londonroad` |
-| 09 | Grassmarket | `?level=grassmarket` |
-| 10 | Royal Mile | `?level=royalmile` |
-| 11 | Castle Esplanade (finale) | `?level=esplanade` |
+| 07 | London Road | `?level=londonroad` |
+| 08 | Stockbridge - coming soon | - |
+| 09 | Princes Street - coming soon | - |
+| 10 | Grassmarket | `?level=grassmarket` |
+| 11 | Royal Mile | `?level=royalmile` |
+| 12 | Castle Esplanade (finale) | `?level=esplanade` |
 
-The menu also has a greyed-out "Coming soon" tile (a `button.soon` without `data-level`) for the next street; it can't be selected.
+"Coming soon" tiles are `button.soon` elements without `data-level` in `index.html`; they can't be selected. To open a new street, add its module to `LEVELS`/`LEVEL_ORDER` in `src/levels/index.js`, its targets to `src/levels/required.js`, and swap its tile for a `data-level` button. West Pilton was removed in v3.10 (kept under the git tag `pilton-archive`).
 
-- Most streets have 10 targets (the Grassmarket has 11). West Pilton has 8 ordinary targets plus 3 optional challenges. In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
+- Most streets have 10 targets (the Grassmarket has 11). In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
 - Crowning the Esplanade shows the game-complete card. The card only claims the full journey if every other street is cleared too.
 
@@ -62,7 +63,7 @@ Bump the version in three places: `BUILD` in `src/main.js`, `public/version.json
 
 ## Tests
 These are headless-Chrome Playwright scripts in `scripts/`. Run them against `vite preview` on port 4199. Every script loads the game with `?debug`.
-- `timeout 120 node scripts/smokeNN.mjs`: smoke17 to smoke38. smoke35 to smoke37 cover London Road, the Royal Mile and the Esplanade. smoke38 covers saves, `?debug` gating, replay and reset. smoke39 covers the finale in both states, save-notice timing and a failed save copy.
+- `timeout 120 node scripts/smokeNN.mjs`: smoke17 to smoke38. smoke35 to smoke37 cover London Road, the Royal Mile and the Esplanade. smoke40 is the core loop (menu, travel, kick, fetch, chippy, no visible leg). The old West Pilton smokes (20, 201, 21) are in `scripts/archive/`; some older smokes still mention Pilton and are legacy. smoke38 covers saves, `?debug` gating, replay and reset. smoke39 covers the finale in both states, save-notice timing and a failed save copy.
 - `timeout 120 node scripts/smoke28.mjs http://localhost:4199/ '' <preset> <level,level>` runs the visual check. Run one preset at a time, two levels per run, to stay under the timeout.
 - `scripts/smoke-freshstart.mjs` checks that a new player starts in Pennywell.
 - `scripts/verify.mjs` (`npm run verify`) is the old long all-in-one run. It's kept for reference, but it's slow and isn't used for releases; use the smokes instead.

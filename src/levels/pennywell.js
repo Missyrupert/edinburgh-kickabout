@@ -287,5 +287,5 @@ export default {
   spawn: [4.2, 0.5, -27], spawnYaw: 180,
   ballHomes: () => [[4.2, 0.4, -24.5], [0, 0.4, 2], [0, 0.4, 34]],
   bounds: { x: 30, zMin: -33, zMax: 50 },
-  next: 'pilton',
+  next: 'granton',
 };
