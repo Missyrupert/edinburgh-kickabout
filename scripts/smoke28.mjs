@@ -8,7 +8,7 @@ const VIEWS = { royalmile: [['spawn', [-50, 1, -90, 4, 0.5]], ['kirk', [4, 3, -3
   granton: [['spawn', [0, -28, 118, 6]], ['spawn-old', [0, -28, 180, -5]], ['gasholder', [-8, -30, 105, 16]], ['purge', [-14, -6, 56, -10]], ['square', [0, -12, 0, 6]], ['harbour', [-20, 15, 180, 2]], ['pier', [16, 22, 180, 3]], ['slipway', [-24.5, 17, 168, -14]]],
   newhaven: [['spawn', [14, -13, 108, 4]], ['street', [-2, -12, 90, 6]], ['cottages', [-20, -8, 0, 14]], ['harbour', [0, 8, 160, 2]], ['lighthouse', [-27, 18, 180, 8]], ['market', [14, -1, 270, 6]]],
   leith: [['spawn', [26, -4, 112, 4]], ['river', [30, 0, 90, 6]], ['bridge', [4, -8, 180, 6]], ['pub', [0, -2, 0, 8]], ['granary', [20, -3, 20, 8]], ['timber', [-30, -4, 0, 12]]],
-  pennywell: [['spawn', [4.2, -27, 180, -8]], ['road', [0, -10, 180, 6]], ['stpauls', [6, 16, 90, 8]], ['kirk', [-6, 0, 240, 6]], ['school', [0, 30, 180, 4]], ['parade', [0, -24, 0, 6]]],
+  pennywell: [['spawn', [17, -23, 90, -6]], ['parade', [1, -31, 270, 6]], ['roundabout', [0, -66, 0, 6]], ['school', [-1, -56, 110, 4]], ['churches', [0, -8, 180, 6]], ['stpauls', [6, 16, 90, 8]], ['police', [0, 30, 180, 4]]],
   pilton: [['flats', [-2, -30, 225, 2]], ['parade', [0, 16, 180, 6]], ['spawn', [0, -38, 180, -8]], ['skyline', [0, 0, 0, 2]]] };
 const black = (buf) => new Promise(() => {});
 for (const preset of (process.argv[4] || 'low,medium,high').split(',')) {

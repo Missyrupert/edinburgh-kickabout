@@ -157,7 +157,7 @@ function build(scene, world, mats, P) {
   FR = null;
 
   // ---------- Pennywell Road: verges, palisade railings, lamp standards, trees, bus stop, clutter ----------
-  const palisade = (x0, z0, x1, z1, col = PAL, h = 1.9) => { const L = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(x1 - x0, z1 - z0), n = Math.round(L / 0.2), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+  const palisade = (x0, z0, x1, z1, col = PAL, h = 1.9) => { const L = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(x1 - x0, z1 - z0), n = Math.round(L / 0.3), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
     for (const y of [0.35, h - 0.35]) solid('metal', mx, y, mz, 0.05, 0.07, L, col, { phys: false, ry: a });
     for (let k = 0; k <= n; k++) { const t = k / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t; B.add('metal', BOX, M4(x, h / 2, z, 0.07, h, 0.025, 0, a), col, {}); B.add('metal', ROOF, M4(x, h + 0.05, z, 0.07, 0.12, 0.025, 0, a), col, {}); }
     body(new CANNON.Box(new CANNON.Vec3(0.06, h / 2, L / 2)), mx, h / 2, mz, { ry: a, surface: 'metal' }); };
@@ -225,16 +225,16 @@ function build(scene, world, mats, P) {
     addTarget({ id: 'stpaulsgate', name: "St Paul's Gate", hint: "rattle St Paul's gate", points: 100, kind: 'hit', pos: V(gx + 1.2, 0, gz), ringR: 1.0, stand: V(-4.0, 0, gz), aim: V(gx, 0.9, gz), lines: ["Gate rattled. Father's lookin' oot the windae.", "Clang! That's the bell sorted for Sunday.", 'Sweet strike. Amen tae that.'] }); }
 
   // ---------- post-war harled flats lining the road (walk-ups with concrete bands and recessed balconies) ----------
-  const flats = (x0, x1, z0, z1, floors, face, tone) => { const xc = (x0 + x1) / 2, zc = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0, h = floors * 2.9 + 0.6;
+  const flats = (x0, x1, z0, z1, floors, face, tone, gables = true) => { const xc = (x0 + x1) / 2, zc = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0, h = floors * 2.9 + 0.6;
     solid('harl', xc, h / 2, zc, w, h, d, tone, { tile: 2.6, grime: 0.12 }); solid('cpanel', xc, h + 0.2, zc, w + 0.3, 0.4, d + 0.3, 0xb8b5ae, { phys: false });
     const fx = face > 0 ? x0 - 0.02 : x1 + 0.02, ry = face > 0 ? -Math.PI / 2 : Math.PI / 2, n = Math.round(d / 3.2);
     for (let f = 0; f < floors; f++) { solid('cpanel', fx - face * 0.08, 0.6 + f * 2.9 + 0.05, zc, 0.16, 0.18, d, 0xc8c5be, { phys: false });
       for (let i = 0; i < n; i++) { const wz = z0 + (i + 0.5) * d / n; if (i % 3 === 1) { solid('flat', fx - face * 0.02, 1.95 + f * 2.9, wz, 0.04, 2.3, 1.9, 0x3a3c3e, { phys: false }); solid('metal', fx - face * 0.2, 1.3 + f * 2.9, wz, 0.04, 0.9, 2.0, 0xc8ccd0, { phys: false }); }
         else win(fx, 1.9 + f * 2.9, wz, ry, 1.9, 1.5); } }
     for (let i = 0; i < n; i += 3) quad('grime', fx - face * 0.015, 1.2, z0 + (i + 0.5) * d / n, 1.8, 2.4, ry, GRIME_UV[2]);
-    const m = Math.max(1, Math.round(w / 3.2)); for (const [ez, er] of [[z0 - 0.02, Math.PI], [z1 + 0.02, 0]]) for (let f = 0; f < floors; f++) for (let i = 0; i < m; i++) win(x0 + (i + 0.5) * w / m, 1.9 + f * 2.9, ez, er, 1.2, 1.3); // gable-end windows
+    const m = gables ? Math.max(1, Math.round(w / 3.2)) : 0; for (const [ez, er] of [[z0 - 0.02, Math.PI], [z1 + 0.02, 0]]) for (let f = 0; f < floors; f++) for (let i = 0; i < m; i++) win(x0 + (i + 0.5) * w / m, 1.9 + f * 2.9, ez, er, 1.2, 1.3); // gable-end windows
     for (const ez of [z0 - 0.03, z1 + 0.03]) quad('grime', xc, 1.4, ez, w, 2.8, ez < zc ? Math.PI : 0, GRIME_UV[3]); };
-  flats(14, 27, 17, 33, 3, 1, HARL[1]); flats(-27, -14, -15, 5, 4, -1, HARL[4]); flats(14, 27, -76, -58, 3, 1, HARL[5]); flats(-27, -14, -42, -22, 3, -1, HARL[3]);
+  flats(14, 27, 17, 33, 3, 1, HARL[1]); flats(-27, -14, -15, 5, 4, -1, HARL[4]); flats(14, 27, -76, -58, 3, 1, HARL[5], false); flats(-27, -14, -42, -22, 3, -1, HARL[3], false); // v3.11: plain gables keep the budget
   // drying-green poles and a washing line on the left verge behind the railings
   for (const z of [19, 24, 29]) { cyl('metal', 12.6, 1.1, z, 0.04, 0.04, 2.2, 0x9a9c9c, { phys: false, seg: 5 }); } solid('flat', 12.6, 2.1, 24, 0.01, 0.01, 10, 0xe8e8e8, { phys: false });
   for (const [z, c] of [[20.5, 0xd4402c], [21.4, 0xf2f2f2], [22.6, 0x2d6cc4], [26, 0xf2f2f2]]) solid('flat', 12.6, 1.8, z, 0.02, 0.6, 0.55, c, { phys: false });
@@ -267,11 +267,11 @@ function build(scene, world, mats, P) {
     for (let i = 0; i < 3; i++) { const x = -18 + i * 8; solid('flat', x, 0.45, 48.5 + (i % 2), 3.8, 0.9, 1.7, pick([0xf2f2f2, 0x3a5aa0, 0xd8d8d0]), { phys: false }); solid('glass', x - 0.2, 1.1, 48.5 + (i % 2), 2.0, 0.45, 1.5, 0x3a4a5a, { phys: false }); } } // cars in the yard
 
   // ---------- backdrop: more scheme flats, a high-rise and trees so no edge reads as void ----------
-  for (const s of [-1, 1]) for (let z = -84; z < 56; z += 14) { if (s > 0 && z > -66 && z < 16) continue; if (s < 0 && ((z > 4 && z < 26) || (z > -86 && z < -44))) continue; const h = 9 + rand() * 4; solid('harl', s * 36, h / 2, z + 7, 12, h, 12, pick(HARL), { tile: 2.6, phys: false, grime: 0.12 }); solid('cpanel', s * 36, h + 0.2, z + 7, 12.3, 0.4, 12.3, 0xb8b5ae, { phys: false });
-    for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) win(s * 29.98, 1.9 + f * 2.9, z + 2 + i * 3, s > 0 ? -Math.PI / 2 : Math.PI / 2, 1.8, 1.4); }
+  for (const s of [-1, 1]) for (let z = -56; z < 56; z += 14) { if (s > 0 && z > -66 && z < 16) continue; if (s < 0 && ((z > 4 && z < 26) || (z > -86 && z < -44))) continue; const h = 9 + rand() * 4; solid('harl', s * 36, h / 2, z + 7, 12, h, 12, pick(HARL), { tile: 2.6, phys: false, grime: 0.12 }); solid('cpanel', s * 36, h + 0.2, z + 7, 12.3, 0.4, 12.3, 0xb8b5ae, { phys: false });
+    for (let f = 0; f < 3; f++) for (let i = 0; i < 3; i++) win(s * 29.98, 1.9 + f * 2.9, z + 2.5 + i * 3.5, s > 0 ? -Math.PI / 2 : Math.PI / 2, 1.8, 1.4); }
   { const x = 46, z = -24, h = 46; solid('cpanel', x, h / 2, z, 14, h, 14, 0xc9c3b6, { tile: 3, phys: false }); for (let f = 0; f < 15; f++) solid('glass', x - 7.02, 2 + f * 3, z, 0.04, 1.3, 11, 0x9aa6ae, { phys: false }); solid('flat', x, h + 0.6, z, 14.4, 1.2, 14.4, 0x9a958c, { phys: false }); }
   for (let i = 0; i < 14; i++) { const x = -40 + rand() * 80, z = 68 + rand() * 6, s2 = 1 + rand() * 0.5; cyl('wood', x, 2.5 * s2, z, 0.25, 0.32, 5 * s2, 0x4e3c2a, { phys: false, seg: 5 }); B.add('flat', new THREE.IcosahedronGeometry(3 * s2, 1), M4(x, 6.5 * s2, z, 1, 0.9, 1), pick([0x46672f, 0x557a36]), {}); }
-  solid('cpanel', 0, 7, -101, 90, 14, 4, 0xc9c3b6, { phys: false, tile: 3 }); // flats beyond the Parkway
+  for (const x of [-30, -10, 10, 30]) { const h = 8 + (x % 20 ? 1.5 : 0); solid('harl', x, h / 2, -104, 14, h, 8, pick(HARL), { tile: 2.6, phys: false, grime: 0.12 }); solid('cpanel', x, h + 0.2, -104, 14.3, 0.4, 8.3, 0xb8b5ae, { phys: false }); for (let f = 0; f < 2; f++) for (let i = 0; i < 3; i++) win(x - 4.5 + i * 4.5, 1.9 + f * 2.9, -99.98, 0, 1.6, 1.3); } // houses beyond the Parkway
   // world edges for the player (balls are kept in by buildings, railings and the fence)
   pwall(-XW - 0.5, -15, 1, 172); pwall(XW + 0.5, -15, 1, 172);
   for (const s of [-1, 1]) pwall(s * (VG + XW) / 2, 33.6, XW - VG, 1); // close the verge ends behind the railings at the top road
