@@ -28,7 +28,7 @@ ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(k.infoboard === 1, 'easy first target (the board by the spawn) in one kick');
 await pg.waitForTimeout(3500);
 const fin = await pg.evaluate(() => ({ shown: !document.getElementById('goalCard').classList.contains('hidden'), t: document.getElementById('goalCard').textContent }));
-ok(fin.shown && /Ye've done it/.test(fin.t), 'crowning it shows the game-complete card ' + fin.t.slice(0, 80));
+ok(fin.shown && /Esplanade's crowned/.test(fin.t) && /still tae finish/.test(fin.t), 'crowning it (other streets not done) shows the honest Esplanade card ' + fin.t.slice(0, 120));
 ok(['Chris', 'Fiona', 'AG', 'The Gamekeeper'].every(n => fin.t.includes(n)), 'credits name Chris, Fiona, AG and The Gamekeeper');
 ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'the Esplanade travels back to Pennywell');
 await pg.goto(URL + '?debug&level=royalmile&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Esplanade/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels on to the Esplanade');
