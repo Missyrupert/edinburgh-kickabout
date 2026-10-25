@@ -150,7 +150,7 @@ function build(scene, world, mats, P) {
       for (let k = 0; k < 2; k++) for (let m = 0; m < 3; m++) quad('flat', x + ox * 1.01 + (ry % Math.PI ? 0 : (k - 0.5) * 0.5), 1.0 + m * 0.6, z + oz * 1.01 + (ry % Math.PI ? (k - 0.5) * 0.5 : 0), 0.42, 0.48, ry, null, 0x16305e); }
     quad('glass', x + 0.25, 2.3, z + 0.68, 0.4, 0.4, 0, null, 0xffffff);
     solid('flat', x - 1.3, 0.4, z, 0.6, 0.8, 0.6, 0x2a2d31, { phys: false }); solid('flat', x + 1.25, 0.45, z + 0.3, 0.6, 0.9, 0.6, 0x5a3a22, { phys: false }); // cups bin + stool
-    addTarget({ id: 'policebox', name: 'Blue Box Coffee', hint: 'hit the blue police-box coffee stall', points: 50, kind: 'hit', pos: V(x, 0, z), ringR: 1.3, stand: V(x + 4.5, 0, z - 1.8), aim: V(x, 1.3, z), lines: ['Flat white, flat ball.', "Bigger on the inside? Naw, it's just a coffee stall.", 'Order up! One oat-milk volley.'] }); }
+    addTarget({ id: 'policebox', name: 'Blue Box Coffee', hint: 'hit the blue police-box coffee stall', points: 50, kind: 'hit', pos: V(x, 0, z), ringR: 1.3, stand: V(x + 4.5, 0, z - 1.8), aim: V(x, 1.3, z), lines: ['Flat white, flat ball.', "Naw, it's just a coffee stall.", 'Order up! One oat-milk volley.'] }); }
   // bollards along the quay (one is a target)
   for (const x of [-34, -24, -16, 22, 30, 38]) { cyl('metal', x, 0.38, RS - 1.1, 0.22, 0.26, 0.76, IRON, { seg: 10 }); cyl('metal', x, 0.78, RS - 1.1, 0.3, 0.3, 0.08, IRON, { phys: false, seg: 10 }); }
   { const x = -6, z = RS - 1.1; cyl('metal', x, 0.38, z, 0.22, 0.26, 0.76, IRON, { seg: 10, target: 'bollard' }); cyl('metal', x, 0.78, z, 0.3, 0.3, 0.08, IRON, { phys: false, seg: 10 }); cyl('flat', x, 0.5, z, 0.23, 0.23, 0.12, 0xf7c325, { phys: false, seg: 10 });

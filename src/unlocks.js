@@ -6,7 +6,7 @@ export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legen
 export const BOOTS = { trainers: { name: 'Scuffed trainers' }, boots: { name: 'Classic black boots', how: 'All 3 Away Ye Go! shots' } };
 export const ITEMS = {
   wee: { name: 'The Wee Supper', pence: 200, line: '"Wee bag o\' chips an\' a can. Dinnae fill yersel up."' },
-  supper: { name: 'Fish supper + a can o' ginger', pence: 650 },
+  supper: { name: "Fish supper + a can o' ginger", pence: 650 },
   munchie: { name: 'The Legendary Munchie Box', pence: 500, line: '"Doner, chips, pakora, onion rings, garlic sauce. Ye\'ll no\' sleep tonight."', how: 'Any Away Ye Go! shot' },
 };
 const fresh = () => ({ levels: {}, balls: ['tango'], ball: 'tango', boots: 'trainers', bootsOwned: ['trainers'], items: ['wee', 'supper'], bought: {} });
