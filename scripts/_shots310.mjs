@@ -8,7 +8,7 @@ for (const [w, h] of [[412, 915], [360, 640], [915, 412], [667, 360]]) {
   await pg.goto(URL + '?debug&level=granton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 40000 }); await pg.waitForTimeout(800);
   await pg.screenshot({ path: `/workspace/ek-design/${TAG}-menu-${w}x${h}.png` });
   const m = await pg.evaluate(() => ({ n: document.querySelectorAll('.card.menu .levels button').length, sel: document.querySelectorAll('[data-level]').length, minH: Math.min(...[...document.querySelectorAll('.card.menu .levels button')].map(e => e.getBoundingClientRect().height)) }));
-  console.log(w, h, 'menu tiles', m.n, 'selectable', m.sel, 'min height', Math.round(m.minH)); if (m.n !== 12 || m.sel !== 11) bad++;
+  console.log(w, h, 'menu tiles', m.n, 'selectable', m.sel, 'min height', Math.round(m.minH)); if (m.n !== 12 || m.sel !== 11 || m.minH < 44) bad++;
   await pg.click('#startBtn'); await pg.waitForTimeout(500);
   await pg.evaluate(() => { const t = __game.targets[0]; __game.teleport(t.pos.x + 2.5, t.pos.z + 2.5, 0); });
   await pg.waitForTimeout(9000); // let the opening toasts pass

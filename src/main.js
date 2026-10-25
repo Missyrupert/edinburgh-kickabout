@@ -186,7 +186,7 @@ function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
   const left = streetsLeft(levelDone, LEVEL.id); // v3.9.2: explicit required-target list per street (Pilton had no tiers object)
   if (left.length) $('goalTitle').textContent = "The Esplanade's crowned!";
-  $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae West Pilton tae the Castle - the full journey's waiting for ye.` : `Every street fae West Pilton tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
+  $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae Pennywell tae the Castle - the full journey's waiting for ye.` : `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
   $('goalOk').textContent = 'Pure magic'; $('goalCard').classList.remove('hidden'); $('goalCard').dataset.finale = '1'; sfx.success(true);
   if (document.pointerLockElement) document.exitPointerLock();
 }

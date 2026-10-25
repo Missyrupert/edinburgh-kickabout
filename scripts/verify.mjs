@@ -236,7 +236,7 @@ try {
   const ready = async (p = pg) => { await p.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 60000 }); };
   const go = async (url, p = pg) => { await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 }); await ready(p); };
   await go(BASE + '?debug'); // brand-new player: no ?level, empty storage (?debug only exposes the test hook)
-  check('new players start in West Pilton', await pg.evaluate(() => window.__game.level === 'pilton' && window.__game.targets.length === 8), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
+  check('new players start in Pennywell', await pg.evaluate(() => window.__game.level === 'pennywell' && window.__game.targets.length === 10), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
   await pg.screenshot({ path: 'screenshots/pilton-menu.png' });
   // welcome screen fits a phone with no scroll (portrait + landscape)
   const fit = {};
