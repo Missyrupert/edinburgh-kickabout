@@ -1,26 +1,27 @@
-# Edinburgh Kickabout (v3.9.2)
+# Edinburgh Kickabout (v3.10)
 
-A first-person street-football game set in 11 Edinburgh streets. It's built for phones, and works on desktop too.
+A first-person street-football game set in 11 playable Edinburgh streets (a 12th, Stockbridge, is on the way). It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
 
 Live: https://missyrupert.github.io/edinburgh-kickabout/
 
 ## Levels
-Every level is open from the menu. The numbers are a suggested order, not a lock.
+Every level is open from the menu. The numbers are a suggested order, not a lock. A fresh player starts in West Pilton, where it all began.
 
 | # | Level | URL param |
 |---|---|---|
-| 01 | Pennywell | `?level=pennywell` |
-| 02 | West Pilton | `?level=pilton` |
+| 01 | West Pilton | `?level=pilton` |
+| 02 | Pennywell | `?level=pennywell` |
 | 03 | Granton | `?level=granton` |
 | 04 | Newhaven | `?level=newhaven` |
 | 05 | Leith | `?level=leith` |
-| 06 | Easter Road | `?level=easterroad` |
-| 07 | Portobello | `?level=portobello` |
+| 06 | Portobello | `?level=portobello` |
+| 07 | Easter Road | `?level=easterroad` |
 | 08 | London Road | `?level=londonroad` |
-| 09 | Grassmarket | `?level=grassmarket` |
-| 10 | Royal Mile | `?level=royalmile` |
-| 11 | Castle Esplanade (finale) | `?level=esplanade` |
+| 09 | Stockbridge (coming soon, not playable yet) | - |
+| 10 | Grassmarket | `?level=grassmarket` |
+| 11 | Royal Mile | `?level=royalmile` |
+| 12 | Castle Esplanade (finale) | `?level=esplanade` |
 
 - Most streets have 10 targets (the Grassmarket has 11). West Pilton has 8 ordinary targets plus 3 optional challenges. In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
@@ -32,6 +33,10 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 - `?debug` exposes `window.__game` for the test scripts. It's a convenience switch, not security.
 
 ## Controls
+No part of the player is drawn on screen; the kick is felt through the sound and a small camera dip. On touch devices, Play asks the browser for fullscreen (toggle in Settings); whether a phone browser honours it varies.
+
+Nearby-target hints show as a large cream pill: top of the screen under the HUD in portrait, bottom centre between the joystick and the buttons in landscape.
+
 - **Touch:**
   - Left joystick to walk (push far to run); drag the right side to look.
   - Hold and release **KICK** to kick; look up to chip it.
@@ -58,7 +63,7 @@ Bump the version in three places: `BUILD` in `src/main.js`, `public/version.json
 These are headless-Chrome Playwright scripts in `scripts/`. Run them against `vite preview` on port 4199. Every script loads the game with `?debug`.
 - `timeout 120 node scripts/smokeNN.mjs`: smoke17 to smoke38. smoke35 to smoke37 cover London Road, the Royal Mile and the Esplanade. smoke38 covers saves, `?debug` gating, replay and reset. smoke39 covers the finale in both states, save-notice timing and a failed save copy.
 - `timeout 120 node scripts/smoke28.mjs http://localhost:4199/ '' <preset> <level,level>` runs the visual check. Run one preset at a time, two levels per run, to stay under the timeout.
-- `scripts/smoke-freshstart.mjs` checks that a new player starts in Pennywell.
+- `scripts/smoke-freshstart.mjs` checks that a new player starts in West Pilton.
 - `scripts/verify.mjs` (`npm run verify`) is the old long all-in-one run. It's kept for reference, but it's slow and isn't used for releases; use the smokes instead.
 
 ## Performance budget

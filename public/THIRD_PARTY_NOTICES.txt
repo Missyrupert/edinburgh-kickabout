@@ -1,4 +1,4 @@
-THIRD-PARTY NOTICES - Edinburgh Kickabout v3.9.2
+THIRD-PARTY NOTICES - Edinburgh Kickabout v3.10
 These components are shipped in (or compiled into) this game's build. Their full licence texts follow.
 Poly Haven textures/HDRI: CC0 1.0 (public domain dedication, https://creativecommons.org/publicdomain/zero/1.0/) - no notice required, credited in CREDITS.md.
 
