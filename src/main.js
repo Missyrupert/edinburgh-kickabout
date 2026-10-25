@@ -143,7 +143,7 @@ const balls = BALL_HOMES.map(([x, y, z]) => {
 // a scuffed trainer (default) or unlockable classic black boots, with shin; cosmetic only (no physics)
 const leg = makeLeg(unlocks.boots, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })); // v3.9: rigged leg (knee + ankle pose on the kick)
 const boot = leg.root;
-boot.position.set(0.2, -0.6, -0.75); camera.add(boot); let legDebugK = null;
+boot.visible = false; let legDebugK = null; // v3.10: the leg is never added to the scene - no part of the player is shown (boots stay a saved cosmetic choice only)
 let kickAnim = 1;
 
 // ---------- UI ----------
@@ -186,7 +186,7 @@ function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
   const left = streetsLeft(levelDone, LEVEL.id); // v3.9.2: explicit required-target list per street (Pilton had no tiers object)
   if (left.length) $('goalTitle').textContent = "The Esplanade's crowned!";
-  $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae Pennywell tae the Castle - the full journey's waiting for ye.` : `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
+  $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae West Pilton tae the Castle - the full journey's waiting for ye.` : `Every street fae West Pilton tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
   $('goalOk').textContent = 'Pure magic'; $('goalCard').classList.remove('hidden'); $('goalCard').dataset.finale = '1'; sfx.success(true);
   if (document.pointerLockElement) document.exitPointerLock();
 }
@@ -271,7 +271,16 @@ const controls = new Controls(renderer.domElement, {
   chargeEnd: () => { $('power').classList.remove('on'); if (!paused && chargeT0) kick(Math.min(1, (performance.now() - chargeT0) / 1000)); chargeT0 = 0; },
 });
 function pause() { paused = true; showPanel('mainPanel'); $('overlay').classList.add('paused'); $('overlay').classList.remove('hidden'); $('startBtn').textContent = 'Resume'; if (document.pointerLockElement) document.exitPointerLock(); }
+// v3.10: fullscreen on Play (hides the browser bar where the browser allows it); a Settings toggle, saved per device
+let fsPref = true; try { fsPref = localStorage.getItem('ek-fs') !== '0'; } catch {}
+const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+function goFull() { if (!fsPref || !fsOK() || document.fullscreenElement || document.webkitFullscreenElement) return; const el = document.documentElement;
+  try { const p = (el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen?.()); p?.catch?.(() => {}); } catch {} }
+{ const fb = $('fsBtn'), lab = () => { fb.textContent = fsOK() ? `⛶ Fullscreen: ${fsPref ? 'on' : 'off'}` : '⛶ Fullscreen: not supported here'; fb.disabled = !fsOK(); }; lab();
+  fb.addEventListener('click', () => { fsPref = !fsPref; try { localStorage.setItem('ek-fs', fsPref ? '1' : '0'); } catch {} lab();
+    if (fsPref) goFull(); else if (document.fullscreenElement) document.exitFullscreen?.().catch?.(() => {}); }); }
 function resume() {
+  if (controls.touch) goFull();
   sfx.init(); started = true; paused = false; $('overlay').classList.add('hidden');
   if (!controls.touch) renderer.domElement.requestPointerLock?.();
   if (!resume.once) { resume.once = 1;
@@ -606,9 +615,7 @@ function render(dt, t) {
   for (const d of dynamics) { d.mesh.position.copy(d.body.position); d.mesh.quaternion.copy(d.body.quaternion); }
   kickAnim = Math.min(1, kickAnim + dt * 4);
   const s = Math.sin(kickAnim * Math.PI);
-  { // v3.1.2: the leg sits low in the bottom-right of whatever the screen shape is (portrait or landscape) and swings through on the kick (same timing)
-    const d = 0.75, hh = d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), hw = hh * camera.aspect, x0 = camera.aspect < 1 ? hw * 0.04 : Math.min(hw * 0.32, 0.26), y0 = camera.aspect < 1 ? 0.56 : 0.9, /* v3.9: portrait - up above the button band */ e = s * s * (3 - 2 * s);
-    boot.position.set(x0 * (1 - 0.6 * e), -hh * (y0 - 0.4 * e), -d - 0.22 * e); boot.rotation.set(-0.35 - 0.25 * e, 0.5 - 0.2 * e, 0); boot.visible = true; leg.pose(legDebugK ?? kickAnim); }
+  if (s > 0) { const e = s * s * (3 - 2 * s); camera.position.y -= 0.035 * e; camera.rotation.x -= 0.03 * e; } // v3.10: a small camera dip on the kick instead of a visible leg
   if (chargeT0) $('powerFill').style.width = `${Math.min(1, (performance.now() - chargeT0) / 1000) * 100}%`;
   let near = null, nd = 1e9;
   for (const tg of allTargets) {
@@ -621,7 +628,7 @@ function render(dt, t) {
     tg.ring.material.opacity = o; tg.ring.visible = o > 0.01;
     if (!tg.done && d < 14 && d < nd) { nd = d; near = tg; }
   }
-  $('nearby').textContent = near ? (near.challenge ? `${near.name} - ${near.hint}` : `Nearby: ${near.name} - ${near.hint} (${fmt(cashFor(near))})`) : '';
+  { const nt = near ? (near.challenge ? `${near.name} - ${near.hint}` : `Nearby: ${near.name} - ${near.hint} (${fmt(cashFor(near))})`) : ''; if ($('nearby').textContent !== nt) $('nearby').textContent = nt; } // v3.10: only touch the DOM when the hint changes
   if (built.sparkles) { const left = challenges.some((c) => !levelDone(LEVEL.id)[c.id]); built.sparkles.visible = left; built.sparkles.material.opacity = 0.25 + 0.3 * (0.5 + 0.5 * Math.sin(t * 0.004)); }
   pigeons.list.forEach((pg, i) => {
     if (pg.state === 'idle') {
@@ -693,7 +700,7 @@ if (DEBUG) window.__game = {
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
   finale() { showFinale(); return { title: $('goalTitle').textContent, line: $('goalLine').textContent, left: streetsLeft(levelDone, LEVEL.id) }; },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,
-  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return leg.tris(); }, legDebug(k) { legDebugK = k; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
+  get wallet() { return { ...wallet }; }, challenges, get unlocks() { return JSON.parse(JSON.stringify(unlocks)); }, get lastUnlock() { return lastUnlock; }, applyBall, applyBoots, get bootTris() { return leg.tris(); }, get legShown() { let v = false; camera.traverse((o) => { if (o === boot) v = true; }); scene.traverse((o) => { if (o === boot) v = true; }); return v; }, legDebug(k) { legDebugK = k; }, requestBall, get ballMsg() { return ballMsg; }, buyItem, resetProgress() { resetProgress(); buildBallMenu(); updateHud(); }, get ballMap() { return ballMat.map; }, openCounter, get lastEarn() { return lastEarn; }, resetWallet() { resetWallet(); updateWallet(); }, GOAL, scoreTarget,
   waitSim(sec) { const t0 = simTime; return new Promise((res) => { const f = () => (simTime - t0 >= sec ? res() : setTimeout(f, 30)); f(); }); }, targets, balls, player,
   pause, showPanel,
   start: () => { started = true; paused = false; $('overlay').classList.add('hidden'); },
