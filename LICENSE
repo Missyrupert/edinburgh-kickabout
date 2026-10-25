@@ -1,0 +1,11 @@
+Edinburgh Kickabout
+Copyright (c) 2026 the Edinburgh Kickabout authors (Missyrupert). All rights reserved.
+
+No licence is granted to copy, modify or redistribute this game's code or original art except as needed to play it in a
+web browser. Third-party components keep their own licences (see CREDITS.md and THIRD-PARTY NOTICES below):
+
+- three.js - MIT licence, Copyright (c) 2010-2026 three.js authors
+- cannon-es - MIT licence, Copyright (c) 2015 cannon.js authors / pmndrs
+- Fonts Alfa Slab One, Barlow Condensed and Patrick Hand - SIL Open Font License 1.1 (via @fontsource, MIT packaging)
+- Poly Haven textures and HDRI - CC0 1.0 (public domain)
+Vite (MIT) is a build tool only and is not shipped.

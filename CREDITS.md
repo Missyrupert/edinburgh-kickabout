@@ -1,19 +1,33 @@
-# Credits / asset licences
+# Credits and licences
 
-All third-party assets are **CC0 1.0 (public domain)** from [Poly Haven](https://polyhaven.com) (https://polyhaven.com/license). No attribution required; credited anyway.
+## Made by
+Chris, Fiona, AG and The Gamekeeper.
 
-| File(s) | Poly Haven asset | Use |
-|---|---|---|
-| public/tex/sandstone_* | [sandstone_blocks_08](https://polyhaven.com/a/sandstone_blocks_08) | tenement walls, close, walls, castle |
-| public/tex/cobble_* | [cobblestone_floor_08](https://polyhaven.com/a/cobblestone_floor_08) | street setts, slope, terrace |
-| public/tex/paving_* | [precast_stone_paving](https://polyhaven.com/a/precast_stone_paving) | pavements, back court |
-| public/tex/slate_* | [roof_slates_02](https://polyhaven.com/a/roof_slates_02) | roofs |
-| public/tex/wood_* | [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | shopfronts, benches |
-| public/hdri/sky_1k.hdr | [kloofendal_48d_partly_cloudy_puresky](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky) | sky + reflections |
+## Shipped in the build (in `dist/`)
+These are the only third-party assets in the game itself. Everything else in the scene is original and generated in code: the geometry for all 11 levels, the signs, windows, doors, balls, boots and leg, and all the sound (WebAudio synthesis).
 
-Textures were downloaded at 1K and re-encoded as JPEG (roughness maps 512 px greyscale) for mobile.
-Window, sign, door and ball textures and all sounds are generated in code (no external assets).
-Libraries: three.js (MIT), cannon-es (MIT), Vite (MIT).
+| What | Source | Licence | Attribution required? |
+|---|---|---|---|
+| Textures `public/tex/sandstone_*` | Poly Haven [sandstone_blocks_08](https://polyhaven.com/a/sandstone_blocks_08) | CC0 1.0 | No (credited anyway) |
+| Textures `public/tex/cobble_*` | Poly Haven [cobblestone_floor_08](https://polyhaven.com/a/cobblestone_floor_08) | CC0 1.0 | No |
+| Textures `public/tex/paving_*` | Poly Haven [precast_stone_paving](https://polyhaven.com/a/precast_stone_paving) | CC0 1.0 | No |
+| Textures `public/tex/slate_*` | Poly Haven [roof_slates_02](https://polyhaven.com/a/roof_slates_02) | CC0 1.0 | No |
+| Textures `public/tex/wood_*` | Poly Haven [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | CC0 1.0 | No |
+| Sky `public/hdri/*` | Poly Haven [kloofendal_48d_partly_cloudy_puresky](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky) | CC0 1.0 | No |
+| Font Alfa Slab One | The Alfa Slab One Project Authors, via @fontsource | SIL OFL 1.1 | Keep the copyright and licence notice with the font files (included in `node_modules/@fontsource/*/LICENSE`); the font can't be sold on its own |
+| Font Barlow Condensed | The Barlow Project Authors, via @fontsource | SIL OFL 1.1 | As above |
+| Font Patrick Hand | Patrick Wagesreiter, via @fontsource | SIL OFL 1.1 | As above |
+| three.js | three.js authors | MIT | Keep the copyright notice (bundled JS keeps the licence comment where the bundler preserves it; see LICENSE) |
+| cannon-es | cannon.js authors / pmndrs | MIT | As above |
 
+The Poly Haven textures were re-encoded to WebP, at 1K and 512 px, for mobile.
+Vite (MIT) and Playwright (Apache-2.0) are development tools only. They aren't shipped.
 
-v1.2: the Poly Haven textures were re-encoded to WebP (1K + 512px, normal and roughness at 512px). The sky is a WebP made from the CC0 Poly Haven HDRI. The football pattern is original and generated procedurally (Tango/Telstar-inspired, no branding).
+## Reference photos: design only, NOT shipped
+The `design-refs` branch holds reference photos from Wikimedia Commons and Geograph, under CC BY-SA 2.0/3.0/4.0, CC BY 2.0 and public domain. Each photo's author, source URL and licence is listed in `design-refs/MANIFEST.md`.
+- They informed the layout, proportions and colours only. **No reference photo, or any part of one, is in the game build.**
+- The photo-vs-build comparison images (`*-compare-*.jpg`) contain those photos. They're working documents, not part of the game.
+- If you publish them, credit each photo's author and licence as given in the MANIFEST, and share it under the same terms where the licence is CC BY-SA.
+
+## Names
+All shop, pub and business names in the game are fictional. Real street and place names are used for setting only.
