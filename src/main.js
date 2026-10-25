@@ -272,6 +272,8 @@ function resume() {
   if (!controls.touch) renderer.domElement.requestPointerLock?.();
   if (!resume.once) { resume.once = 1; toast(LEVEL.intro, 4500);
     let seen = false; try { seen = localStorage.getItem('ek-tip'); localStorage.setItem('ek-tip', '1'); } catch {}
+    { let told = false; try { told = sessionStorage.getItem('ek-sideways'); sessionStorage.setItem('ek-sideways', '1'); } catch {} // v3.9.1: portrait-only hint (toast sits clear of the HUD)
+      if (!told && controls.touch && innerHeight > innerWidth) setTimeout(() => { if (innerHeight > innerWidth) toast('<small>Tip: turn yer phone sideways for a wider view.</small>', 3000); }, seen ? 2500 : 6000); }
     if (!seen) setTimeout(() => toast(controls.touch ? '<b>Tip:</b> hold KICK and release. Look up to chip it.' : '<b>Tip:</b> hold the mouse button and release to kick. Look up to chip it.', 4000), 4800); }
 }
 $('startBtn').addEventListener('click', resume);
@@ -696,7 +698,7 @@ if (DEBUG) window.__game = {
   get autopilotActive() { return !!autopilot; },
 };
 // v1.8.2: cache-bust. Pages serves index.html with max-age=600; if a newer build is live, reload once.
-const BUILD = 'v3.9';
+const BUILD = 'v3.9.1';
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // v2.5: a back/forward-cache restore must rebuild the level fresh
 fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => {
   if (j.v && j.v !== BUILD && sessionStorage.getItem('reloadedFor') !== j.v) { sessionStorage.setItem('reloadedFor', j.v); location.reload(); }
