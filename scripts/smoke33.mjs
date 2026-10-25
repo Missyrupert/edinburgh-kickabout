@@ -6,7 +6,7 @@ const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : '
 const URL = process.argv[2] || 'http://localhost:4199/';
 const pg = await (await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true })).newPage();
 pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
-await pg.goto(URL + '?level=easterroad&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
+await pg.goto(URL + '?debug&level=easterroad&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'easterroad' && Math.hypot(g0.p.x + 24, g0.p.z + 36) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on Easter Road ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
@@ -28,5 +28,5 @@ ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(k.fanzine === 1, 'easy first target (fanzine board by the spawn) in one kick');
 ok(k.crossbar <= 4, 'crossbar challenge in <=4 tries');
 ok(/Portobello/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Easter Road travels on to Portobello');
-await pg.goto(URL + '?level=leith&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Easter Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Leith travels on to Easter Road');
+await pg.goto(URL + '?debug&level=leith&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Easter Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Leith travels on to Easter Road');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

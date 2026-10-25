@@ -6,7 +6,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export class Sfx {
   constructor() {
     this.ctx = null; this.voices = 0; this.peakVoices = 0; this.dropped = 0; this.L = { x: 0, z: 0, yaw: 0 }; this.loops = []; this.timers = [];
-    try { this.on = localStorage.getItem('ek-sound') !== 'off'; this.vol = clamp(parseFloat(localStorage.getItem('ek-vol') ?? '0.8'), 0, 1); } catch { this.on = true; this.vol = 0.8; }
+    try { this.on = localStorage.getItem('ek-sound') !== 'off'; this.vol = (Number.isFinite(parseFloat(localStorage.getItem('ek-vol'))) ? clamp(parseFloat(localStorage.getItem('ek-vol')), 0, 1) : 0.8); } catch { this.on = true; this.vol = 0.8; }
     if (!Number.isFinite(this.vol)) this.vol = 0.8;
     document.addEventListener('visibilitychange', () => { if (!this.ctx) return; if (document.hidden) this.ctx.suspend(); else if (this.on) this.ctx.resume(); });
   }

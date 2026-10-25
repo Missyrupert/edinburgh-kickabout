@@ -9,7 +9,7 @@ await new Promise((r) => setTimeout(r, 2500));
 const browser = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
 const errs = []; page.on('pageerror', (e) => errs.push(String(e)));
-await page.goto(`http://127.0.0.1:${PORT}/?level=pilton&preset=low`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.goto(`http://127.0.0.1:${PORT}/?debug&level=pilton&preset=low`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 await page.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 60000 }).catch(() => {});
 // 1) "intended shot" per target: a player who knows the shot aims at the middle of the working (power, pitch) window
 const plan = await page.evaluate(() => {

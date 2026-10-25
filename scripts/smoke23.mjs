@@ -4,7 +4,7 @@ const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : '
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
 const D = '/workspace/ek-design/v23-';
-await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
+await pg.goto('http://localhost:4199/?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
 await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-wallet-v', '2'); }); await pg.reload(); await pg.waitForFunction(() => window.__game);
 // locker fits at 915x412
 await pg.click('#lockerBtn'); await pg.waitForTimeout(300);

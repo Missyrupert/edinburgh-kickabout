@@ -2,7 +2,7 @@
 import { chromium } from 'playwright-core';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-const PORT = Number(process.env.VERIFY_PORT) || 4300 + Math.floor(Math.random() * 600), BASE = `http://127.0.0.1:${PORT}/`, URL = BASE + '?level=grassmarket';
+const PORT = Number(process.env.VERIFY_PORT) || 4300 + Math.floor(Math.random() * 600), BASE = `http://127.0.0.1:${PORT}/`, URL = BASE + '?debug&level=grassmarket';
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { stdio: 'ignore', detached: true });
 const killServer = () => { try { process.kill(-server.pid, 'SIGTERM'); } catch {} };
 process.on('exit', killServer);
@@ -242,7 +242,7 @@ try {
   const fit = {};
   for (const [w, h] of [[412, 915], [915, 412]]) {
     const fc = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.6 }); const fp = await fc.newPage();
-    await fp.goto(BASE + '?level=pilton', { waitUntil: 'domcontentloaded', timeout: 60000 }); await fp.waitForSelector('#mainPanel', { timeout: 90000 }); await wait(fp, 1500);
+    await fp.goto(BASE + '?debug&level=pilton', { waitUntil: 'domcontentloaded', timeout: 60000 }); await fp.waitForSelector('#mainPanel', { timeout: 90000 }); await wait(fp, 1500);
     fit[`${w}x${h}`] = await fp.evaluate(() => { const c = document.getElementById('mainPanel'), r = c.getBoundingClientRect(), o = document.getElementById('overlay');
       return { ok: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth && c.scrollHeight <= c.clientHeight + 1 && o.scrollHeight <= o.clientHeight + 1, h: Math.round(r.height) }; });
     await fp.screenshot({ path: `screenshots/menu-phone-${w > h ? 'landscape' : 'portrait'}.png` });
@@ -251,14 +251,14 @@ try {
     await fc.close();
   }
   check('welcome screen fits 412x915 and 915x412 with no scroll', Object.values(fit).every((f) => f.ok), JSON.stringify(fit));
-  // level select: menu button -> Grassmarket, travel button -> back to Pilton, ?level= param
+  // level select: menu button -> Grassmarket, travel button -> back to Pilton, ?debug&level= param
   await Promise.all([pg.waitForURL(/level=grassmarket/, { timeout: 60000, waitUntil: 'domcontentloaded' }), pg.click('[data-level="grassmarket"]')]); await ready();
   const lv1 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
   await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000, waitUntil: 'domcontentloaded' }), pg.evaluate(() => { window.__game.start(); window.__game.pause(); }).then(() => pg.click('#travelBtn'))]); await ready();
   const lv2 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
   await go(BASE); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
   check('level transition both ways (menu + travel button + saved)', lv1[0] === 'grassmarket' && lv1[1] === 11 && lv2[0] === 'pilton' && lv3 === 'pilton', JSON.stringify({ lv1, lv2, lv3 }));
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   await pg.evaluate(() => { window.__game.resetWallet(); window.__game.start(); }); await wait(pg, 1200);
   await pg.screenshot({ path: 'screenshots/pilton-desktop-spawn.png' });
   // every Pilton target scoreable from its stand point; wallet earns per target (difficulty + bonus)
@@ -315,7 +315,7 @@ try {
   for (const [n, v] of Object.entries(await pg.evaluate(() => window.__game.views))) { await pg.evaluate((v) => window.__game.teleport(v[0], v[1], v[2], v[3], v[4]), v); await wait(pg, 900); await pg.screenshot({ path: `screenshots/pilton-desktop-${n}.png` }); }
     // open-top 'into' targets: drop-in scores, side hits don't, realistic chips score at a fair share
   for (const [lv, ids] of [['pilton', ['bin', 'wheelie']], ['grassmarket', ['bin', 'skip']]]) {
-    await go(BASE + '?level=' + lv);
+    await go(BASE + '?debug&level=' + lv);
     const ot = await pg.evaluate((ids) => {
       const g = window.__game; g.start(); const V = g.camera.position.constructor; const out = {}; const rnd = Math.random; Math.random = () => 0.5;
       for (const id of ids) {
@@ -336,7 +336,7 @@ try {
     check(`${lv}: into-targets drop-in scores, side hits miss, chips score fairly`, Object.values(ot).every((r) => r.drops === r.dropN && r.miss === 0 && r.side === 0 && r.share >= 0.05 && r.share <= 0.55), JSON.stringify(ot));
   }
   // ---------- experimental challenges + unlocks ----------
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   const ch = await pg.evaluate(() => {
     const g = window.__game; g.resetProgress(); const rnd = Math.random; Math.random = () => 0.5; const out = {};
     for (const t of g.challenges) {
@@ -359,7 +359,7 @@ try {
   check('long-range challenge needs range (close pole shot does not count)', close.ch === false, JSON.stringify(close));
   // full new-player sequence (tiers -> unlocks -> chippy -> reload)
   await pg.evaluate(() => { localStorage.clear(); });
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   const np = await pg.evaluate(async () => { const g = window.__game; g.restart(); g.start(); const r = {};
     const T = (id) => g.targets.find((t) => t.id === id) || g.challenges.find((t) => t.id === id);
     r.tiers = { easy: g.targets.filter((t) => t.tier === 'easy').length, tricky: g.targets.filter((t) => t.tier === 'tricky').length, legend: g.challenges.filter((t) => t.tier === 'legend').length };
@@ -381,7 +381,7 @@ try {
   check('Legendary roof shot fires once (cash once), unlocks Munchie Box', np.roof && np.munch && np.wRoof - np.w1 > 0 && np.wRoof2 === np.wRoof && !np.special1, JSON.stringify(np));
   check('all 3 Legendary -> Pilton Special ball + black boots, selectable', np.special && np.boots && np.selB && np.selF, JSON.stringify(np));
   await wait(pg, 2600); await pg.screenshot({ path: 'screenshots/unlock-toast.png' });
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   const per = await pg.evaluate(() => ({ u: window.__game.unlocks, w: window.__game.wallet.pence, done: window.__game.targets.filter((t) => t.done).length, hud: document.getElementById('chalVal').textContent }));
   check('progress persists across reload (targets, balls, selection, items, money)', per.u.ball === 'special' && per.u.boots === 'boots' && per.u.levels.pilton.c_window && per.u.items.includes('munchie') && per.done === 7 && per.w > 0, JSON.stringify(per));
   const phys = await pg.evaluate(() => { const g = window.__game; const r = Math.random; Math.random = () => 0.5; const run = () => { g.restart(); g.start(); g.teleport(0, -30, 180, -10); g.placeBall(0, 0, 0.3, -29.2); g.simulate(0.5); g.teleport(0, -30, 180, -10); g.kick(0.6); g.simulate(2); const b = g.balls[0].body; return [b.position.x, b.position.y, b.position.z, b.mass, b.shapes[0].radius]; };
@@ -395,7 +395,7 @@ try {
   await pg.evaluate(() => document.getElementById('overlay').classList.add('hidden'));
   for (const [id, v] of [['c_roof', [-2.5, 12, 90, 14, 1.6]], ['c_window', [4.5, -28.5, -90, 22, 1.6]], ['c_longpoles', [-4.6, -4, -90, 6, 1.6]]]) { await pg.evaluate((v) => { const g = window.__game; g.resetProgress(); g.restart(); g.start(); g.teleport(...v); }, v); await wait(pg, 800); await pg.screenshot({ path: `screenshots/challenge-${id}.png` }); }
   await pg.evaluate(() => { localStorage.setItem('ek-wallet', JSON.stringify({ pence: 900, goalSeen: true, suppers: 0, total: 900 })); const u = JSON.parse(localStorage.getItem('ek-unlocks')); u.items.push('munchie'); localStorage.setItem('ek-unlocks', JSON.stringify(u)); });
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   const shop = await pg.evaluate(() => { const g = window.__game; g.start(); g.openCounter(); const b = document.getElementById('cnt_munchie'); const dis = b.disabled; b.click(); return { dis, wallet: g.wallet.pence, bought: g.unlocks.bought.munchie, line: document.getElementById('cntLine').textContent }; });
   await wait(pg, 400); await pg.screenshot({ path: 'screenshots/chippy-munchie-box.png' });
   check('Munchie Box purchasable after unlock (priced in wallet)', !shop.dis && shop.wallet === 400 && shop.bought === 1 && /Doner/.test(shop.line), JSON.stringify(shop));
@@ -406,7 +406,7 @@ try {
     localStorage.setItem('ek-wallet', '{}'); r.skint = (() => { g.placeBall(0, 0, 0.3, -18); g.balls[0].stillT = 1e9; g.teleport(0, -30, 180, -10); return g.requestBall(); })();
     return r; });
   await pg.evaluate(() => localStorage.setItem('ek-wallet', JSON.stringify({ pence: 50, goalSeen: false, suppers: 0, total: 50 })));
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
   const br3 = await pg.evaluate(async () => { const g = window.__game; g.restart(); g.start(); const r = {}; const lt = (i) => { g.placeBall(i, ...[0, 0.3, -18]); };
     g.teleport(0, -30, 180, -10); g.placeBall(0, 0, 0.3, -27); g.simulate(0.3); g.kick(0.05); g.simulate(0.3); // lastTouched = ball 0
     g.placeBall(0, 0, 0.3, -18); g.simulate(0.5); g.teleport(0, -30, 180, -10); r.paid = g.requestBall(); r.w1 = g.wallet.pence;
@@ -417,7 +417,7 @@ try {
   const feet = await pg.evaluate(() => { const g = window.__game; const r = { t0: g.bootTris, lockedBoots: g.applyBoots('boots') }; return r; });
   check('feet: trainer by default, boots locked until all 3 challenges, cheap geometry', feet.lockedBoots === false && feet.t0 < 400, JSON.stringify(feet));
   await pg.evaluate(() => { const g = window.__game; g.restart(); g.start(); g.teleport(0, -30, 180, -70); }); await wait(pg, 700); await pg.screenshot({ path: 'screenshots/feet-trainer.png' });
-  await go(BASE + '?level=pilton');
+  await go(BASE + '?debug&level=pilton');
 check('Pilton: no console errors (desktop)', perr.length === 0, perr.join(' | '));
   await pc.close();
   // Pilton on a phone (landscape) with touch

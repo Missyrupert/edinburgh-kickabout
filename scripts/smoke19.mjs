@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
-const open = async (lv) => { await pg.goto(`http://localhost:4199/?level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1200); };
+const open = async (lv) => { await pg.goto(`http://localhost:4199/?debug&level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1200); };
 await open('pilton'); await pg.evaluate(() => { localStorage.clear(); __game.resetProgress(); }); await open('pilton');
 const near = await pg.evaluate(() => { const P = __game.player.position; return __game.targets.map(t => ({ id: t.id, tier: t.tier, diff: t.diff, d: Math.hypot(t.pos.x - P.x, t.pos.z - P.z) })).sort((a, b) => a.d - b.d).slice(0, 3); });
 console.log(JSON.stringify(near)); ok(near[0].id === 'trolley' && near[0].diff === 'easy', 'nearest target to spawn is the easy trolley');

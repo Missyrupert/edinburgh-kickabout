@@ -15,7 +15,7 @@ for (const preset of (process.argv[4] || 'low,medium,high').split(',')) {
   const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true }), pg = await ctx.newPage(), errs = [];
   pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
   for (const lv of (process.argv[5] || 'pennywell,grassmarket,pilton,granton,newhaven,leith,easterroad,portobello,londonroad').split(',')) {
-    await pg.goto(`${URL}?level=${lv}&preset=${preset}`); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(3000);
+    await pg.goto(`${URL}?debug&level=${lv}&preset=${preset}`); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(3000);
     await pg.evaluate(() => { for (const id of ['toast', 'hud', 'touch', 'wallet']) { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; } document.querySelectorAll('.hud, #touchUI, #joy, .btn, #kickBtn, #jumpBtn, #ballBtn, #pauseBtn').forEach(e => e.style.visibility = 'hidden'); });
     for (const [n, v] of VIEWS[lv]) {
       await pg.evaluate((v) => __game.teleport(...v), v); await pg.waitForTimeout(1200);

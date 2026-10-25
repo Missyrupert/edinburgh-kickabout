@@ -7,12 +7,12 @@ const URL = process.argv[2] || 'http://localhost:4199/';
 const pg = await (await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true })).newPage();
 pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
 // saved level still loads; a fresh save starts at Pennywell
-await pg.goto(URL + '?preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
-await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-level', 'leith'); }); await pg.goto(URL + '?preset=low'); await pg.waitForFunction(() => window.__game);
+await pg.goto(URL + '?debug&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
+await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-level', 'leith'); }); await pg.goto(URL + '?debug&preset=low'); await pg.waitForFunction(() => window.__game);
 ok(await pg.evaluate(() => __game.level) === 'leith', 'existing save (Leith) still loads');
-await pg.evaluate(() => localStorage.clear()); await pg.goto(URL + '?preset=low'); await pg.waitForFunction(() => window.__game);
+await pg.evaluate(() => localStorage.clear()); await pg.goto(URL + '?debug&preset=low'); await pg.waitForFunction(() => window.__game);
 ok(await pg.evaluate(() => __game.level) === 'pennywell', 'new player starts at Pennywell');
-await pg.goto(URL + '?level=pennywell&preset=low'); await pg.waitForFunction(() => window.__game); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
+await pg.goto(URL + '?debug&level=pennywell&preset=low'); await pg.waitForFunction(() => window.__game); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'pennywell' && Math.hypot(g0.p.x - 4.2, g0.p.z + 27) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn outside Haddon\'s ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10, 'targets ' + g0.ids.join(','));
@@ -32,5 +32,5 @@ const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of 
 ok(Object.values(k).every(Boolean), 'every Pennywell target scores with real kicks (tries) ' + JSON.stringify(k));
 ok(Object.values(k).every(n => n >= 1 && n <= 6), 'each target in 1-6 tries');
 ok(/Pilton/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Pennywell travels on to Pilton');
-await pg.goto(URL + '?level=esplanade&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'the last level (Esplanade) loops back to Pennywell');
+await pg.goto(URL + '?debug&level=esplanade&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'the last level (Esplanade) loops back to Pennywell');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

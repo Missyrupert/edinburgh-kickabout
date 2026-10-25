@@ -6,7 +6,7 @@ const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : '
 const URL = process.argv[2] || 'http://localhost:4199/';
 const pg = await (await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true })).newPage();
 pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
-await pg.goto(URL + '?level=leith&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
+await pg.goto(URL + '?debug&level=leith&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
 await pg.evaluate(() => localStorage.clear()); await pg.reload(); await pg.waitForFunction(() => window.__game); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels }));
 ok(g0.lv === 'leith' && Math.hypot(g0.p.x - 26, g0.p.z + 4) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the Shore ' + JSON.stringify(g0.p));
@@ -43,6 +43,6 @@ const k = await pg.evaluate(() => { const g = __game, res = {}; for (const t of 
   for (const pitch of [0.0, 0.12, -0.15, 0.25, -0.3, 0.35, -0.45, 0.5]) /* v2.9.2: level aim first, as a player would */ for (const p of [0.25, 0.35, 0.5, 0.65, 0.8, 0.95]) { if (t.done) break; g.teleport(t.stand.x, t.stand.z, 0); g.simulate(0.3); const P = g.player.position; const dx = t.aim.x - P.x, dz = t.aim.z - P.z; const y = Math.atan2(-dx, -dz); g.aim(y, pitch);
     g.placeBall(0, P.x - Math.sin(y) * 0.8, P.y - 0.2, P.z - Math.cos(y) * 0.8); g.simulate(0.2); g.kick(p); g.simulate(4); n++; } res[t.id] = t.done ? n : 0; } return res; });
 ok(Object.values(k).every(Boolean), 'every Leith target scores with real kicks (tries) ' + JSON.stringify(k));
-await pg.goto(URL + '?level=newhaven&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Leith/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Newhaven travels on to Leith');
-await pg.goto(URL + '?level=leith&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Easter Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Leith travels on to Easter Road');
+await pg.goto(URL + '?debug&level=newhaven&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Leith/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Newhaven travels on to Leith');
+await pg.goto(URL + '?debug&level=leith&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Easter Road/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Leith travels on to Easter Road');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);

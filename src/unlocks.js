@@ -1,5 +1,6 @@
 // PHASE 5 "One More Shot": tiers, cosmetic unlocks and chippy menu. Saved on the device (localStorage 'ek-unlocks').
 // Tiers: easy = 'The Wee Warm-Up', tricky = 'Getting Cocky', legend = 'Away Ye Go!' (hidden optional challenges).
+import { loadRecord, saveRecord, isObj, strArr, nat } from './save.js';
 const KEY = 'ek-unlocks';
 export const TIERS = { easy: 'The Wee Warm-Up', tricky: 'Cocky', legend: 'Away Ye Go!' };
 export const BALLS = { tango: { name: 'Starter' }, winter: { name: 'Street Legend', how: 'Hit 3 Cocky targets' }, special: { name: 'The Pilton Special', how: 'All 3 Away Ye Go! shots' } };
@@ -10,9 +11,19 @@ export const ITEMS = {
   munchie: { name: 'The Legendary Munchie Box', pence: 500, line: '"Doner, chips, pakora, onion rings, garlic sauce. Ye\'ll no\' sleep tonight."', how: 'Any Away Ye Go! shot' },
 };
 const fresh = () => ({ levels: {}, balls: ['tango'], ball: 'tango', boots: 'trainers', bootsOwned: ['trainers'], items: ['wee', 'supper'], bought: {} });
-function load() { try { const u = JSON.parse(localStorage.getItem(KEY)); if (u && u.levels) return { ...fresh(), ...u }; } catch {} return fresh(); }
+function sanitise(u) { // v3.9.1: shape/type checks; anything wrong is replaced by the default and flagged
+  if (!isObj(u)) return null; const f = fresh(); let damaged = false; const bad = () => { damaged = true; };
+  const out = { ...f };
+  if (u.levels !== undefined) { if (isObj(u.levels)) { for (const [lv, d] of Object.entries(u.levels)) { if (!isObj(d)) { bad(); continue; } const keep = {}; for (const [id, v] of Object.entries(d)) { if (v === true) keep[id] = true; else bad(); } out.levels[lv] = keep; } } else bad(); }
+  for (const k of ['balls', 'bootsOwned', 'items']) if (u[k] !== undefined) { if (strArr(u[k])) out[k] = [...new Set([...f[k], ...u[k]])]; else bad(); }
+  if (u.ball !== undefined) { if (typeof u.ball === 'string' && out.balls.includes(u.ball)) out.ball = u.ball; else bad(); }
+  if (u.boots !== undefined) { if (typeof u.boots === 'string' && out.bootsOwned.includes(u.boots)) out.boots = u.boots; else bad(); }
+  if (u.bought !== undefined) { if (isObj(u.bought)) { for (const [k, v] of Object.entries(u.bought)) { const n = nat(v); if (n === null) bad(); else out.bought[k] = n; } } else bad(); }
+  return { value: out, damaged };
+}
+function load() { return loadRecord(KEY, sanitise, fresh, 'progress'); }
 export const unlocks = load();
-export function saveUnlocks() { try { localStorage.setItem(KEY, JSON.stringify(unlocks)); } catch {} }
+export function saveUnlocks() { return saveRecord(KEY, unlocks, 'progress'); }
 export const levelDone = (lv) => (unlocks.levels[lv] ||= {});
 export function tierCount(lv, targets, tier) { const d = levelDone(lv); return targets.filter((t) => t.tier === tier && d[t.id]).length; }
 // record a completion; returns a list of new unlocks (each fires once, ever)

@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
-await pg.goto('http://localhost:4199/?level=grassmarket&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
+await pg.goto('http://localhost:4199/?debug&level=grassmarket&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
 await pg.evaluate(() => localStorage.clear()); await pg.reload(); await pg.waitForFunction(() => window.__game); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
 const sp = await pg.evaluate(() => ({ ...__game.player.position })); ok(Math.hypot(sp.x - 3, sp.z + 10) < 0.5 && sp.y > 0.3 && sp.y < 0.6, 'spawn on the setts ' + JSON.stringify(sp));
 ok(await pg.evaluate(() => __game.targets.length === 11 && ['bin','bench','cone','lamp','close','dug','door','post','case','tardis','skip'].every(id => __game.targets.some(t => t.id === id))), '11 targets, same IDs');

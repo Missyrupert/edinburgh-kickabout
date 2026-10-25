@@ -3,8 +3,8 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
-const open = async (lv) => { await pg.goto(`http://localhost:4199/?level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1200); };
-await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.waitForTimeout(1500);
+const open = async (lv) => { await pg.goto(`http://localhost:4199/?debug&level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1200); };
+await pg.goto('http://localhost:4199/?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.waitForTimeout(1500);
 await pg.screenshot({ path: '/workspace/ek-design/v2-welcome.png' });
 ok(await pg.evaluate(() => document.fonts.check('40px "Alfa Slab One"')), 'Alfa Slab One loaded');
 ok(await pg.evaluate(async () => (await (await fetch('version.json', { cache: 'no-store' })).json()).v === document.getElementById('verTag').textContent), 'HUD label matches version.json');

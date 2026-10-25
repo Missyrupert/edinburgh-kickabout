@@ -4,7 +4,7 @@ const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : '
 for (const [W, H] of [[915, 412], [800, 360], [740, 320]]) {
   const ctx = await b.newContext({ viewport: { width: W, height: H }, hasTouch: true, isMobile: true });
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message));
-  await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
+  await pg.goto('http://localhost:4199/?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
   ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v3.9'), `${W}x${H} label`);
   const fits = async (sel) => pg.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }, sel);
   ok(await fits('#mainPanel'), `${W}x${H} welcome fits`);

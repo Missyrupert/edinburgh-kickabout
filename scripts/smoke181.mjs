@@ -4,7 +4,7 @@ const errs = []; let fail = 0;
 for (const lv of ['grassmarket', 'pilton']) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(lv + ': ' + e.message));
-  await pg.goto(`http://localhost:4199/?level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
+  await pg.goto(`http://localhost:4199/?debug&level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
   await pg.click('#startBtn'); await pg.waitForTimeout(2000);
   for (const [d, a, shot] of [[0.8, 50, true], [1.8, -70, false], [1.0, 160, false]]) {
     const pre = await pg.evaluate(async ([d, a]) => { const g = __game, P = g.player.position, y = g.yaw + a * Math.PI / 180;

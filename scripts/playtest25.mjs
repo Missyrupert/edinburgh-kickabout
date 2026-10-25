@@ -18,7 +18,7 @@ const tryTarget = async (id) => { const t = await pg.evaluate((id) => { const t 
   for (const ms of [450, 650, 850]) { const s0 = await st(); if (s0.done.includes(id)) break; await hold('#btnKick', ms); await pg.waitForTimeout(2500); if ((await st()).done.includes(id)) break; await pg.click('#btnBall').catch(() => {}); await pg.waitForTimeout(600); await faceTarget(id); }
   const s = await st(); log(`  ${id}: ${s.done.includes(id) ? 'BAGGED' : 'missed'}  score ${s.score}, wallet ${s.wallet}p, ballMsg ${s.ball}`); };
 
-await pg.goto(URL0 + '?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
+await pg.goto(URL0 + '?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
 log('live version', await pg.textContent('#verTag')); await pg.evaluate(() => { localStorage.clear(); }); await pg.reload(); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 });
 await snap('welcome'); await pg.click('#startBtn'); await pg.waitForTimeout(1500); await snap('pilton-start');
 log('PILTON'); await pg.keyboard.down('KeyW'); await pg.waitForTimeout(1500); await pg.keyboard.up('KeyW'); log('  walked', JSON.stringify((await st()).p));

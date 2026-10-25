@@ -10,6 +10,7 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { PRESET, PRESET_SOURCE, SHOW_PERF, DYNRES, choosePreset } from './settings.js';
 import { LEVEL, LEVELS, LEVEL_ORDER, travelTo } from './levels/index.js';
 import { makeLeg } from './leg.js';
+import { onNotice } from './save.js';
 import { unlocks, recordDone, levelDone, tierCount, TIERS, selectBall, selectBoots, BOOTS, resetProgress, BALLS, ITEMS, saveUnlocks } from './unlocks.js';
 import { wallet, saveWallet, earn, buySupper, resetWallet, fmt, GOAL, BONUS, cashFor, CHIPPY_TARGETS } from './wallet.js';
 import { ballTexture, skyTexture, texManager, texStats } from './textures.js';
@@ -139,45 +140,6 @@ const balls = BALL_HOMES.map(([x, y, z]) => {
 
 // boot (kick animation), attached to the camera: one mesh
 // a scuffed trainer (default) or unlockable classic black boots, with shin; cosmetic only (no physics)
-function footGeo(style) { // v3.1.2: first-person kicking leg - boot seen from above/behind, ankle + knee bend, baked lighting (no dark blob), no pole
-  const parts = [], add = (geo, c, m) => { if (m) geo.applyMatrix4(m); parts.push([geo.index ? geo.toNonIndexed() : geo, c]); },
-    T = (x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
-  // a tapered limb segment from point a along unit dir d, length L (radius r0 at a, r1 at the far end)
-  const seg = (a, d, L, r0, r1, c, n = 10) => { const g = new THREE.CylinderGeometry(r1, r0, L, n); g.translate(0, L / 2, 0);
-    add(g, c, new THREE.Matrix4().compose(a, new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d), new THREE.Vector3(1, 1, 1))); };
-  const classic = style === 'boots', UPPER = classic ? 0x1c1c1c : 0x30478a, TOE = classic ? 0x262626 : 0x3a55a0, FLASH = classic ? 0xf2f2ee : 0xc8ec3c, SOLE = classic ? 0x3a3a3a : 0xf0ede4,
-    STUD = classic ? 0xa0a0a0 : 0x3a3a3a, SOCK = classic ? 0x1c1c1c : 0xf3f1ea, HOOP = classic ? 0xf2f2ee : 0x6B3F73, SKIN = 0xe0a882, SHORTS = 0x23304f;
-  // --- boot (toe toward -z, sole at y=0) ---
-  add(new THREE.SphereGeometry(1, 14, 9), UPPER, T(0, 0.045, -0.06, 0.055, 0.05, 0.15)); // vamp/upper
-  add(new THREE.SphereGeometry(1, 12, 8), TOE, T(0, 0.034, -0.165, 0.05, 0.036, 0.07)); // rounded toe box
-  add(new THREE.SphereGeometry(1, 12, 8), UPPER, T(0, 0.058, 0.035, 0.052, 0.062, 0.06)); // heel counter
-  add(new THREE.BoxGeometry(0.106, 0.018, 0.27), SOLE, T(0, 0.004, -0.07));
-  add(new THREE.CylinderGeometry(0.053, 0.053, 0.018, 12, 1, false, 0, Math.PI), SOLE, T(0, 0.004, -0.205, 1, 1, 1, 0, -Math.PI / 2, 0)); // toe of the sole plate
-  for (const [x, z] of [[-0.033, -0.18], [0.033, -0.18], [-0.038, -0.11], [0.038, -0.11], [0, -0.145], [-0.032, 0.02], [0.032, 0.02]]) add(new THREE.CylinderGeometry(0.009, 0.012, 0.018, 6), STUD, T(x, -0.012, z));
-  add(new THREE.BoxGeometry(0.046, 0.012, 0.11), classic ? 0x2a2a2a : 0x3d5596, T(0, 0.092, -0.045, 1, 1, 1, -0.28)); // tongue
-  for (let k = 0; k < 5; k++) add(new THREE.BoxGeometry(0.05, 0.007, 0.008), 0xfafaf6, T(0, 0.094 - k * 0.0075, -0.005 - k * 0.024, 1, 1, 1, -0.28)); // laces
-  for (const sx of [-1, 1]) { add(new THREE.BoxGeometry(0.005, 0.014, 0.16), FLASH, T(sx * 0.053, 0.03, -0.075, 1, 1, 1, 0.22)); add(new THREE.BoxGeometry(0.005, 0.01, 0.07), FLASH, T(sx * 0.051, 0.058, -0.005, 1, 1, 1, 0.7)); } // fictional side flash
-  add(new THREE.BoxGeometry(0.028, 0.034, 0.006), FLASH, T(0, 0.075, 0.093)); // heel tab
-  // --- leg: ankle bend, shin back-and-down toward you, knee bend, thigh dropping out of the frame ---
-  const ankle = new THREE.Vector3(0, 0.1, 0.03), dS = new THREE.Vector3(0.32, -0.78, 0.54).normalize(), Ls = 0.4, knee = ankle.clone().addScaledVector(dS, Ls), dT = new THREE.Vector3(0.3, -0.92, 0.25).normalize();
-  add(new THREE.CylinderGeometry(0.05, 0.054, 0.05, 12), UPPER, T(0, 0.098, 0.03)); // boot collar
-  seg(ankle, dS, Ls * 0.62, 0.044, 0.06, SOCK, 12); // sock over the shin pad
-  for (const f of [0.5, 0.56]) seg(ankle.clone().addScaledVector(dS, Ls * f), dS, 0.016, 0.0585, 0.0595, HOOP, 12);
-  seg(ankle.clone().addScaledVector(dS, Ls * 0.62), dS, Ls * 0.38, 0.06, 0.052, SKIN, 12); // bare shin up to the knee
-  add(new THREE.SphereGeometry(1, 10, 8), SOCK, T(ankle.x, ankle.y, ankle.z, 0.047, 0.047, 0.047)); // ankle
-  { const c = ankle.clone().addScaledVector(dS, Ls * 0.4); add(new THREE.SphereGeometry(1, 10, 8), SOCK, T(c.x, c.y - 0.012, c.z + 0.02, 0.058, 0.06, 0.1, -1.05)); } // calf
-  add(new THREE.SphereGeometry(1, 10, 8), SKIN, T(knee.x, knee.y, knee.z, 0.06, 0.06, 0.06)); // knee
-  seg(knee, dT, 0.1, 0.06, 0.07, SKIN, 12); seg(knee.clone().addScaledVector(dT, 0.1), dT, 0.35, 0.075, 0.085, SHORTS, 12); // thigh into the shorts, out of frame
-  // bake simple lighting into the vertex colours (from above / slightly behind) so it never renders as a dark blob
-  const Lt = new THREE.Vector3(0.35, 0.85, 0.4).normalize();
-  const g = new THREE.BufferGeometry(), cols = [];
-  for (const [p, c] of parts) { p.computeVertexNormals(); const k = new THREE.Color(c), nn = p.attributes.normal, n = p.attributes.position.count, arr = new Float32Array(n * 3);
-    for (let q = 0; q < n; q++) { const l = Math.min(1.12, 0.6 + 0.55 * Math.max(0, nn.getX(q) * Lt.x + nn.getY(q) * Lt.y + nn.getZ(q) * Lt.z)); arr.set([Math.min(1, k.r * l), Math.min(1, k.g * l), Math.min(1, k.b * l)], q * 3); }
-    p.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
-  for (const k of ['position', 'normal', 'uv', 'color']) { const tot = parts.reduce((a, [p]) => a + p.attributes[k].array.length, 0), arr = new Float32Array(tot); let o = 0;
-    for (const [p] of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; } g.setAttribute(k, new THREE.BufferAttribute(arr, parts[0][0].attributes[k].itemSize)); }
-  return g;
-}
 const leg = makeLeg(unlocks.boots, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })); // v3.9: rigged leg (knee + ankle pose on the kick)
 const boot = leg.root;
 boot.position.set(0.2, -0.6, -0.75); camera.add(boot); let legDebugK = null;
@@ -190,6 +152,7 @@ const surfaceAt = LEVEL.surfaceAt || (() => 'paving');
 const TARGET_SURF = { garage: 'garage', bin: 'plastic', wheelie: 'plastic', busstop: 'glass', trolley: 'metal', lamp: 'metal', gap: 'metal', noballs: 'metal', tardis: 'metal', post: 'metal', door: 'wall', bench: 'board', skip: 'metal', case: 'board', cone: 'plastic' };
 let score = 0, started = false, paused = true, chargeT0 = 0, toastTimer = 0;
 function toast(text, ms = 2400) { const el = $('toast'); el.innerHTML = text; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
+let noticeAt = 0; onNotice((m) => { const at = Math.max(performance.now() + 1500, noticeAt); noticeAt = at + 4200; setTimeout(() => toast(`<small>${m}</small>`, 4000), at - performance.now()); }); // v3.9.1: save problems, non-blocking
 function updateHud() { if (LEVEL.id !== "pilton") try { updateWallet(); } catch (e) { /* v2.9: keep the per-level goal bar in step (wallet not ready during boot) */ } $('scoreVal').textContent = score; $('targetVal').textContent = `${targets.filter((t) => t.done).length}/${targets.length}`;
   const tc = (tier) => `${tierCount(LEVEL.id, allTargets, tier)}/${allTargets.filter((x) => x.tier === tier).length}`;
   // v2.3: compact challenge line for phones (full names live in Help)
@@ -217,7 +180,9 @@ function updateWallet(pop = false) {
 }
 function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   $('goalBig').textContent = '👑 ⚽'; $('goalTitle').textContent = "Ye've done it!";
-  $('goalLine').innerHTML = `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
+  const left = LEVEL_ORDER.filter((id) => id !== LEVEL.id && !(Object.keys(LEVELS[id].tiers || {}).length && Object.keys(LEVELS[id].tiers).every((k) => levelDone(id)[k]))); // v3.9.1: only claim the whole journey if it's true
+  if (left.length) $('goalTitle').textContent = "The Esplanade's crowned!";
+  $('goalLine').innerHTML = (left.length ? `Ye've cleared the Castle Esplanade. ${left.length} street${left.length > 1 ? 's' : ''} still tae finish fae Pennywell tae the Castle - the full journey's waiting for ye.` : `Every street fae Pennywell tae the Castle - kicked, chipped and crowned. Edinburgh's yours. Away hame for yer tea, ye've earned it.`) + `<br><small class="credits">Made wi' love by Chris, Fiona, AG and The Gamekeeper.</small>`;
   $('goalOk').textContent = 'Pure magic'; $('goalCard').classList.remove('hidden'); $('goalCard').dataset.finale = '1'; sfx.success(true);
   if (document.pointerLockElement) document.exitPointerLock();
 }
@@ -276,7 +241,7 @@ function buildBallMenu() {
     btn.addEventListener('click', () => applyBall(id)); el.appendChild(btn); }
 }
 buildBallMenu();
-$('progressReset').addEventListener('click', () => { if (confirm('Reset progress: completed targets, unlocked balls/boots and chippy items and pocket money?')) { resetProgress(); resetWallet(); updateWallet(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; boot.geometry = footGeo('trainers'); buildBallMenu(); updateHud(); } });
+$('progressReset').addEventListener('click', () => { if (confirm('Reset progress: completed targets, unlocked balls/boots and chippy items and pocket money?')) { resetProgress(); resetWallet(); updateWallet(); ballMat.map = ballTexture('tango'); ballMat.needsUpdate = true; leg.setStyle('trainers'); score = 0; for (const t of allTargets) { t.done = false; t.touched = 0; t.ring.material.color.set(0xffd93d); } buildBallMenu(); updateHud(); toast('Progress reset. Fresh start!', 1800); } });
 // ---------- levels ----------
 $('levelNow').textContent = LEVEL.name; $('levelBlurb').textContent = LEVEL.blurb;
 document.querySelectorAll('[data-level]').forEach((b) => { if (b.dataset.level === LEVEL.id) b.classList.add('on'); b.addEventListener('click', () => { if (b.dataset.level !== LEVEL.id) travelTo(b.dataset.level); }); });
@@ -487,19 +452,15 @@ function scoreTarget(t, bonus = null) {
     if (now - lastRepeat > 2500) { lastRepeat = now; const n = targets.filter((x) => x !== t && !x.done).length; toast(`<b>${t.name}</b> - no' yet!<br><small>Bag the other ${n} first, then crown it.</small>`, 2200); } return; }
   const rec = recordDone(LEVEL.id, t, allTargets); announce(rec.news);
   if (t.challenge) return scoreChallenge(t, rec.first);
-  if (!rec.first) { // already paid for this one (e.g. after Restart level): no double pay
-    t.done = true; t.ring.material.color.set(DONE_RING); lastEarn = { id: t.id, pence: 0, bonus: null };
-    toast(`<b>${t.name}</b> - already bagged.<br><small>Ye got paid for that one already.</small>`, 1800); sfx.success(false); updateHud(); return; }
-  t.done = true; score += t.points;
-  const pence = cashFor(t) + (bonus ? BONUS : 0);
+  t.done = true; score += t.points; // v3.9.1: replays (after Restart level) score normally; money is only paid the first time ever
+  const pence = rec.first ? cashFor(t) + (bonus ? BONUS : 0) : 0;
   lastEarn = { id: t.id, pence, bonus };
-  const reached = earn(pence, chippyEarned()); updateWallet(true);
-  if (reached) setTimeout(showGoal, 1800);
+  if (pence) { const reached = earn(pence, chippyEarned()); updateWallet(true); if (reached) setTimeout(showGoal, 1800); }
   t.ring.material.color.set(DONE_RING);
   const all = targets.every((x) => x.done);
   sfx.success(all);
   const line = t.lines[Math.floor(Math.random() * t.lines.length)];
-  toast(`<b>${t.name} +${fmt(pence)}</b>${bonus ? ` <small>(${bonus}! +${fmt(BONUS)})</small>` : ''}<br>${line}`);
+  toast(rec.first ? `<b>${t.name} +${fmt(pence)}</b>${bonus ? ` <small>(${bonus}! +${fmt(BONUS)})</small>` : ''}<br>${line}` : `<b>${t.name} +${t.points} pts</b> <small>(replay - nae pocket money twice)</small><br>${line}`);
   if (all && LEVEL.finale) setTimeout(showFinale, 2600);
   else if (all) setTimeout(() => toast(`<b>Pure dead brilliant!</b><br>All ${targets.length} targets done in ${LEVEL.name}.<br><small>Pause to restart, or travel to ${LEVELS[LEVEL.next].name}.</small>`, 7000), 2600);
   updateHud();
@@ -715,7 +676,8 @@ function loop(t) {
 requestAnimationFrame(loop);
 
 // Test/debug hooks (used by scripts/verify.mjs and scripts/profile.mjs).
-window.__game = {
+const DEBUG = new URLSearchParams(location.search).has('debug'); // v3.9.1: test hook only with ?debug (a convenience switch, not security)
+if (DEBUG) window.__game = {
   get score() { return score; }, get assetsLoaded() { return assetsLoaded; }, get simTime() { return simTime; }, get resScale() { return resScale; },
   get yaw() { return yaw; }, get pitch() { return pitch; }, get lastKick() { return lastKickInfo; }, get textureMemoryMB() { return +(texStats.bytes / 1048576).toFixed(1); },
   preset: P.name, presetSource: PRESET_SOURCE, views, FIXED, level: LEVEL.id, levelName: LEVEL.name, levels: LEVEL_ORDER, travelTo, counter: built.counter || null,

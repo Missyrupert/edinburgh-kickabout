@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
-const open = async () => { await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(800); };
+const open = async () => { await pg.goto('http://localhost:4199/?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); await pg.click('#startBtn'); await pg.waitForTimeout(800); };
 await open();
 // simulate an old v2.0 save: £6.30 carried over, no targets done
 await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-wallet', JSON.stringify({ pence: 630, goalSeen: false, suppers: 0, total: 900 })); localStorage.setItem('ek-level', 'pilton'); });

@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args
 const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : 'FAIL', m); if (!c) fail++; };
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-await pg.goto('http://localhost:4199/?level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
+await pg.goto('http://localhost:4199/?debug&level=pilton&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 });
 await pg.evaluate(() => { localStorage.removeItem('ek-sound'); localStorage.removeItem('ek-vol'); }); await pg.reload(); await pg.waitForFunction(() => window.__game);
 ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v3.9'), 'label v3.1.1');
 ok(await pg.evaluate(() => __game.sfx.ctx === null), 'no AudioContext before Play');

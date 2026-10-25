@@ -6,7 +6,7 @@ const errs = []; let fail = 0; const ok = (c, m) => { console.log(c ? 'OK  ' : '
 const URL = process.argv[2] || 'http://localhost:4199/';
 const pg = await (await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true })).newPage();
 pg.on('pageerror', e => { errs.push(e.message); console.log('PAGEERR', e.message); }); pg.on('console', m => { if (m.type() === 'error' || /atlas full/.test(m.text())) errs.push(m.text()); });
-await pg.goto(URL + '?level=esplanade&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
+await pg.goto(URL + '?debug&level=esplanade&preset=low'); await pg.waitForFunction(() => window.__game, null, { timeout: 60000 }); await pg.click('#startBtn'); await pg.waitForTimeout(1500);
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, sp: __game.views.spawn }));
 ok(g0.lv === 'esplanade' && Math.hypot(g0.p.x - g0.sp[0], g0.p.z - g0.sp[1]) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the Esplanade ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10 && g0.ids[9] === 'crown', 'targets (crown last) ' + g0.ids.join(','));
@@ -31,5 +31,5 @@ const fin = await pg.evaluate(() => ({ shown: !document.getElementById('goalCard
 ok(fin.shown && /Ye've done it/.test(fin.t), 'crowning it shows the game-complete card ' + fin.t.slice(0, 80));
 ok(['Chris', 'Fiona', 'AG', 'The Gamekeeper'].every(n => fin.t.includes(n)), 'credits name Chris, Fiona, AG and The Gamekeeper');
 ok(/Pennywell/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'the Esplanade travels back to Pennywell');
-await pg.goto(URL + '?level=royalmile&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Esplanade/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels on to the Esplanade');
+await pg.goto(URL + '?debug&level=royalmile&preset=low'); await pg.waitForFunction(() => window.__game); ok(/Esplanade/.test(await pg.evaluate(() => document.getElementById('travelBtn').textContent)), 'Royal Mile travels on to the Esplanade');
 console.log('errors', JSON.stringify(errs)); await b.close(); process.exit(fail || errs.length ? 1 : 0);
