@@ -1,4 +1,4 @@
-# Edinburgh Kickabout (v3.10)
+# Edinburgh Kickabout (v3.11)
 
 A first-person street-football game set in 10 playable Edinburgh streets, with Stockbridge and Princes Street on the way. It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
@@ -28,6 +28,17 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 - Most streets have 10 targets (the Grassmarket has 11). In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
 - Crowning the Esplanade shows the game-complete card. The card only claims the full journey if every other street is cleared too.
+
+## Pennywell (v3.11)
+Pennywell was rebuilt from Chris's description and reference photos. From the bottom to the top:
+- the roundabout at Muirhouse Parkway;
+- the new Craigroyston school on the right (its gates are a goal you have to kick through) and houses on the left;
+- the shopping centre on the left (Haddon's, Ladd's Bookmakers, El Mexicano, the pork shop, the Wee Grocer, and the library through the pend);
+- the Old Kirk (left) and the burnt-out St Paul's (right);
+- harled flats;
+- Drylaw Police Station behind its security fence at the top.
+
+You start outside the old flat above Haddon's Wines. The layout is approximate and hasn't been checked on site.
 
 ## Other URL params
 - `?preset=low|medium|high` sets the graphics preset (the default is auto).

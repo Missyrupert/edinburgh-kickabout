@@ -30,6 +30,14 @@ The `design-refs` branch holds reference photos from Wikimedia Commons and Geogr
 - If you publish them, credit each photo's author and licence as given in the MANIFEST, and share it under the same terms where the licence is CC BY-SA.
 
 ## Names
-All shop, pub and business names in the game are fictional. Real street and place names are used for setting only.
+Shop, pub and business names in the game are fictional, with these exceptions:
+- **Local-memory names (Pennywell):** *El Mexicano* (a long-closed local sweet shop), *Haddon's Wines* and *R.J. McCallum's*. Chris remembers these from growing up on Pennywell Road and asked for them to be kept. They're used affectionately as part of the street's history, with no logos or trade dress.
+- **Public buildings named for the setting:** Craigroyston Community High School, Drylaw Police Station, the Old Kirk and St Paul's. They're shown as simplified buildings with plain name signs, and without any official crests or logos.
+- The bookies, *Ladd's Bookmakers*, is fictional. It's inspired by the red-and-white bookies that used to be in the shopping centre.
+- The faded wall tags "YPD" and "YMD" recall two old local youth gangs. They're small, faded wall marks as part of the street's history and aren't meant to glorify anything.
+Real street and place names are used for setting only.
+
+## Pennywell v3.11 reference photos
+The v3.11 Pennywell rebuild was laid out from Chris's description and the `design-refs/00-pennywell-road/` photos (authors and licences are in `design-refs/MANIFEST.md`). The photos are design references only and aren't shipped. The `/workspace/ek-design/v311-compare-*.jpg` sheets contain those photos, so they're working documents and aren't for publication without the attribution given in the MANIFEST.
 
 Full third-party licence texts: `public/THIRD_PARTY_NOTICES.txt`, deployed with the game as `THIRD_PARTY_NOTICES.txt`.
