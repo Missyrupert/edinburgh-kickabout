@@ -235,8 +235,8 @@ try {
   const perr = []; pg.on('console', (m) => m.type() === 'error' && perr.push(m.text())); pg.on('pageerror', (e) => perr.push(String(e)));
   const ready = async (p = pg) => { await p.waitForFunction(() => window.__game?.assetsLoaded, null, { timeout: 60000 }); };
   const go = async (url, p = pg) => { await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 }); await ready(p); };
-  await go(BASE); // brand-new player: no ?level, empty storage
-  check('new players start in West Pilton', await pg.evaluate(() => window.__game.level === 'pilton' && window.__game.targets.length >= 5 && window.__game.targets.length <= 8), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
+  await go(BASE + '?debug'); // brand-new player: no ?level, empty storage (?debug only exposes the test hook)
+  check('new players start in Pennywell', await pg.evaluate(() => window.__game.level === 'pennywell' && window.__game.targets.length === 10), await pg.evaluate(() => window.__game.level + ' ' + window.__game.targets.length));
   await pg.screenshot({ path: 'screenshots/pilton-menu.png' });
   // welcome screen fits a phone with no scroll (portrait + landscape)
   const fit = {};
@@ -256,7 +256,7 @@ try {
   const lv1 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
   await Promise.all([pg.waitForURL(/level=pilton/, { timeout: 60000, waitUntil: 'domcontentloaded' }), pg.evaluate(() => { window.__game.start(); window.__game.pause(); }).then(() => pg.click('#travelBtn'))]); await ready();
   const lv2 = await pg.evaluate(() => [window.__game.level, window.__game.targets.length]);
-  await go(BASE); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
+  await go(BASE + '?debug'); const lv3 = await pg.evaluate(() => window.__game.level); // remembers last level
   check('level transition both ways (menu + travel button + saved)', lv1[0] === 'grassmarket' && lv1[1] === 11 && lv2[0] === 'pilton' && lv3 === 'pilton', JSON.stringify({ lv1, lv2, lv3 }));
   await go(BASE + '?debug&level=pilton');
   await pg.evaluate(() => { window.__game.resetWallet(); window.__game.start(); }); await wait(pg, 1200);
