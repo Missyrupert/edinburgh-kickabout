@@ -14,10 +14,10 @@ These are the only third-party assets in the game itself. Everything else in the
 | Textures `public/tex/slate_*` | Poly Haven [roof_slates_02](https://polyhaven.com/a/roof_slates_02) | CC0 1.0 | No |
 | Textures `public/tex/wood_*` | Poly Haven [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | CC0 1.0 | No |
 | Sky `public/hdri/*` | Poly Haven [kloofendal_48d_partly_cloudy_puresky](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky) | CC0 1.0 | No |
-| Font Alfa Slab One | The Alfa Slab One Project Authors, via @fontsource | SIL OFL 1.1 | Keep the copyright and licence notice with the font files (included in `node_modules/@fontsource/*/LICENSE`); the font can't be sold on its own |
+| Font Alfa Slab One | The Alfa Slab One Project Authors, via @fontsource | SIL OFL 1.1 | Keep the copyright and licence notice with the font files (full text shipped in `THIRD_PARTY_NOTICES.txt`); the font can't be sold on its own |
 | Font Barlow Condensed | The Barlow Project Authors, via @fontsource | SIL OFL 1.1 | As above |
 | Font Patrick Hand | Patrick Wagesreiter, via @fontsource | SIL OFL 1.1 | As above |
-| three.js | three.js authors | MIT | Keep the copyright notice (bundled JS keeps the licence comment where the bundler preserves it; see LICENSE) |
+| three.js | three.js authors | MIT | Keep the copyright notice (full text shipped in `THIRD_PARTY_NOTICES.txt`) |
 | cannon-es | cannon.js authors / pmndrs | MIT | As above |
 
 The Poly Haven textures were re-encoded to WebP, at 1K and 512 px, for mobile.
@@ -31,3 +31,5 @@ The `design-refs` branch holds reference photos from Wikimedia Commons and Geogr
 
 ## Names
 All shop, pub and business names in the game are fictional. Real street and place names are used for setting only.
+
+Full third-party licence texts: `public/THIRD_PARTY_NOTICES.txt`, deployed with the game as `THIRD_PARTY_NOTICES.txt`.

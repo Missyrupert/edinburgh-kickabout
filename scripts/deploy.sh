@@ -4,12 +4,19 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 npm run build
-PREV_PID=""
-if ! curl -s -o /dev/null http://localhost:4199/; then npx vite preview --port 4199 --strictPort >/tmp/ek-deploy-preview.log 2>&1 & PREV_PID=$!; sleep 3; fi
-cleanup() { [ -n "$PREV_PID" ] && kill "$PREV_PID" 2>/dev/null || true; }
+# v3.9.2: always a dedicated preview of THIS dist on a free port; the smokes test exactly that address.
+PORT=$(node -e "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})")
+npx vite preview --port "$PORT" --strictPort >/tmp/ek-deploy-preview.log 2>&1 & PREV_PID=$!
+cleanup() { kill "$PREV_PID" 2>/dev/null || true; }
 trap cleanup EXIT
-for s in smoke-freshstart smoke38 smoke21; do
-  echo "deploy smoke: $s"; timeout 120 node "scripts/$s.mjs" > "/tmp/ek-deploy-$s.log" 2>&1 || { echo "SMOKE FAILED: $s (see /tmp/ek-deploy-$s.log) - not deploying"; exit 1; }
+URL="http://localhost:$PORT/"
+for i in $(seq 1 30); do curl -sf -o /dev/null "$URL" && break; sleep 1; done
+WANT=$(node -p "require('./public/version.json').v")
+GOT=$(curl -sf "${URL}version.json" | node -p "JSON.parse(require('fs').readFileSync(0)).v") || { echo "preview not serving - not deploying"; exit 1; }
+[ "$GOT" = "$WANT" ] || { echo "preview serves $GOT, expected $WANT - not deploying"; exit 1; }
+echo "testing fresh dist at $URL ($GOT)"
+for s in smoke-freshstart smoke38 smoke39 smoke21; do
+  echo "deploy smoke: $s"; timeout 120 node "scripts/$s.mjs" "$URL" > "/tmp/ek-deploy-$s.log" 2>&1 || { echo "SMOKE FAILED: $s (see /tmp/ek-deploy-$s.log) - not deploying"; exit 1; }
 done
 cd dist && touch .nojekyll && rm -rf .git && git init -q -b gh-pages && git add -A && git commit -qm "Deploy $(date -u +%FT%TZ)"
 git push -f "https://github.com/Missyrupert/edinburgh-kickabout.git" gh-pages

@@ -4,9 +4,9 @@ const errs = [], warns = []; let fail = 0; const ok = (c, m) => { console.log(c 
 const ctx = await b.newContext({ viewport: { width: 915, height: 412 }, hasTouch: true, isMobile: true });
 const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); if (m.type() === 'warning') warns.push(m.text()); });
 const D = '/workspace/ek-design/';
-const open = async (lv = 'pilton', start = true) => { await pg.goto(`http://localhost:4199/?debug&level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); if (start) { await pg.click('#startBtn'); await pg.waitForTimeout(800); } };
+const open = async (lv = 'pilton', start = true) => { await pg.goto(`${process.argv[2] || "http://localhost:4199/"}?debug&level=${lv}&preset=low`); await pg.waitForFunction(() => window.__game, null, { timeout: 30000 }); if (start) { await pg.click('#startBtn'); await pg.waitForTimeout(800); } };
 await open('pilton', false); await pg.evaluate(() => { localStorage.clear(); localStorage.setItem('ek-wallet-v', '2'); }); await open('pilton', false);
-ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v3.9.1'), 'label v3.1.1');
+ok(await pg.evaluate(() => document.getElementById('verTag').textContent === 'v3.9.2'), 'label v3.1.1');
 await pg.click('#settingsBtn'); await pg.waitForTimeout(200);
 const s1 = await pg.textContent('#soundBtn'); await pg.click('#soundBtn'); const s2 = await pg.textContent('#soundBtn');
 ok(s1.includes('on') && s2.includes('off') && await pg.evaluate(() => localStorage.getItem('ek-sound')) === 'off', 'sound toggle saves'); await pg.click('#soundBtn');
