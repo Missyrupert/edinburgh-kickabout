@@ -1,7 +1,7 @@
 // Pocket money: pence earned per target (by difficulty) + a small accuracy bonus. Saved on the device.
-// The goal is purely cosmetic: a chippy supper and an Irn-Bru. No shops, inventory or upgrades.
+// The goal is purely cosmetic: a chippy supper and a can o' ginger. No shops, inventory or upgrades.
 const KEY = 'ek-wallet';
-export const GOAL = { pence: 650, label: 'Chippy an\' an Irn-Bru' };
+export const GOAL = { pence: 650, label: 'Chippy an\' a can o\' ginger' };
 export const BONUS = 25;
 export const fmt = (p) => '£' + (p / 100).toFixed(2);
 function load() { try { const w = JSON.parse(localStorage.getItem(KEY)); if (w && Number.isFinite(w.pence)) return { pence: w.pence, goalSeen: !!w.goalSeen, suppers: w.suppers | 0, total: w.total | 0 }; } catch {} return { pence: 0, goalSeen: false, suppers: 0, total: 0 }; }

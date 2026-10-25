@@ -88,7 +88,7 @@ function build(scene, world, mats, P_) {
       else { const c = F(u, 0.01); quad('facade', c.x, 1.6, c.z, 2.2, 3.0, ry, cellUV(b ? FACADE.door : FACADE.sashA), vt()); } } }
   // the shop door targets (pub at the west end, newsagent, cafe)
   for (const [id, name, hint, lines] of [['pubdoor', 'Lodge Bar Door', 'strike the pub door', ['A pint o\' heavy and a ba\' please.', 'Door chapped. Last orders!', 'In off the door. Barry wid be proud.']],
-    ['newsagent', 'London Road News Door', 'hit the newsagent door', ['Stop press: door hit.', 'Papers, rolls, and a ba\'.', 'The Evening News'+"'"+'ll cover it.']], ['cafe', 'Curve Cafe Door', 'hit the cafe door', ['Flat white, hard strike.', 'Rolls and sausage: earned.', 'Coffee\'s on the hoose.']]]) {
+    ['newsagent', 'London Road News Door', 'hit the newsagent door', ['Stop press: door hit.', 'Papers, rolls, and a ba\'.', 'The Daily Blether'+"'"+'ll cover it.']], ['cafe', 'Curve Cafe Door', 'hit the cafe door', ['Flat white, hard strike.', 'Rolls and sausage: earned.', 'Coffee\'s on the hoose.']]]) {
     const d = doors[id], c = d.F(d.u, 0), s = d.F(d.u, 5), p = d.F(d.u, 1.2); tgt({ id, name, hint, points: 75, kind: 'hit', pos: p, ringR: 1.0, stand: s, aim: V(c.x, 1.0, c.z), lines }); }
   { // tenement stair door with a fanlight (target) in segment 6
     const a = TH0 + 6.5 * DA, F = (u, off) => { const p = P(a, RF - off); return V(p.x + Math.cos(a) * u, 0, p.z - Math.sin(a) * u); }, ry = RY(a), c = F(0, 0.06);

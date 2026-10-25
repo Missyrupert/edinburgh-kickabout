@@ -77,7 +77,7 @@ export function buildSquare(scene, world, mats, P) {
       const hs = (pubSign[name] ||= atlas.sign(name.split(' ').slice(-1)[0], col, '#f1d98a', 1.6, 'bold 70px Georgia, serif')); for (const f of [1, -1]) quad('atlas', hx + f * 0.03, 3.85, z + n * 0.8, 0.9, 0.56, s > 0 ? -Math.PI / 2 * f : Math.PI / 2 * f, hs);
     }
   }
-  const NAMES = [['THE LAST DRAP', '#1d3b2a', 'pub', 0xa82a24], ['FLEMING & DAUGHTER', '#5b1b2a', 'iron'], ['THE BOW BARBER', '#1e2c4f', 'barber'], ['BOOKS & BAWBEES', '#2f4a2a', 'books'],
+  const NAMES = [['THE WEE STOOP INN', '#1d3b2a', 'pub', 0xa82a24], ['FLEMING & DAUGHTER', '#5b1b2a', 'iron'], ['THE BOW BARBER', '#1e2c4f', 'barber'], ['BOOKS & BAWBEES', '#2f4a2a', 'books'],
     ['THE WEST PORT FISH BAR', '#0f3d5c', 'cafe', 0xa82a24], ['THE CORN EXCHANGE CAFE', '#C77B2E', 'cafe', 0xc8b89a], ["MACKAY'S BAKERY", '#2f4a2a', 'bakery', 0x2f5a3a], ['THE HALF MOON', '#5b1b2a', 'pub', 0xa82a24],
     ['PAPER & PRESS', '#3b2350', 'shop'], ['CANDLEMAKER', '#1d5c3a', 'shop'], ['THE MAP ROOM', '#2f4a2a', 'books'], ['HOOK & LINE', '#2a6f6f', 'shop']];
   let shopI = 0; const pubSign = {};
@@ -289,7 +289,7 @@ export function buildSquare(scene, world, mats, P) {
     addTarget({ id: 'door', name: 'Bakery Door', hint: 'strike the marked door', points: 75, kind: 'hit', pos: V(x, 0, z - 0.8), ringR: 0.9, stand: V(x, 0, z - 4.7), aim: V(x, 0.6, z - 0.3), lines: ["Knock knock! 'We're SHUT, son.'", 'Mrs Mackay is coming oot. Run.', 'One steak bake, special delivery.'] }); }
   { // 8. Pillar box (north pavement)
     const x = -20, z = 20.8; cyl('flat', x, 0.75, z, 0.3, 0.3, 1.5, 0xc8102e, { seg: 14, target: 'post' }); cyl('flat', x, 1.55, z, 0.34, 0.34, 0.12, 0xc8102e, { phys: false, seg: 14 }); solid('flat', x, 1.15, z - 0.28, 0.3, 0.06, 0.08, 0x1a1a1a, { phys: false });
-    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(x, 0, z), ringR: 0.8, stand: V(x, 0, z - 2.6), aim: V(x, 0.6, z), lines: ['First class!', 'Signed for. Delivered.', "Royal Mail: 'Is this a parcel?'"] }); }
+    addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(x, 0, z), ringR: 0.8, stand: V(x, 0, z - 2.6), aim: V(x, 0.6, z), lines: ['First class!', 'Signed for. Delivered.', "The postie: 'Is this a parcel?'"] }); }
   { // 9. Busker's open guitar case (roll it in from the +x side)
     const x = -2, z = 6, cm = 0x222222;
     solid('flat', x, 0.03, z, 1.3, 0.04, 0.6, 0x7a1030, { phys: false }); solid('flat', x, 0.06, z - 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x, 0.06, z + 0.32, 1.3, 0.12, 0.04, cm); solid('flat', x - 0.65, 0.15, z, 0.04, 0.3, 0.6, cm);
@@ -299,7 +299,7 @@ export function buildSquare(scene, world, mats, P) {
   { // 10. Police box in the square
     const x = -30, z = -8, pb = 0x123a7a; solid('flat', x, 1.3, z, 1.3, 2.6, 1.3, pb, { target: 'tardis' }); solid('flat', x, 2.75, z, 1.1, 0.3, 1.1, pb, { phys: false });
     sign('POLICE BOX', x + 0.66, 2.35, z, 1.1, 0.2, Math.PI / 2, '#111', '#fff', 'bold 60px Arial'); for (const k of [-0.3, 0.3]) solid('glass', x + 0.66, 1.8, z + k, 0.02, 0.4, 0.4, 0xffffff, { phys: false });
-    addTarget({ id: 'tardis', name: 'Police Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: V(x + 0.9, 0, z), ringR: 1.0, stand: V(x + 3.6, 0, z), aim: V(x + 0.6, 0.6, z), lines: ["It's bigger on the inside, but you hit the outside.", 'Polis! ...no, it\'s empty. Phew.', 'Exterminate! Wait, wrong show.'] }); }
+    addTarget({ id: 'tardis', name: 'Auld Polis Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: V(x + 0.9, 0, z), ringR: 1.0, stand: V(x + 3.6, 0, z), aim: V(x + 0.6, 0.6, z), lines: ["Ye hit the auld polis box fair an' square.", 'Polis! ...no, it\'s empty. Phew.', 'Clunk! The sergeant\'s tea spilled.'] }); }
   { // 11. Builders' skip on the south edge road
     const x = 40, z = -17.4, w = 2.6, d = 1.6, h = 0.9, th = 0.08, sm = 0xe0a400, y = 0;
     solid('flat', x, y + 0.05, z, w, 0.1, d, sm); solid('flat', x - w / 2, y + h / 2, z, th, h, d, sm); solid('flat', x + w / 2, y + h / 2, z, th, h, d, sm); solid('flat', x, y + h / 2, z - d / 2, w, h, th, sm); solid('flat', x, y + h / 2, z + d / 2, w, h, th, sm);

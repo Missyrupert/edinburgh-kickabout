@@ -222,10 +222,10 @@ function showFinale() { // v3.9: the game-complete card (the Esplanade crown)
   if (document.pointerLockElement) document.exitPointerLock();
 }
 function showGoal(bought = false) {
-  $('goalBig').textContent = '🍟 🥤'; $('goalTitle').textContent = bought ? 'One fish supper an\' an Irn-Bru!' : 'Chippy unlocked!';
+  $('goalBig').textContent = '🍟 🥤'; $('goalTitle').textContent = bought ? 'One fish supper an\' a can o\' ginger!' : 'Chippy unlocked!';
   $('goalLine').innerHTML = bought
     ? `"That's ${fmt(GOAL.pence)}, son. Salt an' vinegar? ...Course ye dae."<br><small>Suppers bought: ${wallet.suppers}. Wallet: ${fmt(wallet.pence)}</small>`
-    : `You've saved ${fmt(wallet.pence)} - enough for a chippy an' an Irn-Bru.<br><small>${LEVEL.id === 'pilton' ? 'Head to the counter at The Pilton Plaice (top of the street).' : 'Get yersel tae West Pilton - The Pilton Plaice is open.'}</small>`;
+    : `You've saved ${fmt(wallet.pence)} - enough for a chippy an' a can o' ginger.<br><small>${LEVEL.id === 'pilton' ? 'Head to the counter at The Pilton Plaice (top of the street).' : 'Get yersel tae West Pilton - The Pilton Plaice is open.'}</small>`;
   $('goalCard').classList.remove('hidden'); sfx.success(true);
   if (document.pointerLockElement) document.exitPointerLock();
 }

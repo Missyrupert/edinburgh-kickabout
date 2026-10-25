@@ -158,7 +158,7 @@ export function drawTargetDoor(g) {
 // The pattern is computed in 3D for every texel of an equirectangular map that matches
 // THREE.SphereGeometry's UV layout, so there is no stretching or seam at the poles/date line.
 const ballCache = {};
-// style 'tango' (default, Tango/Telstar-inspired) or 'winter' (unlockable: 1980s-style orange winter ball, black pentagons)
+// style 'tango' (default, classic panel ball) or 'winter' (unlockable: 1980s-style orange winter ball, black pentagons)
 export function ballTexture(style = 'tango') {
   if (ballCache[style]) return ballCache[style];
   const W = PRESET.texSize <= 512 ? 512 : 1024, H = W / 2;

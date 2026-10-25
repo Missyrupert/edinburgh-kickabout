@@ -58,7 +58,7 @@ function build(scene, world, mats, P_) {
   const winShop = {}; for (const k in shopDraw) winShop[k] = atlas.draw(192, 128, shopDraw[k]);
   const S0 = (name, col, draw, door = null, sub = null, fg = '#F1E3B8') => ({ name, col, draw, door, sub, fg });
   // north side (s = +1) and south side (s = -1) frontages: [x0, x1, storeys, shop]
-  const NORTH = [[-64, -52, 6, S0('CANONGATE CASHMERE', 0x2e3e5a, 'tartan')], [-52, -42, 5, null], [-42, -29, 6, S0('OLD TOWN FUDGE KITCHEN', 0x6a3a22, 'fudge', 'fudgedoor', 'MADE IN THE SHOP')], [-29, -19, 7, null],
+  const NORTH = [[-64, -52, 6, S0('CANONGATE CASHMERE', 0x2e3e5a, 'tartan')], [-52, -42, 5, null], [-42, -29, 6, S0('THE TABLET TIN', 0x6a3a22, 'fudge', 'fudgedoor', 'MADE IN THE SHOP')], [-29, -19, 7, null],
     [-19, -8, 6, S0('CLOSE CORNER CAFE', 0x2e4a3a, 'books', null, 'SOUP · SCONES · COFFEE')], [-8, 2, 6, S0('LAWNMARKET SPIRITS', 0x1f3a2c, 'whisky', 'whiskydoor', 'WHISKY MERCHANTS')], [2, 12, 5, null], [12, PEND[0], 6, null],
     [PEND[1], 30, 6, null], [30, 40, 6, S0('HIGH STREET BOOKS', 0x5a2a2a, 'books')], [40, 52, 7, null], [52, 64, 6, S0('TOLBOOTH TEAROOM', ACC, 'fudge')]];
   const SOUTH = [[-64, -50, 6, S0('HEATHER & STONE', 0x3a3a4a, 'books', null, 'SILVER · GIFTS')], [-50, -38, 6, null], [-38, -26, 5, S0('ROYAL MILE GIFTS', 0x2a4a6a, 'tartan')], [-26, -14, 6, S0('THE TARTAN LOOM', 0x5a1f2a, 'tartan', null, 'WEAVERS SINCE 1902')], [-14, -2, 7, null],
@@ -168,7 +168,7 @@ function build(scene, world, mats, P_) {
     addTarget({ id: 'tourboard', name: 'Tour A-Board', hint: 'hit the walking-tour A-board', points: 50, kind: 'hit', pos: V(x - 3, 0, z), ringR: 0.9, stand: V(x - 6, 0, z), aim: V(x, 0.6, z), lines: ['Tour starts noo - follow that ba\'!', 'Ghosts: rattled.', 'Booked on.'] }); }
 
   // the fudge and whisky doors (north side, face -z)
-  for (const [id, name, hint, lines, pts] of [['fudgedoor', 'Fudge Kitchen Door', 'hit the fudge kitchen door', ['Sweet strike!', 'Tablet for the winner.', 'Melted their hearts.'], 50], ['whiskydoor', 'Whisky Merchant Door', 'hit the whisky merchant\'s door', ['Neat!', 'Aged twelve seconds in the air.', 'A dram fine kick.'], 75]]) {
+  for (const [id, name, hint, lines, pts] of [['fudgedoor', 'Tablet Tin Door', 'hit the Tablet Tin door', ['Sweet strike!', 'Tablet for the winner.', 'Melted their hearts.'], 50], ['whiskydoor', 'Whisky Merchant Door', 'hit the whisky merchant\'s door', ['Neat!', 'Aged twelve seconds in the air.', 'A dram fine kick.'], 75]]) {
     const d = doors[id]; addTarget({ id, name, hint, points: pts, kind: 'hit', pos: V(d.x, 0, FR - 1.3), ringR: 1.0, stand: V(d.x - 2, 0, FR - 6.2), aim: V(d.x, 1.0, FR - 0.2), lines }); }
 
   // ---------- street furniture: heritage lamps, bollards, bins ----------

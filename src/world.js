@@ -196,7 +196,7 @@ export function buildWorld(scene, world, mats, P) {
 
   // ---------- shopfronts (painted timber, gold lettering) ----------
   const shops = [
-    ['W', -46, -40, 'THE LAST DRAP', '#1d3b2a', 0, 7, 'pub'], ['W', -30.5, -25, 'FLEMING & DAUGHTER', '#5b1b2a', 0, 7, 'iron'],
+    ['W', -46, -40, 'THE WEE STOOP INN', '#1d3b2a', 0, 7, 'pub'], ['W', -30.5, -25, 'FLEMING & DAUGHTER', '#5b1b2a', 0, 7, 'iron'],
     ['W', -22, -14, 'THE BOW BARBER', '#1e2c4f', 0, 7, 'barber'], ['W', 6, 14, 'BOOKS & BAWBEES', '#3a2a1a', 0, 6.75, 'books'],
     ['E', -49, -43, 'THE WEST PORT FISH BAR', '#0f3d5c', 0, 7, 'cafe'], ['E', -32, -26, 'THE CORN EXCHANGE CAFE', '#C77B2E', 0, 6.75, 'cafe'],
     ['E', 1, 9, "MACKAY'S BAKERY", '#2f4a2a', 0, 7, 'bakery'], ['E', 12, 18, 'THE HALF MOON', '#5b1b2a', 0, 7, 'pub'],
@@ -388,7 +388,7 @@ export function buildWorld(scene, world, mats, P) {
     cyl('flat', -5.5, PAVE + 1.55, 12, 0.34, 0.34, 0.12, 0xc8102e, { phys: false, seg: 14 });
     solid('flat', -5.22, PAVE + 1.15, 12, 0.08, 0.06, 0.3, 0x1a1a1a, { phys: false });
     addTarget({ id: 'post', name: 'Pillar Box', hint: 'hit the postbox', points: 75, kind: 'hit', pos: V(-5.5, PAVE, 12), ringR: 0.8, stand: V(-5.5, PAVE, 9.4), aim: V(-5.5, 0.6, 12),
-      lines: ['First class!', 'Signed for. Delivered.', "Royal Mail: 'Is this a parcel?'"] });
+      lines: ['First class!', 'Signed for. Delivered.', "The postie: 'Is this a parcel?'"] });
   }
   // 9. Busker's open guitar case (roll it in)
   {
@@ -409,8 +409,8 @@ export function buildWorld(scene, world, mats, P) {
       solid('flat', x, y + 2.75, z, 1.1, 0.3, 1.1, pb, { phys: false });
       sign('POLICE BOX', x - 0.66, y + 2.35, z, 1.1, 0.2, -Math.PI / 2, '#111', '#fff', 'bold 60px Arial');
       for (const k of [-0.3, 0.3]) solid('glass', x - 0.66, y + 1.8, z + k, 0.02, 0.4, 0.4, 0xffffff, { phys: false });
-      addTarget({ id: 'tardis', name: 'Police Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: W(x - 0.9, y, z), ringR: 1.0, stand: W(1.6, y, z), aim: W(x - 0.6, y + 0.6, z),
-        lines: ["It's bigger on the inside, but you hit the outside.", 'Polis! ...no, it\'s empty. Phew.', 'Exterminate! Wait, wrong show.'] }); }
+      addTarget({ id: 'tardis', name: 'Auld Polis Box', hint: 'hit the police box', points: 75, kind: 'hit', pos: W(x - 0.9, y, z), ringR: 1.0, stand: W(1.6, y, z), aim: W(x - 0.6, y + 0.6, z),
+        lines: ["Ye hit the auld polis box fair an' square.", 'Polis! ...no, it\'s empty. Phew.', 'Clunk! The sergeant\'s tea spilled.'] }); }
     { const x = -4.2, z = 31, w = 2.6, d = 1.6, h = 0.9, th = 0.08, sm = 0xe0a400;
       solid('flat', x, y + 0.05, z, w, 0.1, d, sm);
       solid('flat', x - w / 2, y + h / 2, z, th, h, d, sm); solid('flat', x + w / 2, y + h / 2, z, th, h, d, sm);

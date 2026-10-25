@@ -157,7 +157,7 @@ export function buildParade({ solid, quad, atlas, cyl, windows, V, boxBody }) {
   for (const [x, y, c] of [[-1.75, 0.18, 0x4b6a8a], [-1.75, 0.5, 0x8a4b3a], [-1.35, 0.18, 0x4b6a8a]]) solid('flat', x, y, 33.65, 0.38, 0.32, 0.42, c, { phys: y < 0.3 }); // milk/bread crates
   // newspaper A-board (no collider: you walk/kick through it - it's tiny and sits by the wall)
   solid('flat', -5.2, 0.45, 33.55, 0.55, 0.9, 0.04, 0x2E2F2C, { phys: false, rx: 0.15 }); boxBody(-5.2, 0.45, 33.6, 0.55, 0.9, 0.22, { surface: 'board' }); // v2.3 A-board collider (simple box)
-  quad('atlas', -5.2, 0.5, 33.505, 0.48, 0.6, Math.PI, R(80, 100, D.notice(['EVENING NEWS', 'in today'], '#f4f1ea')), 0xffffff, { rx: 0 });
+  quad('atlas', -5.2, 0.5, 33.505, 0.48, 0.6, Math.PI, R(80, 100, D.notice(['THE DAILY BLETHER', 'in today'], '#f4f1ea')), 0xffffff, { rx: 0 });
   // grey council litter bin on a post at the parade end, behind the line of the hedge
   cyl('metal', -15.6, 0.55, 31.6, 0.05, 0.05, 1.1, 0x2a2b29, { seg: 6 }); cyl('flat', -15.6, 0.85, 31.6, 0.22, 0.2, 0.5, 0x4a4d4c, { seg: 10, phys: false });
   // railings in front of the salon/bookies (pedestrian guard by the kerb gap), thin bars, no colliders
