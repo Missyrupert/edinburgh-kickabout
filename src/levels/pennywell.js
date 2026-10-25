@@ -153,7 +153,7 @@ function build(scene, world, mats, P) {
   { // the canopy above Haddon's Wines - Chris's old flat is right above it (chip target)
     addTarget({ id: 'canopy', name: "Up on Haddon's Canopy", hint: "chip it up onto the canopy over Haddon's Wines (that's the old flat above)", points: 125, kind: 'zone', pos: V(7, 0, PF + 3.2), ringR: 1.2, stand: V(7, 0, PF + 12.5), aim: V(7, 4.2, PF + 1.2),
       zone: new THREE.Box3(V(4, 3.45, PF + 0.1), V(10, 4.6, PF + 2.6)), lines: ["Up on the roof! Ma would've had your guts for garters.", "Left it on the canopy. Some things never change.", 'Chipped like a pro. The whole close heard it.'] }); }
-  sign('YPD', 24.03, 1.7, PF - 3.5, 0.9, 0.42, Math.PI / 2, '#d9d6cf', 'rgba(40,58,110,0.5)', 'italic bold 64px Arial'); // v3.11: a small faded tag on the end wall
+  sign('YPD', 24.03, 1.6, PF - 1.4, 0.9, 0.42, Math.PI / 2, '#d9d6cf', 'rgba(40,58,110,0.55)', 'italic bold 64px Arial'); // v3.11: a small faded tag on the end wall
   FR = null;
 
   // ---------- Pennywell Road: verges, palisade railings, lamp standards, trees, bus stop, clutter ----------
@@ -164,7 +164,7 @@ function build(scene, world, mats, P) {
   palisade(VG, -77, VG, -57); palisade(VG, -4, VG, 32.5); // left: houses at the bottom, then from the kirk up (open along the shops)
   palisade(-VG, -77, -VG, -62.7); palisade(-VG, -57.3, -VG, -46); palisade(-VG, -44, -VG, 32.5); // right: the school (gates = goal), then houses and St Paul's
   palisade(-XW, FZ, -3, FZ, 0x5a5e62, 2.4); palisade(3, FZ, XW, FZ, 0x5a5e62, 2.4); // the police station's security fence
-  for (const s of [-1, 1]) for (let z = -76; z < 34; z += 13) { const x = s * (PV - 0.4); cyl('cpanel', x, 3.6, z, 0.11, 0.16, 7.2, 0xb4b2ab, { seg: 7 }); solid('cpanel', x - s * 0.7, 7.15, z, 1.5, 0.12, 0.26, 0xb4b2ab, { phys: false }); solid('flat', x - s * 1.35, 7.05, z, 0.5, 0.12, 0.3, 0xfff1c0, { phys: false }); }
+  for (const s of [-1, 1]) for (let z = -70; z < 34; z += 13) { const x = s * (PV - 0.4); cyl('cpanel', x, 3.6, z, 0.11, 0.16, 7.2, 0xb4b2ab, { seg: 7 }); solid('cpanel', x - s * 0.7, 7.15, z, 1.5, 0.12, 0.26, 0xb4b2ab, { phys: false }); solid('flat', x - s * 1.35, 7.05, z, 0.5, 0.12, 0.3, 0xfff1c0, { phys: false }); }
   for (const [x, z, s2] of [[9.3, -2, 1.1], [-9.3, -9, 1.2], [9.3, 26, 1.25], [-9.3, 30, 1.0], [24, 38.5, 1.1], [-9.3, -50, 1.15], [9.3, -66, 1.2], [-9.3, -30, 1.05]]) { cyl('wood', x, 2.2 * s2, z, 0.22, 0.32, 4.4 * s2, 0x4e3c2a, { seg: 6 }); for (const [ox, oy, oz, r] of [[0, 6.2, 0, 2.6], [0.9, 5.4, 0.6, 1.9], [-0.8, 5.6, -0.7, 2.0], [0.2, 7.3, -0.2, 1.7]]) B.add('flat', new THREE.IcosahedronGeometry(r * s2, 1), M4(x + ox, oy * s2, z + oz, 1, 0.92, 1), pick([0x46672f, 0x557a36, 0x4c6e32]), {}); }
   // bus stop on the right-hand pavement (target, glass)
   { const x = -5.3, z = 5; solid('metal', x - 0.6, 1.25, z, 0.08, 2.5, 3.2, IRON, { phys: false }); quad('glass', x - 0.55, 1.3, z, 3.1, 2.1, Math.PI / 2, null, 0xd8e6ee); boxBody(x - 0.6, 1.25, z, 0.12, 2.5, 3.2, { target: 'busstop', surface: 'glass' });
@@ -240,12 +240,12 @@ function build(scene, world, mats, P) {
   for (const [z, c] of [[20.5, 0xd4402c], [21.4, 0xf2f2f2], [22.6, 0x2d6cc4], [26, 0xf2f2f2]]) solid('flat', 12.6, 1.8, z, 0.02, 0.6, 0.55, c, { phys: false });
   // substation behind palisade (lived-in clutter) on the left
   solid('brick', 13.5, 1.4, -2.5, 3, 2.8, 2.6, 0xffffff, { tile: 1.5 }); solid('metal', 12.0, 1.0, -2.5, 0.05, 1.6, 1.4, 0x6a6c6a, { phys: false }); sign('DANGER  HIGH VOLTAGE', 11.97, 1.3, -2.5, 1.0, 0.35, -Math.PI / 2, '#e7c23a', '#1d1d1d', 'bold 40px Arial');
-  sign('YMD', 11.98, 2.15, -3.4, 0.8, 0.38, -Math.PI / 2, '#ddd8cf', 'rgba(40,58,110,0.5)', 'italic bold 64px Arial'); // v3.11: small faded tag
+  sign('YMD', 21.5, 1.6, -57.95, 0.8, 0.38, 0, '#dedcd4', 'rgba(40,58,110,0.55)', 'italic bold 64px Arial'); // v3.11: small faded tag on the flats' gable
 
   // ---------- v3.11: the new Craigroyston school at the bottom right - cream panels, a grey drum, curved standing-seam roof; gates = goal ----------
   { const xc = -28, zc = -62, gz = -60;
-    solid('cpanel', xc, 4.5, zc, 22, 9, 14, 0xe8e2d2, { tile: 3 }); solid('brick', xc, 0.6, zc, 22.1, 1.2, 14.1, 0xffffff, { phys: false, tile: 1.5 });
-    B.add('metal', new THREE.CylinderGeometry(7.4, 7.4, 14.6, 14, 1, false, Math.PI / 2, Math.PI), M4(xc, 9, zc, 1.55, 1, 0.32, Math.PI / 2, 0, 0), 0xa8b0b8, {}); // curved roof
+    solid('harl', xc, 4.5, zc, 22, 9, 14, 0xf0ece0, { tile: 2.6, grime: 0.06 }); solid('brick', xc, 0.6, zc, 22.1, 1.2, 14.1, 0xffffff, { phys: false, tile: 1.5 });
+    { const R = 12, A = Math.asin(7.3 / R), n = 6, d = 2 * A / n; for (let k = 0; k < n; k++) { const t = -A + d * (k + 0.5); solid('metal', xc, 9 - R * Math.cos(A) + R * Math.cos(t), zc + R * Math.sin(t), 22.6, 0.2, 2 * R * Math.sin(d / 2) + 0.06, 0xa8b0b8, { phys: false, rx: t }); } } // curved standing-seam roof (arch profile faces the road)
     for (let f = 0; f < 2; f++) { quad('glass', -16.97, 2.6 + f * 3.4, zc, 12.5, 1.5, Math.PI / 2, null, 0xb8cad6); for (let k = -6; k <= 6; k += 2) solid('flat', -16.95, 2.6 + f * 3.4, zc + k, 0.06, 1.6, 0.1, 0x3a3c3e, { phys: false }); }
     cyl('cpanel', -22, 5, -73.5, 4.6, 4.6, 10, 0x8a929a, { seg: 16 }); cyl('flat', -22, 10.1, -73.5, 4.8, 4.8, 0.25, 0x5a5e62, { seg: 16, phys: false }); // grey drum
     flatG('slab', -16, -VG, gz - 1.3, gz + 1.3, 0xd2cfc8, { tile: 1.5 }); // path to the gate
