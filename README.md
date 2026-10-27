@@ -1,6 +1,6 @@
-# Edinburgh Kickabout (v3.13)
+# Edinburgh Kickabout (v3.14)
 
-A first-person street-football game set in 11 playable Edinburgh streets, with Princes Street on the way. It's built for phones, and works on desktop too.
+A first-person street-football game set in 12 playable Edinburgh streets. It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
 
 Live: https://missyrupert.github.io/edinburgh-kickabout/
@@ -18,7 +18,7 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 | 06 | Easter Road | `?level=easterroad` |
 | 07 | London Road | `?level=londonroad` |
 | 08 | Stockbridge | `?level=stockbridge` |
-| 09 | Princes Street - coming soon | - |
+| 09 | Princes Street | `?level=princesstreet` |
 | 10 | Grassmarket | `?level=grassmarket` |
 | 11 | Royal Mile | `?level=royalmile` |
 | 12 | Castle Esplanade (finale) | `?level=esplanade` |
@@ -28,6 +28,10 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 - Most streets have 10 targets (the Grassmarket has 11). In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
 - Crowning the Esplanade shows the game-complete card. The card only claims the full journey if every other street is cleared too.
+
+## Princes Street (v3.14)
+
+The north-side shops (fictional names: Moray & Stuart, Baillie's Chemist, Macrae's department store, The Grand North Hotel with its clock tower), trams in a fictional livery, and on the south side the gardens below the balustrade: the castle on its rock, the Ross Fountain, the floral clock, the classical gallery at the Mound and the Gothic monument. Ten targets, including the gardens gate and the floral clock.
 
 ## Stockbridge (v3.13)
 
