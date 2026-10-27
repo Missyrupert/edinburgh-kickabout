@@ -128,7 +128,7 @@ function build(scene, world, mats, P_) {
     quad('atlasLit', nb.x - Math.sin(TH1 + 0.02) * 0.06, 1.35, nb.z - Math.cos(TH1 + 0.02) * 0.06, 1.5, 0.9, nry, atlas.draw(160, 96, (g, w, h) => { g.fillStyle = '#1f2a44'; g.fillRect(0, 0, w, h); g.fillStyle = '#e8d8a0'; g.font = 'bold 16px Georgia'; g.textAlign = 'center'; g.fillText('LONDON ROAD KIRK', w / 2, 22); g.font = '13px Georgia'; g.fillText('Sunday Service 11am', w / 2, 46); g.fillText('All Welcome', w / 2, 66); }));
     const s = P(TH1 + 0.02, R + RW - 3.6); tgt({ id: 'churchboard', name: 'Kirk Notice Board', hint: 'hit the kirk notice board by the junction', points: 75, kind: 'hit', pos: P(TH1 + 0.02, R + RW + 0.2), ringR: 0.9, stand: s, aim: V(nb.x, 1.3, nb.z), lines: ['Hallelujah!', 'The minister felt that.', 'Notice: ball received.'] }); }
   // more tenements beyond both ends (hazy continuation) + Easter Road heading off north at the junction
-  for (const [a, r] of [[TH0 - 0.16, RF + 6], [TH1 + 0.3, RF + 4], [TH0 - 0.28, R - 30]]) { const p = P(a, r); solid('stone', p.x, 7, p.z, 24, 14, 12, pick(SAND), { phys: false, ry: RY(a), tile: 3.4 }); }
+  for (const [a, r] of [[TH1 + 0.3, RF + 4]]) { const p = P(a, r); solid('stone', p.x, 7, p.z, 24, 14, 12, pick(SAND), { phys: false, ry: RY(a), tile: 3.4 }); }
 
   // ---------- street furniture: bus shelter (easy first), postbox, lamps, bins, a gate sign ----------
   { const a = TH0 + 0.14, r = R + RW + 0.9, ry = RY(a), p = P(a, r), tx = Math.cos(a), tz = -Math.sin(a), nx = -Math.sin(a), nz = -Math.cos(a); // shelter: back panel on the building side, roof
@@ -167,7 +167,84 @@ function build(scene, world, mats, P_) {
     const st = P(a, r + 5.5); tgt({ id: 'bench', name: 'Gardens Bench', hint: 'hit the bench up the slope', points: 75, kind: 'hit', pos: P(a, r + 1.5), ringR: 0.9, stand: V(st.x, gh(r + 5.5), st.z), aim: V(p.x, y + 0.5, p.z), lines: ['A seat wi\' a view - and a dent.', 'Bench: benched.', 'Dedicated tae a great strike.'] }); }
 
   // ---------- edges ----------
-  for (const a of [TH0 - 0.04, TH1 + 0.13]) { const p = P(a, (R1 + RF) / 2); boxBody(p.x, 3, p.z, 1, 6, RF - R1 + 2, { ry: a, playerOnly: true }); }
+  // ---------- v3.12: the road carries on west and up: the Playhouse (right), St James Quarter up on the left with its ribbon tower,
+  // Picardy Place (tram stop, garden island) and York Place's Georgian terraces beyond. Straight local frame from the curve's west end:
+  // u runs along the road (away from the curve), v to the left (the outside of the curve). Scenery only - the targets are unchanged.
+  { const a0 = TH0 - 0.1, O = P(a0, R), tx = -Math.cos(a0), tz = Math.sin(a0), lx = tz, lz = -tx;
+    const L = (u, v) => V(O.x + tx * u + lx * v, 0, O.z + tz * u + lz * v);
+    const blk = (key, u, v, y, w, h, d, col, o = {}) => { const p = L(u, v); return solid(key, p.x, y, p.z, w, h, d, col, { ry: a0, ...o }); };
+    const fq = (key, u, v, y, w, h, side, uv, col = 0xffffff, o = {}) => { const p = L(u, v); quad(key, p.x, y, p.z, w, h, side > 0 ? a0 : a0 + Math.PI, uv, col, o); }; // side +1 faces +v
+    const roofL = (u, v, y, w, d, h = 3, col = 0x4c5158) => { const p = L(u, v); B.add('roof', ROOF, M4(p.x, y, p.z, d, h, w, 0, a0 + Math.PI / 2), col, { tile: 2.2 }); };
+    const wall = (u, v, w, d) => { const p = L(u, v); boxBody(p.x, 3, p.z, w, 6, d, { ry: a0, playerOnly: true }); };
+    const flatQ = (key, u, v, y, w, d, col, tile = 0) => { const p = L(u, v); B.add(key, QUAD, M4(p.x, y, p.z, w, d, 1, -Math.PI / 2, a0), col, { tile }); };
+    // ground: the road and pavements carry straight on; Picardy Place opens out into setts round a garden island
+    { const p = L(76, 0); boxBody(p.x, -1, p.z, 170, 2, 90, { ry: a0, surface: 'tarmac' }); }
+    flatQ('tarmac', 50, 0, 0.012, 100, 2 * RW, TAR, 4); flatQ('tarmac', 128, 0, 0.012, 56, 2 * RW, TAR, 4);
+    for (const s of [-1, 1]) { flatQ('slab', 35, s * (RW + PW / 2), 0.022, 70, PW, SLAB, 1.8); flatQ('slab', 128, s * (RW + PW / 2), 0.022, 56, PW, SLAB, 1.8);
+      for (const [u, w] of [[35, 70], [128, 56]]) blk('stone', u, s * RW, 0.06, w, 0.12, 0.3, KERB, { phys: false }); }
+    flatQ('slab', 85, 0, 0.018, 30, 52, 0x9a958c, 1.2); // Picardy Place setts / paving
+    for (let i = 0; i < 26; i++) if (i % 2 === 0) blk('flat', 2 + i * 2.6, 0, 0.016, 2.4, 0.01, 0.15, 0xe8e6de, { phys: false }); // centre dashes
+    // tram lines through Picardy and up York Place (setts strip + rails)
+    flatQ('flat', 118, 0, 0.02, 68, 5.2, 0x7d776c); for (const v of [-1.9, -0.5, 0.5, 1.9]) blk('metal', 118, v, 0.03, 68, 0.03, 0.09, 0x8e9196, { phys: false });
+    // --- the corner tenement closing the curve's west end (outer side) ---
+    { const p = P(TH0 - 0.05, RF + 5); solid('stone', p.x, 7, p.z, 10.6, 14, 10, 0xc8b690, { ry: RY(TH0 - 0.05), tile: 3.2 }); const f = P(TH0 - 0.05, RF + 0.02);
+      for (let j = 0; j < 4; j++) for (const k of [-1, 1]) quad('facade', f.x + Math.cos(TH0 - 0.05) * k * 2.6, 1.6 + j * 3.2, f.z - Math.sin(TH0 - 0.05) * k * 2.6, 2.6, 2.9, RY(TH0 - 0.05), cellUV(j ? FACADE.sashA : FACADE.shopUpper), vt()); }
+    // --- right: the bar on the corner (dark wood, gold letters, hanging baskets) then the Playhouse (dark stone, big lettering, canopy, flags) ---
+    { blk('stone', 4, -RW - PW - 6, 7.5, 9, 15, 12, 0xa89c8c, { tile: 3 }); blk('flat', 4, -RW - PW - 0.05, 2.2, 8.6, 4.4, 0.2, 0x6e2a22, { phys: false });
+      fq('flat', 4, -RW - PW + 0.08, 1.8, 7, 2.2, 1, null, 0x9a7448); for (const k of [-2.4, -0.8, 0.8, 2.4]) blk('flat', 4 + k, -RW - PW + 0.1, 1.8, 0.12, 2.3, 0.08, 0x4a1a16, { phys: false }); fq('atlasLit', 4, -RW - PW + 0.12, 3.9, 7.8, 0.6, 1, atlas.fascia('THE STAGE DOOR BAR', null, '#5a1e1a', '#E8C766', 7.8 / 0.6));
+      for (let j = 1; j < 4; j++) for (const k of [-2.6, 0, 2.6]) fq('facade', 4 + k, -RW - PW + 0.02, 4.6 + (j - 0.5) * 3.2, 2.2, 2.8, 1, cellUV(FACADE.triple), vt(0xd8d0c4));
+      for (const k of [-3, -1, 1, 3]) { const p = L(4 + k, -RW - PW + 0.6); B.add('flat', new THREE.IcosahedronGeometry(0.35, 0), M4(p.x, 5.2, p.z, 1, 0.8, 1), 0x4f8a3a, {}); } }
+    { const u0 = 26, W = 30, v0 = -RW - PW, ST = 0xb8ae9e; blk('stone', u0, v0 - 8, 8, W, 16, 16, ST, { tile: 3.4 });
+      for (let j = 1; j < 4; j++) for (let k = 0; k < 9; k++) fq('facade', u0 - W / 2 + 1.7 + k * 3.3, v0 + 0.02, 4.4 + (j - 0.5) * 3.6, 2.2, 3.0, 1, cellUV(j === 3 ? FACADE.small : FACADE.sashA), vt(0xcfc8bc));
+      blk('stone', u0, v0 + 0.25, 15.6, W + 0.4, 0.8, 0.5, 0x5e574e, { phys: false }); for (let k = 0; k < 30; k++) blk('stone', u0 - W / 2 + 0.5 + k, v0 + 0.25, 16.4, 0.18, 0.8, 0.18, 0x6e665c, { phys: false }); // balustrade
+      fq('atlasLit', u0, v0 + 0.06, 12.9, 12, 1.3, 1, atlas.sign('GREENSIDE PLAYHOUSE', '#4a443c', '#f2ead8', 12 / 1.3, 'bold 46px Georgia'));
+      blk('metal', u0, v0 + 1.6, 4.6, 16, 0.5, 3.2, 0x4a4a50, { phys: false }); fq('atlasLit', u0, v0 + 3.22, 4.6, 16, 0.5, 1, atlas.sign('TONIGHT  ·  THE BIG MUSICAL  ·  BOX OFFICE OPEN', '#141414', '#f4d35e', 32, 'bold 30px Arial'));
+      fq('atlasLit', u0, v0 + 0.08, 7.2, 8, 2.4, 1, atlas.draw(256, 80, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#2a1a4a'); gr.addColorStop(1, '#8a2a3a'); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.fillStyle = '#ffe9a8'; g.font = 'bold 30px Georgia'; g.textAlign = 'center'; g.fillText('NOW SHOWING', w / 2, 50); }));
+      fq('flat', u0, v0 + 0.08, 1.7, 14, 2.6, 1, null, 0xb89a68); for (let k = -6; k <= 6; k += 2) blk('wood', u0 + k, v0 + 0.1, 1.7, 0.12, 2.7, 0.1, 0x2a2420, { phys: false }); for (const k of [-10, 0, 10]) { const p = L(u0 + k, v0 - 4); cyl('metal', p.x, 20.5, p.z, 0.05, 0.06, 9, 0xdddddd, { phys: false, seg: 4 }); fq('flat', u0 + k + 0.9, v0 - 4, 23.6, 1.8, 1.1, 1, null, 0x1f5aa8); fq('flat', u0 + k + 0.9, v0 - 4, 23.6, 1.8, 1.1, -1, null, 0x1f5aa8); }
+      roofL(u0, v0 - 8, 16, W, 16, 2.4, 0x55595e); }
+    // the rest of Greenside: a plainer four-storey block up to Picardy
+    { blk('stone', 54, -RW - PW - 6, 7, 24, 14, 12, 0x8e8270, { tile: 3 }); for (let j = 0; j < 4; j++) for (let k = 0; k < 6; k++) fq('facade', 44 + k * 4, -RW - PW + 0.02, 1.6 + j * 3.2, 2.6, 2.9, 1, cellUV(j ? pick([FACADE.sashA, FACADE.sashB]) : pick([FACADE.door, FACADE.blind])), vt()); roofL(54, -RW - PW - 6, 14, 24, 12); }
+    // --- left, up on its podium: St James Quarter (pale stone and long glass bands, no shop names) and the ribbon tower ---
+    { const v0 = RW + PW, SJ = 0xd9cfb8; blk('stone', 30, v0 + 0.6, 0.7, 56, 1.4, 1.2, 0xb8ae98, { tile: 1.6 }); // podium wall (the Quarter sits up on the left)
+      for (const [u, w, h, d, dv] of [[16, 26, 18, 22, 1.2], [44, 28, 22, 26, 2.2]]) { blk('flat', u, v0 + dv + d / 2, h / 2, w, h, d, SJ);
+        for (let j = 0; j < 4; j++) fq('flat', u, v0 + dv - 0.02, 3.2 + j * 4.2, w - 1.2, 1.7, -1, null, j ? 0x7f95a2 : 0xc8b48a); blk('stone', u, v0 + dv + 0.2, h + 0.3, w + 0.2, 0.6, 0.6, 0xe6ddc8, { phys: false }); }
+      blk('flat', 44, v0 + 12, 25.5, 20, 5, 18, 0x93a8b2, { phys: false }); // set-back glass top storey
+      const c = L(36, v0 + 14), ty = 22; cyl('flat', c.x, ty + 9, c.z, 5.6, 6.2, 18, 0x8ea2ac, { phys: false, seg: 12 }); // the hotel drum
+      const N = 84; for (let i = 0; i < N; i++) { const f = i / N, th = f * Math.PI * 4.4, r = 6.6 + f * 2.2, x = c.x + Math.cos(th) * r, z = c.z + Math.sin(th) * r, y = ty + 1 + f * 21 + Math.sin(f * 9) * 0.6;
+        B.add('flat', BOX, M4(x, y, z, 1.4 * r * Math.PI * 4.4 / N, 1.8 + f * 1.2, 0.3, 0, -th + Math.PI / 2, 0.12), 0xc07a48, {}); } // the copper ribbon spiralling up and out
+      blk('glass', 30, v0 + 1.2, 1.6, 8, 2.6, 0.2, 0x2a3236, { phys: false }); fq('flat', 30, v0 + 2.0, 0.3, 8, 1.6, -1, null, 0xa49a86); } // a glazed entrance + steps
+    // --- Picardy Place: garden island (lawn, flower beds, low railings, a couple of trees), traffic lights, tall poles ---
+    { const u0 = 86, v0 = 17; flatQ('flat', u0, v0, 0.05, 22, 10, 0x5f8a3e); for (const [du, dv, col] of [[-6, -2, 0xc8402a], [2, 2, 0xe8c040], [7, -1, 0xb04a8a]]) flatQ('flat', u0 + du, v0 + dv, 0.07, 4.5, 2.2, col);
+      blk('stone', u0, v0, 0.25, 22.4, 0.5, 10.4, 0x8a8478, { tile: 1 }); for (let k = 0; k < 12; k++) { const p = L(u0 - 10.5 + k * 1.9, v0 - 5.2); cyl('metal', p.x, 0.8, p.z, 0.025, 0.025, 0.7, IRON, { phys: false, seg: 4 }); }
+      for (const du of [-7, 6]) { const p = L(u0 + du, v0 + 1.5); cyl('wood', p.x, 2.2, p.z, 0.15, 0.22, 4.4, 0x4a3a2c, { seg: 6 }); B.add('flat', new THREE.IcosahedronGeometry(2.1, 0), M4(p.x, 5.2, p.z, 1, 0.9, 1), 0x4a7a36, {}); }
+      for (const [u, v] of [[70, 8], [70, -8], [100, 8], [100, -8]]) { const p = L(u, v); cyl('metal', p.x, 1.5, p.z, 0.06, 0.06, 3, 0x2a2c2e, { phys: false, seg: 4 }); blk('metal', u, v, 3.2, 0.32, 0.9, 0.3, 0x1a1a1a, { phys: false }); blk('lamp', u, v + 0.16, 3.45, 0.18, 0.18, 0.05, 0xff6a4a, { phys: false }); } }
+    // the long pale classical block on Picardy's right side (three storeys, pediment, rusticated ground floor)
+    { blk('stone', 86, -30, 8, 36, 16, 14, 0xb8b2a2, { tile: 3.4 }); for (let j = 0; j < 3; j++) for (let k = 0; k < 9; k++) fq('facade', 70 + k * 4, -22.98, 2 + j * 4.4, 2.4, 3.3, 1, cellUV(j ? FACADE.sashA : FACADE.rustic), vt(0xe8e4dc)); roofL(86, -30, 16, 36, 14, 3.2);
+      { const p = L(86, -22.7); B.add('roof', ROOF, M4(p.x, 16, p.z, 12, 2.8, 0.6, 0, a0 + Math.PI), 0xb8b2a2, {}); } }
+    { blk('stone', 76, 36, 9, 30, 18, 12, 0xa89a80, { tile: 3 }); for (let j = 0; j < 4; j++) for (let k = 0; k < 7; k++) fq('facade', 63 + k * 4.2, 29.98, 2 + j * 3.6, 2.4, 3, -1, cellUV(j ? FACADE.sashB : FACADE.shopUpper), vt()); roofL(76, 36, 18, 30, 12); }
+    // the tram stop: island platform with shelters, ticket machine, catenary poles and a red-and-white tram waiting
+    { blk('stone', 96, 0, 0.18, 26, 0.36, 3.2, 0xb8b4aa, { tile: 1.2 }); for (const du of [-6, 6]) { blk('glass', 96 + du, 0.6, 1.4, 4, 2.2, 0.06, 0xcfe0e6, { phys: false }); blk('metal', 96 + du, 0, 2.6, 4.4, 0.12, 2.0, 0x3a3e42, { phys: false }); }
+      blk('metal', 104, -0.6, 1.0, 0.5, 1.6, 0.4, 0x2a2c30, { phys: false }); for (let k = 0; k < 5; k++) { const p = L(86 + k * 14, 0); cyl('metal', p.x, 4, p.z, 0.12, 0.14, 8, 0x55585c, { phys: false, seg: 6 }); blk('metal', 86 + k * 14, 0, 7.6, 0.1, 0.1, 7, 0x55585c, { phys: false }); }
+      for (const v of [-3.6, 3.6]) blk('metal', 116, v, 6.8, 64, 0.03, 0.03, 0x333333, { phys: false }); // overhead wire
+      const tv = -3.0, T0 = 108; blk('metal', T0, tv, 1.9, 30, 2.9, 2.6, 0xf2f2f0, { surface: 'metal' }); blk('metal', T0, tv, 0.75, 30.1, 0.7, 2.62, 0xb0182a, { phys: false });
+      fq('glass', T0, tv + 1.32, 2.3, 28, 1.1, 1, null, 0x22282c); fq('glass', T0, tv - 1.32, 2.3, 28, 1.1, -1, null, 0x22282c); blk('metal', T0 - 15.4, tv, 1.9, 0.8, 2.9, 2.5, 0xb0182a, { phys: false }); blk('metal', T0, tv, 3.45, 6, 0.3, 1, 0x3a3a3a, { phys: false }); }
+    // --- York Place: dark sandstone Georgian terraces both sides (chimney stacks, astragal sashes), the red-sandstone gallery at the far end ---
+    const TER = [0x8e8070, 0x958774, 0x86796a];
+    for (const s of [-1, 1]) for (let b = 0; b < 4; b++) { const u = 108 + b * 11, v = s * (RW + PW + 6), tone = TER[(b + (s > 0)) % 3]; if (s < 0 && b > 1) continue;
+      blk('stone', u, v, 7.5, 11, 15, 12, tone, { tile: 3.2 }); roofL(u, v, 15, 11, 12, 3.2, 0x50545a); for (const k of [-3.5, 3.5]) blk('stone', u + k, v, 18.8, 1.0, 2.6, 3, tone, { phys: false });
+      for (let j = 0; j < 4; j++) for (let k = -1; k <= 1; k++) fq('facade', u + k * 3.5, v - s * 6.02, 1.7 + j * 3.4, 2.2, 3.0, -s, cellUV(j ? (j === 3 ? FACADE.small : FACADE.sashA) : (k ? FACADE.sashB : FACADE.door)), vt());
+      fq('grime', u, v - s * 6.04, 7.5, 11, 15, -s, GRIME_UV[0], 0x6a5e4c); }
+    { const u = 132, v = -(RW + PW + 8), RS = 0x9a4a36; blk('stone', u, v, 9, 26, 18, 16, RS, { tile: 3 }); B.add('roof', ROOF, M4(L(u, v).x, 18, L(u, v).z, 16, 6, 26, 0, a0 + Math.PI / 2), 0x4a4e54, {});
+      for (const du of [-12.5, -4, 4, 12.5]) { const p = L(u + du, v + 7.6); cyl('stone', p.x, 20, p.z, 0.7, 0.8, 4, RS, { phys: false, seg: 6 }); B.add('stone', new THREE.ConeGeometry(0.8, 4.5, 6), M4(p.x, 24.2, p.z, 1, 1, 1), RS, {}); }
+      for (let j = 0; j < 3; j++) for (let k = 0; k < 6; k++) fq('facade', u - 10.5 + k * 4.2, v + 8.02, 2.4 + j * 5, 2.2, 4.0, 1, cellUV(j ? FACADE.arch : FACADE.door), vt(0xf0d8c8)); }
+    { const p = L(160, 0); solid('stone', p.x, 9, p.z, 4, 18, 60, 0x8a7e6e, { ry: a0, tile: 4, phys: false }); } // York Place carrying on into the haze
+    for (const s of [-1, 1]) for (let k = 0; k < 7; k++) { const u = 6 + k * 21; if (u > 64 && u < 104) continue; const p = L(u, s * (RW + 0.6)); cyl('metal', p.x, 4.5, p.z, 0.07, 0.1, 9, 0x5a5e62, { seg: 6 }); blk('lamp', u, s * (RW - 0.3), 8.9, 0.5, 0.12, 1.6, 0xffffff, { phys: false }); }
+    // invisible edges (player only): the frontages, Picardy's widening and the far end
+    wall(35, RW + PW + 0.8, 72, 1); wall(36, -RW - PW - 0.5, 74, 1); wall(130, RW + PW + 0.5, 50, 1); wall(130, -RW - PW - 0.5, 50, 1);
+    wall(86, 23, 34, 1); wall(86, -23, 34, 1); for (const s of [-1, 1]) { wall(71, s * 17, 1, 12); wall(103, s * 17, 1, 12); } wall(155, 0, 1, 30);
+    { const p = P(TH0 - 0.05, RF + 0.6); boxBody(p.x, 3, p.z, 11, 6, 1, { ry: RY(TH0 - 0.05), playerOnly: true }); } }
+
+  for (const a of [TH1 + 0.13]) { const p = P(a, (R1 + RF) / 2); boxBody(p.x, 3, p.z, 1, 6, RF - R1 + 2, { ry: a, playerOnly: true }); }
 
   const groups = [[P(TH0 + 0.2, R + RW + 2).x, 0, P(TH0 + 0.2, R + RW + 2).z], [P(0.05, R - RW - 2).x, 0, P(0.05, R - RW - 2).z], [P(-0.1, 72).x, gh(72), P(-0.1, 72).z], [P(TH1, R).x, 0, P(TH1, R).z]].map((p) => V(...p));
   const pig = { list: [], body: new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), null, groups.length * 4), head: new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 6, 4), null, groups.length * 4) };
@@ -180,6 +257,8 @@ function build(scene, world, mats, P_) {
   materials.atlasLit = new THREE.MeshBasicMaterial({ map: atlas.tex, vertexColors: true });
   const batches = B.build(scene, materials, { shadows: P_.shadows });
   const sp = LR.SPAWN, views = { spawn: [sp[0], sp[2], LR.SPAWNYAW, 4, 0.5], curve: [P(0, R + 2).x, P(0, R + 2).z, 270, 6, 0.5], gardens: [P(GT, R - 3).x, P(GT, R - 3).z, 0, 12, 0.5], spire: [P(TH1 - 0.15, R).x, P(TH1 - 0.15, R).z, 240, 10, 0.5] };
+  { const a0 = TH0 - 0.1, O = P(a0, R), tx = -Math.cos(a0), tz = Math.sin(a0), lx = tz, lz = -tx, L = (u, v) => [O.x + tx * u + lx * v, O.z + tz * u + lz * v], yw = Math.atan2(-tx, -tz) * 180 / Math.PI;
+    views.playhouse = [...L(-4, 3), yw - 20, 6, 0.5]; views.stjames = [...L(10, -6), yw + 35, 14, 0.5]; views.picardy = [...L(66, 4), yw, 6, 0.5]; views.york = [...L(100, 6), yw - 10, 4, 0.5]; }
   return { targets, dynamics, pigeons: pig, materials, batches, views };
 }
 const ringGeo = new THREE.RingGeometry(1, 1.1, 32);
@@ -200,6 +279,6 @@ export default {
   tiers: { shelter: 'easy', postbox: 'easy', pubdoor: 'easy', newsagent: 'easy', cafe: 'easy', stairdoor: 'easy', gatesign: 'easy', churchboard: 'easy', bench: 'tricky', braegoal: 'tricky' },
   spawn: LR.SPAWN, spawnYaw: LR.SPAWNYAW,
   ballHomes: () => { const a = LR.TH0 + 0.11, r = LR.R + LR.RW + 2; return [[Math.sin(a) * r, 0.4, LR.CZ + Math.cos(a) * r], [0, 0.4, -2], [Math.sin(0.3) * 100, 0.4, LR.CZ + Math.cos(0.3) * 100]]; },
-  bounds: { x: 58, zMin: -48, zMax: 14 },
+  bounds: { x: 175, zMin: -120, zMax: 14 },
   next: 'grassmarket',
 };

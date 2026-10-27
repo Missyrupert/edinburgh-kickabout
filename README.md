@@ -1,4 +1,4 @@
-# Edinburgh Kickabout (v3.11)
+# Edinburgh Kickabout (v3.12)
 
 A first-person street-football game set in 10 playable Edinburgh streets, with Stockbridge and Princes Street on the way. It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
@@ -28,6 +28,10 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 - Most streets have 10 targets (the Grassmarket has 11). In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
 - Crowning the Esplanade shows the game-complete card. The card only claims the full journey if every other street is cleared too.
+
+## London Road (v3.12)
+
+The curve now carries on west and up: a corner bar and the Greenside Playhouse (fictional name) on the right, St James Quarter up on the left (building shape only, no shop names) with its copper ribbon tower, Picardy Place's garden island and tram stop, and York Place's Georgian terraces beyond. The ten targets are unchanged.
 
 ## Pennywell (v3.11)
 Pennywell was rebuilt from Chris's description and reference photos. From the bottom to the top:

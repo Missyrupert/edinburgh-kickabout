@@ -41,3 +41,4 @@ Real street and place names are used for setting only.
 The v3.11 Pennywell rebuild was laid out from Chris's description and the `design-refs/00-pennywell-road/` photos (authors and licences are in `design-refs/MANIFEST.md`). The photos are design references only and aren't shipped. The `/workspace/ek-design/v311-compare-*.jpg` sheets contain those photos, so they're working documents and aren't for publication without the attribution given in the MANIFEST.
 
 Full third-party licence texts: `public/THIRD_PARTY_NOTICES.txt`, deployed with the game as `THIRD_PARTY_NOTICES.txt`.
+- London Road (v3.12): the Greenside Playhouse and The Stage Door Bar are fictional names. St James Quarter is drawn as a building shape only, with no shop or hotel brands.
