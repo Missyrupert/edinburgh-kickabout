@@ -12,7 +12,7 @@ await open('pennywell', false); await pg.evaluate(() => localStorage.clear()); a
 const ver = await (await fetch(URL + 'version.json')).json().catch(() => ({}));
 ok(await pg.evaluate((v) => document.getElementById('verTag').textContent === v, ver.v), 'version label matches version.json ' + ver.v);
 const menu = await pg.evaluate(() => ({ tiles: [...document.querySelectorAll('.card.menu .levels button')].map(e => e.querySelector('b').textContent), soon: [...document.querySelectorAll('.levels button.soon')].map(e => e.disabled && !e.dataset.level), order: __game.levels }));
-const SOON = Number(process.env.EK_SOON ?? 1); // v3.13: Princes Street still Coming soon; 0 once it opens
+const SOON = Number(process.env.EK_SOON ?? 0); // v3.14: all 12 streets open
 ok(menu.tiles.length === 12 && menu.soon.length === SOON && menu.soon.every(Boolean), `menu: 12 tiles, ${SOON} disabled Coming soon ` + menu.tiles.join(' | '));
 ok(!menu.order.includes('pilton') && menu.order[0] === 'pennywell' && menu.order.at(-1) === 'esplanade', 'order: no West Pilton, Pennywell first, Esplanade last');
 ok(/Granton/.test(await pg.textContent('#travelBtn')), 'travel from Pennywell goes to Granton');
