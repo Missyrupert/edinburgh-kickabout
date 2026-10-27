@@ -8,6 +8,7 @@ export const REQUIRED = {
   portobello: ['groyne', 'bathsdoor', 'bin', 'kiosk', 'lifebuoy', 'notices', 'sandcastle', 'windbreak', 'bucket', 'menuboard'],
   easterroad: ['crossbar', 'turnstile', 'fanzine', 'programmes', 'pubdoor', 'chippy', 'newsagent', 'stairdoor', 'busstop', 'stewards'],
   londonroad: ['pubdoor', 'newsagent', 'cafe', 'stairdoor', 'churchboard', 'shelter', 'postbox', 'gatesign', 'braegoal', 'bench'],
+  stockbridge: ['postbox', 'deli', 'barber', 'marketgate', 'stall', 'cornerbar', 'clockdoor', 'towerlamp', 'mewsdoor', 'stephensboard'],
   grassmarket: ['bin', 'bench', 'cone', 'lamp', 'close', 'dug', 'door', 'post', 'case', 'tardis', 'skip'],
   royalmile: ['closedown', 'kirkdoor', 'heart', 'mercat', 'busker', 'tartansign', 'windowbox', 'tourboard', 'fudgedoor', 'whiskydoor'],
   esplanade: ['niche', 'sentry', 'banner', 'seats', 'infoboard', 'cannon', 'memorial', 'statue', 'drum', 'crown'],

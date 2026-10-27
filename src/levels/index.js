@@ -7,10 +7,11 @@ import pennywell from './pennywell.js';
 import easterroad from './easterroad.js';
 import portobello from './portobello.js';
 import londonroad from './londonroad.js';
+import stockbridge from './stockbridge.js';
 import royalmile from './royalmile.js';
 import esplanade from './esplanade.js';
-export const LEVELS = { pennywell, grassmarket, granton, newhaven, leith, easterroad, portobello, londonroad, royalmile, esplanade };
-export const LEVEL_ORDER = ['pennywell', 'granton', 'newhaven', 'leith', 'portobello', 'easterroad', 'londonroad', 'grassmarket', 'royalmile', 'esplanade']; // v3.10: Chris's order. Menu slots 8 Stockbridge + 9 Princes Street are 'Coming soon' tiles; West Pilton removed (tag pilton-archive)
+export const LEVELS = { pennywell, grassmarket, granton, newhaven, leith, easterroad, portobello, londonroad, stockbridge, royalmile, esplanade };
+export const LEVEL_ORDER = ['pennywell', 'granton', 'newhaven', 'leith', 'portobello', 'easterroad', 'londonroad', 'stockbridge', 'grassmarket', 'royalmile', 'esplanade']; // v3.10: Chris's order. v3.13: Stockbridge open; slot 9 Princes Street is a 'Coming soon' tile; West Pilton removed (tag pilton-archive)
 LEVEL_ORDER.forEach((id, i) => { LEVELS[id].next = LEVEL_ORDER[(i + 1) % LEVEL_ORDER.length]; }); // travel button follows the order
 const q = new URLSearchParams(location.search);
 let saved = null; try { saved = localStorage.getItem('ek-level'); } catch {}

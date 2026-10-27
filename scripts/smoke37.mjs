@@ -10,7 +10,7 @@ await pg.goto(URL + '?debug&level=esplanade&preset=low'); await pg.waitForFuncti
 const g0 = await pg.evaluate(() => ({ lv: __game.level, p: { ...__game.player.position }, ids: __game.targets.map(t => t.id), levels: __game.levels, sp: __game.views.spawn }));
 ok(g0.lv === 'esplanade' && Math.hypot(g0.p.x - g0.sp[0], g0.p.z - g0.sp[1]) < 0.5 && g0.p.y > 0.3 && g0.p.y < 0.6, 'spawn on the Esplanade ' + JSON.stringify(g0.p));
 ok(g0.ids.length === 10 && new Set(g0.ids).size === 10 && g0.ids[9] === 'crown', 'targets (crown last) ' + g0.ids.join(','));
-ok(g0.levels.join() === 'pennywell,granton,newhaven,leith,portobello,easterroad,londonroad,grassmarket,royalmile,esplanade', 'level order ' + g0.levels);
+ok(g0.levels.join() === 'pennywell,granton,newhaven,leith,portobello,easterroad,londonroad,stockbridge,grassmarket,royalmile,esplanade', 'level order ' + g0.levels);
 ok(/Esplanade: <b>0\/10/.test(await pg.evaluate(() => document.getElementById('goalTxt').innerHTML)), 'HUD shows Esplanade goals');
 ok(await pg.evaluate(() => !!document.querySelector('[data-level=esplanade]')), 'level-select button');
 const S = await pg.evaluate(() => [[0, 0], [50, 0]].map(([x, z]) => __game.surfaceAt(x, z)));
