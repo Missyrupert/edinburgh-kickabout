@@ -63,7 +63,7 @@ function build(scene, world, mats, P_) {
     solid('stone', fx - s * 0.2, H - 0.25, zc, 0.4, 0.5, w + 0.1, 0xd8ccae, { phys: false }); solid('stone', fx - s * 0.15, 4.1, zc, 0.3, 0.28, w, 0xd8ccae, { phys: false });
     const nc = Math.max(2, Math.round(w / 3.3)); for (let k = 0; k < nc; k++) for (let j = 1; j < storeys; j++) quad('facade', fx - s * 0.01, 4.3 + (j - 0.5) * 3.2, zc - w / 2 + (k + 0.5) * w / nc, w / nc * 0.74, 3.0, ry, cellUV(j === storeys - 1 ? pick([FACADE.small, FACADE.sashB]) : pick([FACADE.sashA, FACADE.sashB, FACADE.triple, FACADE.lit])), vt());
     for (const k of [-0.32, 0.32]) { solid('stone', bx, H + 2.3, zc + k * w, 3.2, 2.8, 1.1, tone, { phys: false, tile: 2.6 }); for (let m = -1; m <= 1; m++) cyl('flat', bx + m * 0.8, H + 4, zc + k * w, 0.13, 0.16, 0.5, 0xa65a3a, { phys: false, seg: 6 }); }
-    quad('grime', fx - s * 0.03, H / 2, zc, w, H, ry, GRIME_UV[0], 0x8a7a64);
+    quad('grime', fx - s * 0.03, H - 1.6, zc, w, 3, ry, GRIME_UV[1], 0xb0a48c);
     if (sh) { solid('flat', fx - s * 0.06, 1.95, zc, 0.12, 3.9, w - 0.6, sh.col, { phys: false });
       if (sh.mural) quad('atlas', fx - s * 0.13, 1.8, zc + w * 0.18, w * 0.5, 2.6, ry, mural); else quad('atlasLit', fx - s * 0.13, 1.7, zc - (sh.door ? s * w * 0.1 : 0), w - (sh.door ? 3 : 1.6), 2.1, ry, winShop);
       quad('atlasLit', fx - s * 0.16, 3.4, zc, w - 1, 0.62, ry, atlas.fascia(sh.name, sh.sub, '#' + new THREE.Color(sh.col).getHexString(), sh.fg, (w - 1) / 0.62));
@@ -113,7 +113,7 @@ function build(scene, world, mats, P_) {
     solid('flat', -30, -2.6, 17, 0.8, 0.2, zb - za - 0.8, 0xe8ece8, { phys: false }); // the weir
     // the bridge: deck sides (arched spandrel faces), parapets with coping, the arch underside
     for (const z of [za - 0.2, zb + 0.2]) { solid('stone', 0, -1.4, z, 20, 2.8, 0.6, 0x9a9282, { phys: false, tile: 2 }); }
-    B.add('stone', new THREE.CylinderGeometry(5.2, 5.2, 1, 14, 1, true, Math.PI / 2, Math.PI), M4(0, -2.4, 17, 1, 11.4, 1, 0, 0, Math.PI / 2), 0x5a564c, {});
+    B.add('stone', new THREE.CylinderGeometry(5.2, 5.2, 1, 14, 1, true, Math.PI / 2, Math.PI), M4(0, -6.3, 17, 1, 11.4, 1, 0, 0, Math.PI / 2), 0x5a564c, {});
     for (const s of [-1, 1]) { solid('stone', s * 10.3, 0.55, 17, 0.6, 1.1, zb - za + 1.6, 0x9a9282, { tile: 1.6 }); solid('stone', s * 10.3, 1.15, 17, 0.8, 0.12, zb - za + 1.8, 0xb4ac9a, { phys: false }); boxBody(s * 10.3, 2, 17, 0.6, 4, zb - za + 1.6, { playerOnly: true }); }
     // river walls/railings along both banks either side of the bridge
     for (const s of [-1, 1]) for (const z of [za, zb]) { const xc = s * 40.5; if (s > 0 && z === za) continue; // (the market court wall is the south-left bank)

@@ -1,6 +1,6 @@
-# Edinburgh Kickabout (v3.12)
+# Edinburgh Kickabout (v3.13)
 
-A first-person street-football game set in 10 playable Edinburgh streets, with Stockbridge and Princes Street on the way. It's built for phones, and works on desktop too.
+A first-person street-football game set in 11 playable Edinburgh streets, with Princes Street on the way. It's built for phones, and works on desktop too.
 It uses three.js and cannon-es, built with Vite. It's a static site with no backend, accounts, analytics or ads.
 
 Live: https://missyrupert.github.io/edinburgh-kickabout/
@@ -17,7 +17,7 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 | 05 | Portobello | `?level=portobello` |
 | 06 | Easter Road | `?level=easterroad` |
 | 07 | London Road | `?level=londonroad` |
-| 08 | Stockbridge - coming soon | - |
+| 08 | Stockbridge | `?level=stockbridge` |
 | 09 | Princes Street - coming soon | - |
 | 10 | Grassmarket | `?level=grassmarket` |
 | 11 | Royal Mile | `?level=royalmile` |
@@ -28,6 +28,10 @@ Every level is open from the menu. The numbers are a suggested order, not a lock
 - Most streets have 10 targets (the Grassmarket has 11). In the scripted playtests each target took between 1 and 6 kicks; that's a test result, not a promise.
 - The Esplanade's crown only counts once its other targets are bagged.
 - Crowning the Esplanade shows the game-complete card. The card only claims the full journey if every other street is cleared too.
+
+## Stockbridge (v3.13)
+
+Raeburn Place's sandstone tenements and painted shopfronts (fictional names), the Stock Brig over the Water of Leith, the old market gateway onto a riverside court of yellow stalls, the clock tower building on the corner, Circus Lane's cobbled mews and St Stephen's tower at the end of St Stephen Street. Ten targets, including the market gateway (kick it through the arch) and the tower lamp.
 
 ## London Road (v3.12)
 

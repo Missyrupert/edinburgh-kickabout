@@ -42,3 +42,4 @@ The v3.11 Pennywell rebuild was laid out from Chris's description and the `desig
 
 Full third-party licence texts: `public/THIRD_PARTY_NOTICES.txt`, deployed with the game as `THIRD_PARTY_NOTICES.txt`.
 - London Road (v3.12): the Greenside Playhouse and The Stage Door Bar are fictional names. St James Quarter is drawn as a building shape only, with no shop or hotel brands.
+- Stockbridge (v3.13): Sunflower Deli, Pine & Paper, The Grey Dog, Raeburn Books, The River Cafe, Comely Bakery, Stockbridge Barbers, The Wee Florist, Second Chances, Old & Curious, Raeburn News and The Dean Tavern are fictional. The market gateway, clock tower, St Stephen's and Circus Lane are public landmarks, drawn simply.
